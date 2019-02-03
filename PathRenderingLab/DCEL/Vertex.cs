@@ -1,4 +1,6 @@
-﻿namespace PathRenderingLab.DCEL
+﻿using Bitlush;
+
+namespace PathRenderingLab.DCEL
 {
 
     // Stored vertex data: outgoing vertices stored by angle order (counter-clockwise order)
