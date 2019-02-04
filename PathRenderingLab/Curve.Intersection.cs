@@ -6,7 +6,7 @@ using static PathRenderingLab.GeometricUtils;
 
 namespace PathRenderingLab
 {
-    public partial struct Curve
+    public partial class Curve
     {
         public static IEnumerable<RootPair> Intersections(Curve c1, Curve c2)
         {

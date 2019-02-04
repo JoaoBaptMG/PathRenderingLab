@@ -6,7 +6,7 @@ using static PathRenderingLab.DoubleUtils;
 namespace PathRenderingLab
 {
 
-    public partial struct Curve
+    public partial class Curve
     {
         public Double2 Center => A;
         public Double2 Radii => B;
@@ -264,7 +264,7 @@ namespace PathRenderingLab
             var t1 = FirstAngle; var dt = DeltaAngle;
 
             var plist = new SortedSet<double>(
-                Pi_2.MultiplesBetween(LesserAngle, GreaterAngle).Select(p => (p - t1) / dt), Comparer) { 0, 1 }.ToList();
+                Pi_2.MultiplesBetween(LesserAngle, GreaterAngle).Select(p => (p - t1) / dt), RoughComparer) { 0, 1 }.ToList();
 
             var pointList = new Double2[plist.Count + 1];
             pointList[0] = DeltaAtInternal(plist[0]);

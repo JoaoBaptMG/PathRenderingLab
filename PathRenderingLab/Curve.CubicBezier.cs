@@ -5,7 +5,7 @@ using System.Linq;
 namespace PathRenderingLab
 {
 
-    public partial struct Curve
+    public partial class Curve
     {
         public static Curve CubicBezier(Double2 a, Double2 b, Double2 c, Double2 d)
             => new Curve(CurveType.CubicBezier, a, b, c, d);
