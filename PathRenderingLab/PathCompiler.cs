@@ -84,13 +84,13 @@ namespace PathRenderingLab
             foreach (var set in curveRootSets)
             {
                 set.RemoveAll(p => p <= 0f || p > 1f);
-                set.Sort(DoubleUtils.Comparer);
+                set.Sort(DoubleUtils.RoughComparer);
 
                 // Remove duplicates
                 temp.Clear();
                 temp.Add(set[0]);
                 for (int i = 1; i < set.Count; i++)
-                    if (DoubleUtils.Comparer.Compare(set[i - 1], set[i]) != 0) temp.Add(set[i]);
+                    if (DoubleUtils.RoughComparer.Compare(set[i - 1], set[i]) != 0) temp.Add(set[i]);
                     else temp[temp.Count - 1] = (temp[temp.Count - 1] + set[i]) / 2;
 
                 set.Clear();
@@ -108,7 +108,11 @@ namespace PathRenderingLab
                     var curve = curves[i].Subcurve(v, l);
 
                     foreach (var c in curve.Simplify())
+                    {
                         dcel.AddCurve(c);
+                        Console.WriteLine(dcel);
+                        //Console.ReadLine();
+                    }
 
                     v = l;
                 }

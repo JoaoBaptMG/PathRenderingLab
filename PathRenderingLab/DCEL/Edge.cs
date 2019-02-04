@@ -30,16 +30,6 @@ namespace PathRenderingLab.DCEL
             Canonicity = 0;
         }
 
-        public class EdgeCCWComparer : Comparer<Edge>
-        {
-            public override int Compare(Edge x, Edge y) =>
-                (x.OuterAngles.Angle != y.OuterAngles.Angle) ? x.OuterAngles.Angle.CompareTo(y.OuterAngles.Angle) :
-                (x.OuterAngles.DAngle != y.OuterAngles.DAngle) ? x.OuterAngles.DAngle.CompareTo(y.OuterAngles.DAngle) :
-                x.OuterAngles.DDAngle.CompareTo(y.OuterAngles.DDAngle);
-        }
-
-        public static readonly EdgeCCWComparer CCWComparer = new EdgeCCWComparer();
-
         /// <summary>
         /// Iterates throught the edge's sequence formed by its "next" links
         /// </summary>

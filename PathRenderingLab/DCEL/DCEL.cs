@@ -39,7 +39,7 @@ namespace PathRenderingLab.DCEL
         }
 
         // Values necessary to "align" the curves in the right places
-        const double TruncateVal = 2048;
+        const double TruncateVal = 4096;
         static double Truncate(double v) => Math.Round(v * TruncateVal) / TruncateVal;
         static Double2 Truncate(Double2 v) => new Double2(Truncate(v.X), Truncate(v.Y));
 
@@ -136,7 +136,7 @@ namespace PathRenderingLab.DCEL
                 vertex2.SearchOutgoingEdges(e2, out var e2lo, out var e2ro);
 
                 // Check whether the new edge will connect to different contours
-                var differentContours = !e1lo.CyclicalSequence.Contains(e2lo);
+                var differentContours = !e1lo.CyclicalSequence.Contains(e2lo, ReferenceEqualityComparer.Default);
 
                 // WARNING: the operation above CANNOT be commuted with this below - leave the variable there
                 // Correctly create the edge links (I won't try to draw a diagram here, sorry... my ASCII art is horrible)
@@ -242,8 +242,8 @@ namespace PathRenderingLab.DCEL
             edges.Add(e1);
             edges.Add(e2);
 
-            vertex1.OutgoingEdges.Insert(e1, e1);
-            vertex2.OutgoingEdges.Insert(e2, e2);
+            vertex1.OutgoingEdges.Insert(e1.OuterAngles, e1);
+            vertex2.OutgoingEdges.Insert(e2.OuterAngles, e2);
 
             CheckProblematicCycle(e1);
             CheckProblematicCycle(e2);
@@ -333,7 +333,9 @@ namespace PathRenderingLab.DCEL
             var iterationQueue = new Queue<Face>();
 
             // Add the outer face first
-            iterationQueue.Enqueue(faces.First(f => f.IsOuterFace));
+            var outerFace = faces.First(f => f.IsOuterFace);
+            iterationQueue.Enqueue(outerFace);
+            alreadyAssignedFaces.Add(outerFace);
 
             // Assign fill numbers to every face
             while (iterationQueue.Count > 0)

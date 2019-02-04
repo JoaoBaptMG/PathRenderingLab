@@ -5,7 +5,7 @@ namespace PathRenderingLab
 {
     public enum CurveType { Line, QuadraticBezier, CubicBezier, EllipticArc }
 
-    public struct OuterAngles
+    public struct OuterAngles : IComparable<OuterAngles>
     {
         public double Angle, DAngle, DDAngle;
 
@@ -14,6 +14,15 @@ namespace PathRenderingLab
             Angle = angle;
             DAngle = dAngle;
             DDAngle = ddAngle;
+        }
+
+        public int CompareTo(OuterAngles other)
+        {
+            var comparer = DoubleUtils.RoughComparer;
+            var cmp = comparer.Compare(Angle, other.Angle);
+            if (cmp == 0) cmp = comparer.Compare(DAngle, other.DAngle);
+            if (cmp == 0) cmp = comparer.Compare(DDAngle, other.DDAngle);
+            return cmp;
         }
 
         public override string ToString() => $"{Angle.ToDegrees()}:{DAngle}:{DDAngle}";

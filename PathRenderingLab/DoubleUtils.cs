@@ -14,12 +14,12 @@ namespace PathRenderingLab
         public static bool RoughlyEquals(double a, double b) => a - b < Epsilon && b - a < Epsilon;
         public static bool RoughlyEquals(Double2 a, Double2 b) => (a - b).LengthSquared < Epsilon2;
 
-        public class RoughComparer : Comparer<double>
+        public class RoughComparerInst : Comparer<double>
         {
             public override int Compare(double x, double y) => RoughlyEquals(x, y) ? 0 : x.CompareTo(y);
         }
 
-        public static readonly RoughComparer Comparer = new RoughComparer();
+        public static readonly RoughComparerInst RoughComparer = new RoughComparerInst();
 
         public const double Pi = Math.PI;
         public const double TwoPi = 2 * Pi;

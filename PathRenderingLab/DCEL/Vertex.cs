@@ -7,17 +7,17 @@ namespace PathRenderingLab.DCEL
     public class Vertex
     {
         public Double2 Position;
-        public AvlTree<Edge, Edge> OutgoingEdges;
+        public AvlTree<OuterAngles, Edge> OutgoingEdges;
 
         public Vertex(Double2 pos)
         {
             Position = pos;
-            OutgoingEdges = new AvlTree<Edge, Edge>(Edge.CCWComparer);
+            OutgoingEdges = new AvlTree<OuterAngles, Edge>();
         }
 
         public bool SearchOutgoingEdges(Edge e, out Edge eli, out Edge eri)
         {
-            if (OutgoingEdges.SearchLeftRight(e, out eli, out eri))
+            if (OutgoingEdges.SearchLeftRight(e.OuterAngles, out eli, out eri))
                 return true;
 
             // Try to mimic a cyclical edge list
