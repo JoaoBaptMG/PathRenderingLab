@@ -189,7 +189,7 @@ namespace PathRenderingLab
             else
             {
                 RootPair MakeRoot(double t) => new RootPair(center.X + a.Radii.X * transformRot.X * Math.Cos(t)
-                    - a.Radii.Y * transformRot.Y * Math.Sin(t), (t - a.FirstAngle) / a.DeltaAngle);
+                    - a.Radii.Y * transformRot.Y * Math.Sin(t), a.AngleToParameter(t));
 
                 // The two roots present
                 var rotAngle = Math.Atan2(-a.Radii.X * transformRot.Y, a.Radii.Y * transformRot.X);
@@ -287,13 +287,10 @@ namespace PathRenderingLab
                 var a2 = ((p - c2.Center).Angle - c2.ComplexRot.Angle).WrapAngle();
 
                 // And get their parameters
-                double t1, t2;
-                t1 = (a1 - c1.FirstAngle) / c1.DeltaAngle;
-                if (!Inside01(t1)) t1 = (a1 + TwoPi - c1.FirstAngle) / c1.DeltaAngle;
+                var t1 = c1.AngleToParameter(a1);
                 if (!Inside01(t1)) continue;
 
-                t2 = (a2 - c2.FirstAngle) / c2.DeltaAngle;
-                if (!Inside01(t2)) t2 = (a2 + TwoPi - c2.FirstAngle) / c2.DeltaAngle;
+                var t2 = c2.AngleToParameter(a2);
                 if (!Inside01(t2)) continue;
 
                 // Return the intersection

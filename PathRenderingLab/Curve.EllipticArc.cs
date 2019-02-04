@@ -101,6 +101,23 @@ namespace PathRenderingLab
         public double LesserAngle => Math.Min(FirstAngle, FirstAngle + DeltaAngle);
         public double GreaterAngle => Math.Max(FirstAngle, FirstAngle + DeltaAngle);
 
+        // Check the parameter said angle is contained in
+        public double AngleToParameter(double theta)
+        {
+            if (Type != CurveType.EllipticArc) throw new InvalidOperationException("This query is only relevant on an elliptic arc");
+            theta = theta.WrapAngle();
+
+            // Test the angle and up to two double-turns before and after
+            for (int i = -2; i <= 2; i++)
+            {
+                var cand = theta + i * TwoPi;
+                if (LesserAngle <= cand && cand <= GreaterAngle)
+                    return (cand - FirstAngle) / DeltaAngle;
+            }
+
+            return double.PositiveInfinity;
+        }
+
         private Curve EllipticArc_Reverse => EllipticArcInternal(Center, Radii, ComplexRot, FirstAngle + DeltaAngle, -DeltaAngle);
 
         private DoubleRectangle EllipticArc_BoundingBox
@@ -202,7 +219,7 @@ namespace PathRenderingLab
                 for (int k = (int)Math.Ceiling(LesserAngle / Pi_2);
                     k <= (int)Math.Floor(GreaterAngle / Pi_2); k++)
                 {
-                    var t = (k * Pi_2 - FirstAngle) / DeltaAngle;
+                    var t = AngleToParameter(k * Pi_2);
                     if (GeometricUtils.Inside01(t)) tests.Add(t);
                 }
 
@@ -252,9 +269,8 @@ namespace PathRenderingLab
             }
 
             // If the guess is inside the interval
-            if (LesserAngle <= t && t <= GreaterAngle) return (t - FirstAngle) / DeltaAngle;
-            else if (LesserAngle <= t + TwoPi && t + TwoPi <= GreaterAngle)
-                return (t + TwoPi - FirstAngle) / DeltaAngle;
+            var tu = AngleToParameter(t);
+            if (!double.IsInfinity(tu)) return tu;
             // Else, pick the nearest of 0 or 1
             return EllipticArc_At(0).DistanceSquaredTo(v) < EllipticArc_At(1).DistanceSquaredTo(v) ? 0 : 1;
         }
@@ -265,7 +281,7 @@ namespace PathRenderingLab
             var t1 = FirstAngle; var dt = DeltaAngle;
 
             var plist = new SortedSet<double>(
-                Pi_2.MultiplesBetween(LesserAngle, GreaterAngle).Select(p => (p - t1) / dt), RoughComparer) { 0, 1 }.ToList();
+                Pi_2.MultiplesBetween(LesserAngle, GreaterAngle).Select(AngleToParameter), RoughComparer) { 0, 1 }.ToList();
 
             var pointList = new Double2[plist.Count + 1];
             pointList[0] = DeltaAtInternal(plist[0]);
