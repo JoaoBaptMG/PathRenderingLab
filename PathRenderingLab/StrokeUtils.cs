@@ -213,6 +213,7 @@ namespace PathRenderingLab
             var entryTangent = nextCurve.EntryTangent;
             var diff = entryTangent.Cross(exitTangent);
             var sd = Math.Sign(diff);
+            if (sd == 0) sd = nextCurve.IsConvex ? -1 : 1; // Account for half-turns here
 
             // The common point and the offset vectors
             var p = (prevCurve.At(1) + nextCurve.At(0)) / 2;
@@ -247,8 +248,20 @@ namespace PathRenderingLab
                         else
                         {
                             // Clip the miter
-                            var p1 = entryOffset + miterWidth * (bisectorOffset - entryOffset) / miter;
-                            var p2 = exitOffset + miterWidth * (bisectorOffset - exitOffset) / miter;
+                            Double2 p1, p2;
+
+                            // Account for the special case of a 180 degree turn
+                            if (double.IsInfinity(miter))
+                            {
+                                var outwardOffset = entryOffset.Normalized.CCWPerpendicular;
+                                p1 = entryOffset + miterWidth * outwardOffset;
+                                p2 = exitOffset + miterWidth * outwardOffset;
+                            }
+                            else
+                            {
+                                p1 = entryOffset + miterWidth * (bisectorOffset - entryOffset) / miter;
+                                p2 = exitOffset + miterWidth * (bisectorOffset - exitOffset) / miter;
+                            }
 
                             yield return Curve.Line(p + exitOffset, p + p2);
                             yield return Curve.Line(p + p2, p + p1);
@@ -259,8 +272,8 @@ namespace PathRenderingLab
                 case StrokeLineJoin.Round:
                     {
                         // Generate the circle
-                        var sweep = diff <= 0;
-                        yield return Curve.EllipticArc(p + exitOffset, new Double2(halfWidth, halfWidth), 0, false, sweep, p + entryOffset);
+                        var halfRadii = new Double2(halfWidth, halfWidth);
+                        yield return Curve.EllipticArc(p + exitOffset, halfRadii, 0, false, sd < 0, p + entryOffset);
                         break;
                     }
                 case StrokeLineJoin.Arcs:
