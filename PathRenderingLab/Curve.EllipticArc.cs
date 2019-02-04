@@ -64,7 +64,7 @@ namespace PathRenderingLab
             return EllipticArcInternal(cpun, radii, Double2.FromAngle(xRotation), t1, dt);
         }
 
-        public static Curve CorrectCircle(Double2 center, double radius, Double2 v1, Double2 v2, bool counterclockwise)
+        public static Curve Circle(Double2 center, double radius, Double2 v1, Double2 v2, bool counterclockwise)
             => EllipticArcInternal(center, new Double2(radius, radius), v1.Normalized, 0,
                 (counterclockwise ? 1 : -1) * Math.Atan2(v1.Cross(v2), v1.Dot(v2)).WrapAngle360());
 

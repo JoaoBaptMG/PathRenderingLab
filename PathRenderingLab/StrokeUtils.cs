@@ -269,12 +269,9 @@ namespace PathRenderingLab
                         break;
                     }
                 case StrokeLineJoin.Round:
-                    {
                         // Generate the circle
-                        var halfRadii = new Double2(halfWidth, halfWidth);
-                        yield return Curve.EllipticArc(p + exitOffset, halfRadii, 0, false, sd < 0, p + entryOffset);
+                        yield return Curve.Circle(p, halfWidth, exitOffset, entryOffset, sd < 0);
                         break;
-                    }
                 case StrokeLineJoin.Arcs:
                     {
                         throw new NotImplementedException();
@@ -350,7 +347,7 @@ namespace PathRenderingLab
             {
                 case StrokeLineCap.Butt: yield return Curve.Line(p + offset, p - offset); break;
                 case StrokeLineCap.Round:
-                    yield return Curve.CorrectCircle(p, halfWidth, offset, -offset, !atEnd);
+                    yield return Curve.Circle(p, halfWidth, offset, -offset, !atEnd);
                     break;
                 case StrokeLineCap.Square:
                     {
