@@ -159,7 +159,20 @@ namespace PathRenderingLab
             var curves = new List<Curve>();
             // Convert each split path to a fill
             foreach (var data in path.SplitCurves())
-                curves.AddRange(StrokeUtils.ConvertToFill(data, halfWidth, lineCap, lineJoin, miterLimit));
+            {
+                // Put them on an array
+                var stroke = StrokeUtils.ConvertToFill(data, halfWidth, lineCap, lineJoin, miterLimit).ToArray();
+                
+                // If the winding is counterclockwise, revert it
+                if (stroke.Sum(c => c.Winding) < 0)
+                {
+                    for (int i = 0; i < stroke.Length; i++)
+                        stroke[i] = stroke[i].Reverse;
+                    Array.Reverse(stroke);
+                }
+
+                curves.AddRange(stroke);
+            }
 
             // And compile
             return CompileCurves(curves, FillRule.Nonzero);
