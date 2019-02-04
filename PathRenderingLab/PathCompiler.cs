@@ -110,7 +110,7 @@ namespace PathRenderingLab
                     foreach (var c in curve.Simplify())
                     {
                         dcel.AddCurve(c);
-                        Console.WriteLine(dcel);
+                        //Console.WriteLine(dcel);
                         //Console.ReadLine();
                     }
 
