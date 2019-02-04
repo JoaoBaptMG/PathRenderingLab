@@ -212,8 +212,7 @@ namespace PathRenderingLab
             var exitTangent = prevCurve.ExitTangent;
             var entryTangent = nextCurve.EntryTangent;
             var diff = entryTangent.Cross(exitTangent);
-            var sd = Math.Sign(diff);
-            if (sd == 0) sd = nextCurve.IsConvex ? -1 : 1; // Account for half-turns here
+            var sd = diff < 0 ? -1 : 1; // Account for half-turns here too
 
             // The common point and the offset vectors
             var p = (prevCurve.At(1) + nextCurve.At(0)) / 2;
