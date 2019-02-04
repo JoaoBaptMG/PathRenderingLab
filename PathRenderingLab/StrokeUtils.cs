@@ -41,7 +41,7 @@ namespace PathRenderingLab
             // If the curve is open, add the line caps
             if (!data.IsClosed)
             {
-                rightCurves.AddRange(GenerateLineCaps(data.Curves[0], false, halfWidth, lineCap));
+                rightCurves.InsertRange(0, GenerateLineCaps(data.Curves[0], false, halfWidth, lineCap));
                 leftCurves.AddRange(GenerateLineCaps(data.Curves[data.Curves.Length - 1], true, halfWidth, lineCap));
             }
 
@@ -344,25 +344,25 @@ namespace PathRenderingLab
 
             // Now, get the offset, properly accounting for the direction
             var offset = halfWidth * tangent.CCWPerpendicular;
-            if (atEnd) offset = -offset;
 
             // Finally, generate the line cap
             switch (lineCap)
             {
                 case StrokeLineCap.Butt: yield return Curve.Line(p + offset, p - offset); break;
                 case StrokeLineCap.Round:
-                    yield return Curve.EllipticArc(p + offset, new Double2(halfWidth, halfWidth), 0, false, true, p - offset);
+                    yield return Curve.CorrectCircle(p, halfWidth, offset, -offset, !atEnd);
                     break;
                 case StrokeLineCap.Square:
                     {
                         // Generate a half-square
                         var ext = offset.CCWPerpendicular;
+                        if (atEnd) ext = -ext;
                         yield return Curve.Line(p + offset, p + offset + ext);
                         yield return Curve.Line(p + offset + ext, p - offset + ext);
                         yield return Curve.Line(p - offset + ext, p - offset);
                     }
                     break;
-                default: throw new ArgumentException("Unregocnized lineCap", nameof(lineCap));
+                default: throw new ArgumentException("Unrecognized lineCap", nameof(lineCap));
             }
         }
     }
