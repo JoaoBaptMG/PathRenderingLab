@@ -1,2 +1,2 @@
 M1,0 Q2,0 2,1 2,2 1,2 0,2 0,1 0,2 -1,2 -2,2 -2,1 -2,0 -1,0 -2,0 -2,-1 -2,-2 -1,-2 0,-2 0,-1 0,-2 1,-2 2,-2 2,-1 2,0 1,0Z
-fill: purple; stroke: black; stroke-width: 0.125; stroke-linejoin: bevel; stroke-miterlimit: 3;
+fill: purple; stroke: black; stroke-width: 0.125; stroke-linejoin: miter-clip; stroke-miterlimit: 4;
