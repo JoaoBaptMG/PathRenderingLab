@@ -187,7 +187,8 @@ namespace PathRenderingLab
             var deg = ComplexRot.Angle.ToDegrees();
             var t1d = FirstAngle.ToDegrees();
             var dtd = DeltaAngle.ToDegrees();
-            return $"A{Show(Center)}-{Show(Radii)}:{deg},{t1d},{dtd}";
+            var ord = dtd > 0 ? "CCW" : "CW";
+            return $"A{Show(Center)}-{Show(Radii)}:{deg}, {t1d}{Show(At(0))}, {t1d + dtd}{Show(At(1))} {ord}";
         }
 
         private IEnumerable<Curve> EllipticArc_Simplify()
