@@ -235,7 +235,7 @@ namespace PathRenderingLab.DCEL
         /// </summary>
         /// <param name="vert">The vertex to be tested</param>
         /// <returns>The face to which the vertex belongs, or null if none</returns>
-        public Face GetFaceFromVertex(Double2 vert) => faces.FirstOrDefault(f => f.ContainsVertex(vert));
+        public Face GetFaceFromVertex(Double2 vert) => faces.First(f => f.ContainsVertex(vert));
 
         private void AddEdgePair(Vertex vertex1, Vertex vertex2, Edge e1, Edge e2)
         {
