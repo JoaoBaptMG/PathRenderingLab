@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace PathRenderingLab
 {
 
-    public partial class Curve
+    public partial struct Curve
     {
         public static Curve Line(Double2 a, Double2 b) => new Curve(CurveType.Line, a, b);
         private Curve Line_Reverse => Line(B, A);

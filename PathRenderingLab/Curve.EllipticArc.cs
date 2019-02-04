@@ -6,7 +6,7 @@ using static PathRenderingLab.DoubleUtils;
 namespace PathRenderingLab
 {
 
-    public partial class Curve
+    public partial struct Curve
     {
         public Double2 Center => A;
         public Double2 Radii => B;

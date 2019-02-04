@@ -2,7 +2,7 @@
 
 namespace PathRenderingLab
 {
-    public partial class Curve
+    public partial struct Curve
     {
         public Double2[] EnclosingPolygon
         {

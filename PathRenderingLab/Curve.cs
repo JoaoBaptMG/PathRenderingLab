@@ -31,7 +31,7 @@ namespace PathRenderingLab
     /// <summary>
     /// A variant struct describing an SVG curve, which can be a line, a quadratic or cubic Bézier curve, or an elliptic arc
     /// </summary>
-    public partial class Curve
+    public partial struct Curve
     {
         /// <summary>
         /// The curve's type

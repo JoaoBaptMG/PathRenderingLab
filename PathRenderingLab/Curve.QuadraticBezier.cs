@@ -4,7 +4,7 @@ using System.Linq;
 namespace PathRenderingLab
 {
 
-    public partial class Curve
+    public partial struct Curve
     {
         public static Curve QuadraticBezier(Double2 a, Double2 b, Double2 c) => new Curve(CurveType.QuadraticBezier, a, b, c);
         private Curve QuadraticBezier_Reverse => QuadraticBezier(C, B, A);
