@@ -156,6 +156,9 @@ namespace PathRenderingLab
 
         public static Double2[] SimplifyPolygon(Double2[] polygon)
         {
+            // Quickly discard degenerate polygons
+            if (polygon.Length < 3) return polygon;
+
             // Find a non-collinear polygon first
             int istart;
             int len = polygon.Length;
@@ -185,6 +188,7 @@ namespace PathRenderingLab
             {
                 // Start with a single point
                 var points = new List<Double2>(len) { polygon[istart] };
+                Double2 LastAddedPoint() => points[points.Count - 1];
 
                 for (int i = (istart + 1) % len; i != istart; i = (i + 1) % len)
                 {
@@ -193,13 +197,34 @@ namespace PathRenderingLab
                     var ip = (i + len - 1) % len;
 
                     // Add if the point isn't collinear
-                    if (!DoubleUtils.RoughlyZero((polygon[ik] - polygon[i]).Cross(polygon[ip] - polygon[i])))
+                    if (!DoubleUtils.RoughlyZero((polygon[ik] - polygon[i]).Cross(LastAddedPoint() - polygon[i])))
                         points.Add(polygon[i]);
                 }
 
                 // Return the new formed polygon
                 return points.ToArray();
             }
+        }
+
+        public static IEnumerable<Double2[]> RemovePolygonWedges(Double2[] polygon)
+        {
+            // Quickly discard degenerate polygons
+            if (polygon.Length < 3) return Enumerable.Empty<Double2[]>();
+
+            // We will use a DCEL to do it
+            var dcel = new DCEL.DCEL();
+
+            for (int i = 0; i < polygon.Length; i++)
+            {
+                var ik = (i + 1) % polygon.Length;
+                dcel.AddCurve(Curve.Line(polygon[i], polygon[ik]));
+            }
+
+            // Now, remove the wedges
+            dcel.RemoveWedges();
+
+            // And collect the faces
+            return dcel.Faces.Where(f => !f.IsOuterFace).Select(f => f.Edges.Select(p => p.E1.Position).ToArray());
         }
 
         public static Double2[] CircleIntersection(Double2 c1, double r1, Double2 c2, double r2)

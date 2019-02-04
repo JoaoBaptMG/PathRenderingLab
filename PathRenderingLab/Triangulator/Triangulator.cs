@@ -22,7 +22,11 @@ namespace PathRenderingLab.Triangulator
         public static Triangle[] Triangulate(Double2[][] contours)
         {
             // Firstly, simplify the contours
-            var simplifiedContours = contours.Select(GeometricUtils.SimplifyPolygon).ToArray();
+            var simplifiedContours = contours.SelectMany(GeometricUtils.RemovePolygonWedges)
+                .Select(GeometricUtils.SimplifyPolygon).ToArray();
+
+            // Discard trivial contours right now
+            if (simplifiedContours.Length == 0) return new Triangle[0];
 
             // First, partition the polygon into y-monotone pieces
             var polygons = PartitionToMonotone(simplifiedContours);
