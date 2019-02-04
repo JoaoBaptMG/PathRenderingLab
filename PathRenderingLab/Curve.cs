@@ -262,20 +262,6 @@ namespace PathRenderingLab
             }
         }
 
-        public override string ToString()
-        {
-            switch (Type)
-            {
-                case CurveType.Line: return Line_ToString();
-                case CurveType.QuadraticBezier: return QuadraticBezier_ToString();
-                case CurveType.CubicBezier: return CubicBezier_ToString();
-                case CurveType.EllipticArc: return EllipticArc_ToString();
-                default: throw new InvalidOperationException("Unrecognized type.");
-            }
-        }
-
-        public string PathRepresentation() => PathCommand.MoveTo(At(0)).ToString() + " " + PathCommandFrom().ToString();
-
         public PathCommand PathCommandFrom()
         {
             switch (Type)
@@ -303,5 +289,19 @@ namespace PathRenderingLab
                 }
             }
         }
+
+        public override string ToString()
+        {
+            switch (Type)
+            {
+                case CurveType.Line: return Line_ToString();
+                case CurveType.QuadraticBezier: return QuadraticBezier_ToString();
+                case CurveType.CubicBezier: return CubicBezier_ToString();
+                case CurveType.EllipticArc: return EllipticArc_ToString();
+                default: throw new InvalidOperationException("Unrecognized type.");
+            }
+        }
+
+        public string PathRepresentation() => PathCommand.MoveTo(At(0)).ToString() + " " + PathCommandFrom().ToString();
     }
 }
