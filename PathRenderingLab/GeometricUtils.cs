@@ -214,17 +214,29 @@ namespace PathRenderingLab
             // We will use a DCEL to do it
             var dcel = new DCEL.DCEL();
 
+            // Note the polygon winding
+            double winding = 0;
+
             for (int i = 0; i < polygon.Length; i++)
             {
                 var ik = (i + 1) % polygon.Length;
                 dcel.AddCurve(Curve.Line(polygon[i], polygon[ik]));
+                winding += polygon[i].Cross(polygon[ik]);
             }
 
             // Now, remove the wedges
             dcel.RemoveWedges();
 
+            // Now, ensure the windings are coherent with the original face's winding
+            Double2[] ConstructPolygon(DCEL.Face face)
+            {
+                var array = face.Edges.Select(p => p.E1.Position).ToArray();
+                if (winding < 0) Array.Reverse(array);
+                return array;
+            }
+
             // And collect the faces
-            return dcel.Faces.Where(f => !f.IsOuterFace).Select(f => f.Edges.Select(p => p.E1.Position).ToArray());
+            return dcel.Faces.Where(f => !f.IsOuterFace).Select(ConstructPolygon);
         }
 
         public static Double2[] CircleIntersection(Double2 c1, double r1, Double2 c2, double r2)

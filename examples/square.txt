@@ -1,0 +1,2 @@
+M0,0 0,10 10,10 10,0Z
+fill: gray; stroke: black; stroke-width: 1; stroke-linejoin: miter;
