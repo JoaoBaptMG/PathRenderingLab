@@ -230,7 +230,7 @@ namespace PathRenderingLab
             // Now, ensure the windings are coherent with the original face's winding
             Double2[] ConstructPolygon(DCEL.Face face)
             {
-                var array = face.Edges.Select(p => p.E1.Position).ToArray();
+                var array = face.Edges.Select(p => p.Curve.A).ToArray();
                 if (winding < 0) Array.Reverse(array);
                 return array;
             }

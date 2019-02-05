@@ -41,6 +41,9 @@ namespace PathRenderingLab.DCEL
             int numRoots = IsOuterFace ? 1 : 0;
             foreach (var edge in Edges)
             {
+                // Ignore edges which interface on "blank" contours
+                if (edge.Face == edge.Twin.Face) continue;
+
                 var bbox = edge.Curve.BoundingBox;
                 var lspur = Curve.Line(v, v.WithX(Math.Max(bbox.X + bbox.Width, v.X) + 1f));
 
