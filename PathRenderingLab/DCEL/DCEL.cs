@@ -50,7 +50,8 @@ namespace PathRenderingLab.DCEL
         /// <returns>The vertex added</returns>
         public Vertex AddVertex(Double2 v)
         {
-            var vertex = new Vertex(Truncate(v));
+            v = Truncate(v);
+            var vertex = new Vertex(v);
             vertices.Add(vertex);
             return vertex;
         }
@@ -234,7 +235,7 @@ namespace PathRenderingLab.DCEL
         /// Use a raycasting technique to select the face this vertex belongs
         /// </summary>
         /// <param name="vert">The vertex to be tested</param>
-        /// <returns>The face to which the vertex belongs, or null if none</returns>
+        /// <returns>The face to which the vertex belongs</returns>
         public Face GetFaceFromVertex(Double2 vert) => faces.First(f => f.ContainsVertex(vert));
 
         private void AddEdgePair(Vertex vertex1, Vertex vertex2, Edge e1, Edge e2)
@@ -273,6 +274,8 @@ namespace PathRenderingLab.DCEL
             // those two also happen to have the same feature
             bool IsWedge(Edge edge) => edge.CyclicalSequence.TakeWhile(e => e != edge.Twin).All(e => e.Face == e.Twin.Face);
 
+            var edgesToRemove = new HashSet<Edge>(ReferenceEqualityComparer.Default);
+
             // Go through all the faces and all the contours for this
             foreach (var face in faces)
             {
@@ -305,7 +308,15 @@ namespace PathRenderingLab.DCEL
                                 e = e.Previous;
                             }
 
-                            // Now, e points to the last segment before the wedge. Fix the links.
+                            // Now, e points to the last segment before the wedge. First, add the
+                            // edges that need to be removed
+                            foreach (var u in e.Next.CyclicalSequence)
+                            {
+                                edgesToRemove.Add(u);
+                                if (u == e.Next.Twin) break;
+                            }
+
+                            // Fix the links.
                             var en = e.Next.Twin.Next;
                             e.Next = en;
                             en.Previous = e;
@@ -321,6 +332,9 @@ namespace PathRenderingLab.DCEL
                 // Pluck the contours which are only wedges
                 face.Contours.ExtractIndices(indices.ToArray());
             }
+
+            // Delete the edges from the list
+            edges.RemoveAll(edgesToRemove.Contains);
         }
 
         /// <summary>
@@ -356,6 +370,104 @@ namespace PathRenderingLab.DCEL
                     iterationQueue.Enqueue(twinFace);
                 }
             }
+        }
+
+        /// <summary>
+        /// Join faces that equally satisfy the predicate, to ease for the triangulator.
+        /// If two faces share the same result on the predicate, they are joined
+        /// </summary>
+        public void SimplifyFaces(Func<Face,bool> predicate)
+        {
+            // First, we are going to pass through all the edges to check which can be removed
+            var edgesToRemove = new HashSet<Edge>(ReferenceEqualityComparer.Default);
+            var facesToRemove = new HashSet<Face>(ReferenceEqualityComparer.Default);
+
+            foreach (var edge in edges)
+            {
+                // If the edge's twin is already inserted, ignore it
+                if (edgesToRemove.Contains(edge.Twin)) continue;
+
+                // Else, add it if necessary
+                if (predicate(edge.Face) == predicate(edge.Twin.Face))
+                    edgesToRemove.Add(edge);
+            }
+
+            // Now, proceed to remove the edges
+            foreach (var edge in edgesToRemove)
+            {
+                // Fix the links
+                var ep = edge.Previous;
+                var en = edge.Next;
+                var etp = edge.Twin.Previous;
+                var etn = edge.Twin.Next;
+
+                if (ep != edge.Twin)
+                {
+                    ep.Next = etn;
+                    etn.Previous = ep;
+                }
+
+                if (en != edge.Twin)
+                {
+                    en.Previous = etp;
+                    etp.Next = en;
+                }
+
+                // Now, fix if necessary the contour lists
+                // If they are on same face, necessarily they separate a single contour in two
+                if (edge.Face == edge.Twin.Face)
+                {
+                    var edgeSet = new HashSet<Edge>(ReferenceEqualityComparer.Default);
+                    if (en != edge.Twin) edgeSet.AddRange(en.CyclicalSequence);
+                    if (ep != edge.Twin) edgeSet.AddRange(ep.CyclicalSequence);
+                    edgeSet.Add(edge); edgeSet.Add(edge.Twin);
+
+                    // Remove the original contour
+                    edge.Face.Contours.RemoveAll(edgeSet.Contains);
+
+                    // And add the new contours
+                    // Account for "wedge" edges, if both contours are the same
+                    if (ep != edge.Twin) edge.Face.Contours.Add(ep);
+                    if (en != edge.Twin) edge.Face.Contours.Add(en);
+                }
+                // If they are on different faces, we need to join both faces' contours somewhat
+                else
+                {
+                    var e = ep != edge.Twin ? ep : en;
+
+                    // There is a single contour now
+                    var edgeSet = new HashSet<Edge>(ReferenceEqualityComparer.Default);
+                    edgeSet.AddRange(e.CyclicalSequence);
+                    edgeSet.Add(edge); edgeSet.Add(edge.Twin);
+
+                    // Remove the references to the possible new contour
+                    edge.Face.Contours.RemoveAll(edgeSet.Contains);
+                    edge.Twin.Face.Contours.RemoveAll(edgeSet.Contains);
+
+                    // Just make sure we don't trash the outer face by accident
+                    var keepFace = edge.Face;
+                    var removeFace = edge.Twin.Face;
+
+                    if (removeFace.IsOuterFace) Swap(ref keepFace, ref removeFace);
+
+                    // Now, join the contours, reassigning the face, and add the new joined one
+                    foreach (var contour in removeFace.Contours)
+                    {
+                        keepFace.Contours.Add(contour);
+                        AssignFace(keepFace, contour);
+                    }
+
+                    keepFace.Contours.Add(e);
+                    AssignFace(keepFace, e);
+
+                    // And trash one of the faces
+                    facesToRemove.Add(removeFace);
+                }
+            }
+
+            // Now, we remove the faces and the edges
+            edges.RemoveAll(e => edgesToRemove.Contains(e) || edgesToRemove.Contains(e.Twin));
+            faces.RemoveAll(facesToRemove.Contains);
         }
 
         /// <summary>
@@ -410,6 +522,13 @@ namespace PathRenderingLab.DCEL
             }
 
             return output.ToString();
+        }
+
+        private void Swap<T>(ref T lhs, ref T rhs)
+        {
+            var temp = lhs;
+            lhs = rhs;
+            rhs = temp;
         }
     }
 }

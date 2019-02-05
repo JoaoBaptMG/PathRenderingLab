@@ -119,14 +119,24 @@ namespace PathRenderingLab
             }
 
             // Now, we remove wedges and assign the fill numbers
+            //Console.WriteLine(dcel);
+            //Console.ReadLine();
             dcel.RemoveWedges();
+            //Console.WriteLine(dcel);
+            //Console.ReadLine();
             dcel.AssignFillNumbers();
-            Console.WriteLine(dcel);
+            //Console.WriteLine(dcel);
+            //Console.ReadLine();
 
             // Pick the appropriate predicate for the fill rule
             Func<DCEL.Face, bool> facePredicate;
             if (fillRule == FillRule.Evenodd) facePredicate = f => f.FillNumber % 2 != 0;
             else facePredicate = f => f.FillNumber != 0;
+
+            // Simplify the faces
+            dcel.SimplifyFaces(facePredicate);
+            Console.WriteLine(dcel);
+            //Console.ReadLine();
 
             // Generate the filled faces
             var fills = dcel.Faces.Where(facePredicate).Select(face =>
