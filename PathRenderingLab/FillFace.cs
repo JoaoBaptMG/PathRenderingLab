@@ -142,100 +142,100 @@ namespace PathRenderingLab
                         }
                     }
                 }
+            }
 
-                // Now, we are going to compare concave with line curves
-                // Remove line curves from the concave curves and populate a list with the line curves
-                var lineCurves = new LinkedList<LinkedListNode<Curve>>();
-                for (var inode = concaveCurves.First; inode != null;)
+            // Now, we are going to compare concave with line curves
+            // Remove line curves from the concave curves and populate a list with the line curves
+            var lineCurves = new LinkedList<LinkedListNode<Curve>>();
+            for (var inode = concaveCurves.First; inode != null;)
+            {
+                var next = inode.Next;
+
+                if (inode.Value.Value.Type == CurveType.Line)
                 {
-                    var next = inode.Next;
-
-                    if (inode.Value.Value.Type == CurveType.Line)
-                    {
-                        inode.List.Remove(inode.Value);
-                        lineCurves.AddLast(inode.Value);
-                    }
-
-                    inode = next;
+                    inode.List.Remove(inode.Value);
+                    lineCurves.AddLast(inode.Value);
                 }
 
-                subdivide = true;
-                // Iterate for each line-concave pair until no subdivisions are needed anymore
-                while (subdivide)
-                {
-                    subdivide = false;
+                inode = next;
+            }
 
-                    for (var lnode = lineCurves.First; lnode != null; lnode = lnode.Next)
+            subdivide = true;
+            // Iterate for each line-concave pair until no subdivisions are needed anymore
+            while (subdivide)
+            {
+                subdivide = false;
+
+                for (var lnode = lineCurves.First; lnode != null; lnode = lnode.Next)
+                {
+                    var line = lnode.Value.Value;
+                    var a = line.A;
+                    var b = line.B;
+
+                    // Skip degenerate curves
+                    if (line.IsDegenerate) continue;
+
+                    for (var inode = concaveCurves.First; inode != null; inode = inode.Next)
                     {
-                        var line = lnode.Value.Value;
-                        var a = line.A;
-                        var b = line.B;
+                        retry: // Return-to label if the concave curve needs to be subdivided further 
+                        var concave = inode.Value.Value;
+                        var ccPoly = concave.EnclosingPolygon;
 
                         // Skip degenerate curves
-                        if (line.IsDegenerate) continue;
+                        if (concave.IsDegenerate) continue;
 
-                        for (var inode = concaveCurves.First; inode != null; inode = inode.Next)
+                        // Check first if the line's endpoints don't coincide with the curve's
+                        // If they are, there is nothing left to do
+                        if (DoubleUtils.RoughlyEquals(concave.At(0), b) ||
+                            DoubleUtils.RoughlyEquals(concave.At(1), a)) continue;
+
+                        // Now, for each vertex, check if is ouside the line
+                        foreach (var v in ccPoly)
                         {
-                            retry: // Return-to label if the concave curve needs to be subdivided further 
-                            var concave = inode.Value.Value;
-                            var ccPoly = concave.EnclosingPolygon;
+                            // Get the nearest point
+                            double t = concave.NearestPointTo(v);
+                            var p = concave.At(t);
 
-                            // Skip degenerate curves
-                            if (concave.IsDegenerate) continue;
+                            // If at the endpoints, no need to subdivide it
+                            if (DoubleUtils.RoughlyZero(t) || DoubleUtils.RoughlyEquals(t, 1)) continue;
 
-                            // Check first if the line's endpoints don't coincide with the curve's
-                            // If they are, there is nothing left to do
-                            if (DoubleUtils.RoughlyEquals(concave.At(0), b) ||
-                                DoubleUtils.RoughlyEquals(concave.At(1), a)) continue;
-
-                            // Now, for each vertex, check if is ouside the line
-                            foreach (var v in ccPoly)
+                            // If the line connecting both intersects the original line, subdivide right there
+                            if (GeometricUtils.SegmentsIntersect(a, b, p, v))
                             {
-                                // Get the nearest point
-                                double t = concave.NearestPointTo(v);
-                                var p = concave.At(t);
+                                subdivide = true;
 
-                                // If at the endpoints, no need to subdivide it
+                                var c1 = concave.Subcurve(0, t);
+                                var c2 = concave.Subcurve(t, 1);
+
+                                // Update the linked list
+                                inode.List.AddBefore(inode, inode.Value.List.AddBefore(inode.Value, c1));
+                                inode.Value.Value = c2;
+
+                                // Retry this iteration with the newly-divided curve
+                                goto retry;
+                            }
+                        }
+
+                        // Finnaly, we check if any point is inside the polygon
+                        foreach (var v in new[] { a, b })
+                            if (GeometricUtils.PolygonContainsPoint(ccPoly, v))
+                            {
+                                // If the nearest point is one of the endpoints, no need to subdivide it
+                                double t = concave.NearestPointTo(v);
                                 if (DoubleUtils.RoughlyZero(t) || DoubleUtils.RoughlyEquals(t, 1)) continue;
 
-                                // If the line connecting both intersects the original line, subdivide right there
-                                if (GeometricUtils.SegmentsIntersect(a, b, p, v))
-                                {
-                                    subdivide = true;
+                                subdivide = true;
 
-                                    var c1 = concave.Subcurve(0, t);
-                                    var c2 = concave.Subcurve(t, 1);
+                                var c1 = concave.Subcurve(0, t);
+                                var c2 = concave.Subcurve(t, 1);
 
-                                    // Update the linked list
-                                    inode.List.AddBefore(inode, inode.Value.List.AddBefore(inode.Value, c1));
-                                    inode.Value.Value = c2;
+                                // Update the linked list
+                                inode.List.AddBefore(inode, inode.Value.List.AddBefore(inode.Value, c1));
+                                inode.Value.Value = c2;
 
-                                    // Retry this iteration with the newly-divided curve
-                                    goto retry;
-                                }
+                                // Retry this iteration with the newly-divided curve
+                                goto retry;
                             }
-
-                            // Finnaly, we check if any point is inside the polygon
-                            foreach (var v in new[] { a, b })
-                                if (GeometricUtils.PolygonContainsPoint(ccPoly, v))
-                                {
-                                    // If the nearest point is one of the endpoints, no need to subdivide it
-                                    double t = concave.NearestPointTo(v);
-                                    if (DoubleUtils.RoughlyZero(t) || DoubleUtils.RoughlyEquals(t, 1)) continue;
-
-                                    subdivide = true;
-
-                                    var c1 = concave.Subcurve(0, t);
-                                    var c2 = concave.Subcurve(t, 1);
-
-                                    // Update the linked list
-                                    inode.List.AddBefore(inode, inode.Value.List.AddBefore(inode.Value, c1));
-                                    inode.Value.Value = c2;
-
-                                    // Retry this iteration with the newly-divided curve
-                                    goto retry;
-                                }
-                        }
                     }
                 }
             }
