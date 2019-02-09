@@ -17,7 +17,7 @@ namespace PathRenderingLab
         /// <returns>The real roots of the equation.</returns>
         internal static double[] SolveQuadratic(double a, double b, double c)
         {
-            if (a == 0) return b == 0 ? new double[0] : new[] { -c / b };
+            if (RoughlyZero(a)) return RoughlyZero(b) ? new double[0] : new[] { -c / b };
 
             double delta = b * b - 4 * a * c;
 
@@ -49,7 +49,7 @@ namespace PathRenderingLab
         /// <returns>The real roots of the equation.</returns>
         internal static double[] SolveCubic(double c3, double c2, double c1, double c0)
         {
-            if (c3 == 0) return SolveQuadratic(c2, c1, c0);
+            if (RoughlyZero(c3)) return SolveQuadratic(c2, c1, c0);
 
             // Ah, Cardano's long-winded method... let's go
             var a = c2 / c3;
