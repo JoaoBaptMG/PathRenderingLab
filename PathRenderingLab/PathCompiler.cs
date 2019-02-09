@@ -82,7 +82,7 @@ namespace PathRenderingLab
             // Sort and eliminate all weird results
             foreach (var set in curveRootSets)
             {
-                set.RemoveAll(r => !GeometricUtils.Inside01(r));
+                set.RemoveAll(r => r == 0 || !GeometricUtils.Inside01(r));
                 set.RemoveDuplicatedValues();
             }
 
@@ -98,6 +98,7 @@ namespace PathRenderingLab
 
                     foreach (var c in curve.Simplify())
                     {
+                        if (c.IsDegenerate) continue;
                         dcel.AddCurve(c);
                         //Console.WriteLine(dcel);
                         //Console.ReadLine();
