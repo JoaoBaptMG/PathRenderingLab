@@ -124,8 +124,11 @@ namespace PathRenderingLab
 
             // Create the index buffer
             var indices = FillIndices.Concat(StrokeIndices).ToArray();
-            indexBuffer = new IndexBuffer(GraphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Length, BufferUsage.WriteOnly);
-            indexBuffer.SetData(indices);
+            if (indices.Length > 0)
+            {
+                indexBuffer = new IndexBuffer(GraphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Length, BufferUsage.WriteOnly);
+                indexBuffer.SetData(indices);
+            }
 
             // Create the basic effect
             effect = Content.Load<Effect>("CurveEffects");
