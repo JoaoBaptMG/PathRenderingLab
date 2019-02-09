@@ -22,7 +22,8 @@ namespace PathRenderingLab
 
             // Collect all curve triangles
             var curves = newFace.Contours.SelectMany(v => v.Where(c => c.Type != CurveType.Line));
-            fill.CurveTriangles = curves.SelectMany(curve => CurveVertex.MakeTriangleFan(curve.CurveVertices)).ToArray();
+            fill.CurveTriangles = curves.SelectMany(curve => CurveVertex.MakeTriangleFan(curve.CurveVertices))
+                .Where(ct => !ct.IsDegenerate).ToArray();
 
             return fill;
         }

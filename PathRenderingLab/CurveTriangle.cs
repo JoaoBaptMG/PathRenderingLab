@@ -13,6 +13,8 @@
             C = cw ? b : c;
         }
 
+        public bool IsDegenerate => DoubleUtils.RoughlyZero((B.Position - A.Position).Cross(C.Position - A.Position));
+
         public override string ToString() => $"{A} / {B} / {C}";
     }
 }
