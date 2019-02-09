@@ -24,10 +24,12 @@ namespace PathRenderingLab.DCEL
         public ReadOnlyCollection<Edge> Edges => edges.AsReadOnly();
         public ReadOnlyCollection<Face> Faces => faces.AsReadOnly();
 
+        private readonly bool truncate;
+
         /// <summary>
         /// Initializes the DCEL and constructs everything
         /// </summary>
-        public DCEL()
+        public DCEL(bool trunc = true)
         {
             vertices = new List<Vertex>();
             edges = new List<Edge>();
@@ -36,6 +38,8 @@ namespace PathRenderingLab.DCEL
                 // Initializes the first face, the outer face
                 new Face(true)
             };
+
+            truncate = trunc;
         }
 
         // Values necessary to "align" the curves in the right places
@@ -50,7 +54,7 @@ namespace PathRenderingLab.DCEL
         /// <returns>The vertex added</returns>
         public Vertex AddVertex(Double2 v)
         {
-            v = Truncate(v);
+            if (truncate) v = Truncate(v);
             var vertex = new Vertex(v);
             vertices.Add(vertex);
             return vertex;
@@ -64,7 +68,7 @@ namespace PathRenderingLab.DCEL
         /// <returns></returns>
         public bool FindVertex(Double2 v, out Vertex vertex)
         {
-            v = Truncate(v);
+            if (truncate) v = Truncate(v);
             vertex = vertices.FirstOrDefault(vt => vt.Position == v);
             return vertex != null;
         }
@@ -88,15 +92,19 @@ namespace PathRenderingLab.DCEL
                 e2.Twin = e1;
             }
 
-            // There are four main cases:
-            // 1) The vertices are both new: we find which face they pertain and add them to the contour list
-            // 2) The vertices are both existing and they connect two different contour of a face: we join those contours
-            // 3) The vertices are both existing and they connect a contour of a face to itself: here, we close the face
-            // 4) One of the vertices is new: here, there is not a lot of preprocessing to do
-
             // Check if the vertices were added to the cache first
             bool found1 = FindVertex(vert1, out var vertex1);
             bool found2 = FindVertex(vert2, out var vertex2);
+
+            // There are four main cases:
+            // 1) The vertices are both new: we find which face they pertain and add them to the contour list
+            // 2) The vertices are both existing and they connect two different contours of a face: we join those contours
+            // 3) The vertices are both existing and they connect a contour of a face to itself: here, we close the face
+            // 4) One of the vertices is new: here, there is not a lot of preprocessing to do
+
+            // Cases 1) and 3) need to be treated differently if both vertices happen to be the same vertex
+            // 1a) The loop will form another face, which will need to be added to the vertex's contour
+            // 3a) If the loop is formed along, the edge link is set differently, and it needs to be accounted for
 
             // If none are found, add them individually and add a contour to the face
             if (!found1 && !found2)
@@ -104,19 +112,56 @@ namespace PathRenderingLab.DCEL
                 var face = GetFaceFromVertex(vert1);
 
                 vertex1 = AddVertex(vert1);
-                vertex2 = AddVertex(vert2);
+                if (vert1 != vert2) // Deal with the equal vertices case
+                    vertex2 = AddVertex(vert2);
+                else vertex2 = vertex1;
 
                 PairOfEdges(vertex1, vertex2, out var e1, out var e2);
 
                 e1.Canonicity++;
-                e1.Next = e1.Previous = e2;
-                e2.Next = e2.Previous = e1;
-                e1.Face = e2.Face = face;
 
-                AddEdgePair(vertex1, vertex2, e1, e2);
+                // If the vertices are different, wire they on a loop
+                if (vertex1 != vertex2)
+                {
+                    e1.Next = e1.Previous = e2;
+                    e2.Next = e2.Previous = e1;
+                    e1.Face = e2.Face = face;
 
-                // Add the edge to the contours
-                face.Contours.Add(e1);
+                    AddEdgePair(vertex1, vertex2, e1, e2);
+
+                    // Add the edge to the contours
+                    face.Contours.Add(e1);
+                }
+                // If they are equal, they need to be wired differently
+                else
+                {
+                    e1.Next = e1.Previous = e1;
+                    e2.Next = e2.Previous = e2;
+
+                    AddEdgePair(vertex1, vertex2, e1, e2);
+
+                    // Create a new face
+                    var newFace = new Face();
+
+                    // Select the convex edge, and add it to the new face
+                    var edge = e1.Winding > 0 ? e1 : e2;
+                    newFace.Contours.Add(edge);
+                    edge.Face = newFace;
+
+                    // Extract all the old contours that should pertain to the new face
+                    var contours = face.Contours.ExtractAll(e => newFace.ContainsVertex(e.E1.Position));
+
+                    // Add them to the new face
+                    newFace.Contours.AddRange(contours);
+                    foreach (var c in contours) AssignFace(newFace, c);
+
+                    // Add the concave edge to the outer face
+                    face.Contours.Add(edge.Twin);
+                    edge.Twin.Face = face;
+
+                    // Add the new face to the face list
+                    faces.Add(newFace);
+                }
             }
             // If both of them are found, we create the edge and find out which shapes they are
             else if (found1 && found2)
@@ -133,20 +178,35 @@ namespace PathRenderingLab.DCEL
 
                 e1.Canonicity++;
 
-                // The other matching edge is guaranteed to be found
+                // The other matching edge is guaranteed not to be found
                 vertex2.SearchOutgoingEdges(e2, out var e2lo, out var e2ro);
 
                 // Check whether the new edge will connect to different contours
                 var differentContours = !e1lo.CyclicalSequence.Contains(e2lo, ReferenceEqualityComparer.Default);
 
                 // WARNING: the operation above CANNOT be commuted with this below - leave the variable there
-                // Correctly create the edge links (I won't try to draw a diagram here, sorry... my ASCII art is horrible)
-                e1ro.Twin.Next = e2lo.Previous = e1;
-                e2ro.Twin.Next = e1lo.Previous = e2;
-                e1.Next = e2lo;
-                e1.Previous = e1ro.Twin;
-                e2.Next = e1lo;
-                e2.Previous = e2ro.Twin;
+                // There is a special case that needs to be handled for the same vertex
+                if (vertex1 == vertex2 && e1lo == e2lo && e1ro == e2ro)
+                {
+                    // Find the convex edge
+                    var edge = e1.Winding > 0 ? e1 : e2;
+
+                    // Create a loop on itself and link the other edge
+                    edge.Next = edge.Previous = edge;
+                    e1ro.Twin.Next = e1lo.Previous = edge.Twin;
+                    edge.Twin.Next = e1lo;
+                    edge.Twin.Previous = e1ro.Twin;
+                }
+                else
+                {
+                    // Correctly create the edge links
+                    e1ro.Twin.Next = e2lo.Previous = e1;
+                    e2ro.Twin.Next = e1lo.Previous = e2;
+                    e1.Next = e2lo;
+                    e1.Previous = e1ro.Twin;
+                    e2.Next = e1lo;
+                    e2.Previous = e2ro.Twin;
+                }
 
                 // Add the edges to the list
                 AddEdgePair(vertex1, vertex2, e1, e2);
@@ -378,6 +438,8 @@ namespace PathRenderingLab.DCEL
         /// </summary>
         public void SimplifyFaces(Func<Face,bool> predicate)
         {
+            // Curiously, this code unmodified works with single edges
+
             // First, we are going to pass through all the edges to check which can be removed
             var edgesToRemove = new HashSet<Edge>(ReferenceEqualityComparer.Default);
             var facesToRemove = new HashSet<Face>(ReferenceEqualityComparer.Default);

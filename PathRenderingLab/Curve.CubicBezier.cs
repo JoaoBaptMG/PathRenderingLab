@@ -155,9 +155,6 @@ namespace PathRenderingLab
 
                     // Find the roots (that happen to be the loop points)
                     roots.AddRange(Equations.SolveQuadratic(1, -bb, bb * (bb + s2) + s1));
-
-                    // Add them (plus the midpoint if necessary)
-                    if (roots.Count == 4) roots.Add((roots[0] + roots[1]) / 2);
                 }
 
                 // The inflection point polynom
@@ -173,9 +170,9 @@ namespace PathRenderingLab
                 // Add the roots of the inflection points
                 roots.AddRange(Equations.SolveQuadratic(k2, k1, k0));
 
-                // Sort and  the roots, subdivide the curve
-                roots.RemoveAll(p => !GeometricUtils.Inside01(p));
-                roots.Sort();
+                // Sort and the roots and remove duplicates, subdivide the curve
+                roots.RemoveAll(r => !GeometricUtils.Inside01(r));
+                roots.RemoveDuplicatedValues();
 
                 for (int i = 1; i < roots.Count; i++)
                     yield return CubicBezier_Subcurve(roots[i - 1], roots[i]);
@@ -298,6 +295,8 @@ namespace PathRenderingLab
                     var h1 = d3 * d1 - d2 * d2;
                     var h2 = d3 * d1 - d2 * d2 + d1 * d2 - d1 * d1;
                     var h = Math.Abs(h1) > Math.Abs(h2) ? h1 : h2;
+                    var h12 = d3 * d1 - d2 * d2 + d1 * d2 / 2 - d1 * d1 / 4;
+                    if (Math.Abs(h12) > Math.Abs(h)) h = h12;
 
                     if (d1 * h > 0) NegateSigns();
                 }

@@ -79,22 +79,11 @@ namespace PathRenderingLab
                         curveRootSets[j].Add(pair.B);
                     }
 
-            var temp = new List<double>();
             // Sort and eliminate all weird results
             foreach (var set in curveRootSets)
             {
-                set.RemoveAll(p => p <= 0f || p > 1f);
-                set.Sort(DoubleUtils.RoughComparer);
-
-                // Remove duplicates
-                temp.Clear();
-                temp.Add(set[0]);
-                for (int i = 1; i < set.Count; i++)
-                    if (DoubleUtils.RoughComparer.Compare(set[i - 1], set[i]) != 0) temp.Add(set[i]);
-                    else temp[temp.Count - 1] = (temp[temp.Count - 1] + set[i]) / 2;
-
-                set.Clear();
-                set.AddRange(temp);
+                set.RemoveAll(r => !GeometricUtils.Inside01(r));
+                set.RemoveDuplicatedValues();
             }
 
             // Finally, we can start building the DCEL
@@ -110,8 +99,8 @@ namespace PathRenderingLab
                     foreach (var c in curve.Simplify())
                     {
                         dcel.AddCurve(c);
-                        //Console.WriteLine(dcel);
-                        //Console.ReadLine();
+                        Console.WriteLine(dcel);
+                        Console.ReadLine();
                     }
 
                     v = l;
@@ -119,14 +108,12 @@ namespace PathRenderingLab
             }
 
             // Now, we remove wedges and assign the fill numbers
-            //Console.WriteLine(dcel);
-            //Console.ReadLine();
             dcel.RemoveWedges();
-            //Console.WriteLine(dcel);
-            //Console.ReadLine();
+            Console.WriteLine(dcel);
+            Console.ReadLine();
             dcel.AssignFillNumbers();
-            //Console.WriteLine(dcel);
-            //Console.ReadLine();
+            Console.WriteLine(dcel);
+            Console.ReadLine();
 
             // Pick the appropriate predicate for the fill rule
             Func<DCEL.Face, bool> facePredicate;
@@ -136,7 +123,7 @@ namespace PathRenderingLab
             // Simplify the faces
             dcel.SimplifyFaces(facePredicate);
             Console.WriteLine(dcel);
-            //Console.ReadLine();
+            Console.ReadLine();
 
             // Generate the filled faces
             var fills = dcel.Faces.Where(facePredicate).Select(face =>

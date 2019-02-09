@@ -47,5 +47,18 @@ namespace PathRenderingLab
 
         public static bool AngleLeftTo(double x, double y) => (x - y).WrapAngle() > 0;
         public static bool AngleRightTo(double x, double y) => (x - y).WrapAngle() < 0;
+
+        public static void RemoveDuplicatedValues(this List<double> list)
+        {
+            list.Sort(RoughComparer);
+            var temp = new List<double>() { list[0] };
+
+            for (int i = 1; i < list.Count; i++)
+                if (RoughComparer.Compare(list[i - 1], list[i]) != 0) temp.Add(list[i]);
+                else temp[temp.Count - 1] = (temp[temp.Count - 1] + list[i]) / 2;
+
+            list.Clear();
+            list.AddRange(temp);
+        }
     }
 }
