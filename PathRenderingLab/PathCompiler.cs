@@ -99,8 +99,8 @@ namespace PathRenderingLab
                     foreach (var c in curve.Simplify())
                     {
                         dcel.AddCurve(c);
-                        Console.WriteLine(dcel);
-                        Console.ReadLine();
+                        //Console.WriteLine(dcel);
+                        //Console.ReadLine();
                     }
 
                     v = l;
@@ -109,11 +109,11 @@ namespace PathRenderingLab
 
             // Now, we remove wedges and assign the fill numbers
             dcel.RemoveWedges();
-            Console.WriteLine(dcel);
-            Console.ReadLine();
+            //Console.WriteLine(dcel);
+            //Console.ReadLine();
             dcel.AssignFillNumbers();
-            Console.WriteLine(dcel);
-            Console.ReadLine();
+            //Console.WriteLine(dcel);
+            //Console.ReadLine();
 
             // Pick the appropriate predicate for the fill rule
             Func<DCEL.Face, bool> facePredicate;
@@ -123,7 +123,7 @@ namespace PathRenderingLab
             // Simplify the faces
             dcel.SimplifyFaces(facePredicate);
             Console.WriteLine(dcel);
-            Console.ReadLine();
+            //Console.ReadLine();
 
             // Generate the filled faces
             var fills = dcel.Faces.Where(facePredicate).Select(face =>
