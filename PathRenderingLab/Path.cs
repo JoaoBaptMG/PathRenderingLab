@@ -85,6 +85,13 @@ namespace PathRenderingLab
             var firstVec = Double2.Zero;
             var prevVec = Double2.Zero;
 
+            CurveData NewCurveList(bool closed)
+            {
+                var list = curves.SelectMany(c => c.Simplify(true)).Where(c => !c.IsDegenerate).ToArray();
+                curves.Clear();
+                return new CurveData(list, closed);
+            }
+
             foreach (var cmd in pathCommands)
             {
                 // A vector of NaNs indicate the path is closing
@@ -99,11 +106,7 @@ namespace PathRenderingLab
                     case PathCommandType.MoveTo:
                         {
                             // Yield the last curve list if any
-                            if (curves.Count > 0)
-                            {
-                                yield return new CurveData(curves.SelectMany(c => c.Simplify(true)).ToArray(), false);
-                                curves.Clear();
-                            }
+                            if (curves.Count > 0) yield return NewCurveList(false);
                             firstVec = target; break;
                         }
                     case PathCommandType.LineTo: curves.Add(Curve.Line(prevVec, target)); break;
@@ -127,11 +130,7 @@ namespace PathRenderingLab
                 // Yield the last curve list if any
                 bool isClose = cmd.Type == PathCommandType.ClosePath || double.IsNaN(cmd.Target.X)
                     || double.IsNaN(cmd.Control.X) || double.IsNaN(cmd.Control2.X);
-                if (isClose && curves.Count > 0)
-                {
-                    yield return new CurveData(curves.SelectMany(c => c.Simplify(true)).ToArray(), true);
-                    curves.Clear();
-                }
+                if (isClose && curves.Count > 0) yield return NewCurveList(true);
 
                 prevVec = target;
             }
