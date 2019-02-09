@@ -35,6 +35,12 @@ Once you have a path specification file, just drag it to the icon of the compile
 ![img7](imgs/pathrendering7.png)
 ![img8](imgs/pathrendering8.png)
 ![img9](imgs/pathrendering9.png)
+![img9](imgs/pathrendering10.png)
+![img9](imgs/pathrendering11.png)
+![img9](imgs/pathrendering12.png)
+![img9](imgs/pathrendering13.png)
+![img9](imgs/pathrendering14.png)
+![img9](imgs/pathrendering15.png)
 
 ## How can I help?
 
