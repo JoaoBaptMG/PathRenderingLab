@@ -66,7 +66,7 @@ namespace PathRenderingLab
 
         public static Curve Circle(Double2 center, double radius, Double2 v1, Double2 v2, bool counterclockwise)
             => EllipticArcInternal(center, new Double2(radius, radius), v1.Normalized, 0,
-                (counterclockwise ? 1 : -1) * Math.Atan2(v1.Cross(v2), v1.Dot(v2)).WrapAngle360());
+                (counterclockwise ? 1 : -1) * v1.AngleBetween(v2).WrapAngle360());
 
         public Curve EnlargeRadii(double r)
         {

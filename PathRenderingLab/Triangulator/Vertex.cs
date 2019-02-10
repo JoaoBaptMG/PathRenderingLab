@@ -33,7 +33,7 @@ namespace PathRenderingLab.Triangulator
             // Comparison variables
             int comparisonCP = GeneralizedComparer.Default.Compare(cur, prev);
             int comparisonCN = GeneralizedComparer.Default.Compare(cur, next);
-            bool reflex = (next - cur).AngleBetween(prev - cur) > 0;
+            bool reflex = (prev - cur).AngleBetween(next - cur) > 0;
 
             // Compute the type of the vertex
             // Both lie below:

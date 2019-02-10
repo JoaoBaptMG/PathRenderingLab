@@ -53,7 +53,7 @@ namespace PathRenderingLab
         public static readonly Double2 Zero = new Double2(0, 0);
         public static Double2 FromAngle(double a) => new Double2(Math.Cos(a), Math.Sin(a));
 
-        public double AngleBetween(Double2 v) => RotScale(v.NegateY).Angle;
+        public double AngleBetween(Double2 v) => Math.Atan2(Cross(v), Dot(v));
 
         public override string ToString() => $"{X} {Y}";
 
