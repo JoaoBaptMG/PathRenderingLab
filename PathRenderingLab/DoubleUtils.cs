@@ -28,6 +28,7 @@ namespace PathRenderingLab
 
         public static double WrapAngle(this double a) => a + TwoPi * Math.Round(-a / TwoPi);
         public static double WrapAngle360(this double a) => a - TwoPi * Math.Ceiling(a / TwoPi) + TwoPi;
+        public static double WrapAngle360(this double v, bool ccw) => (ccw ? 1 : -1) * WrapAngle360(ccw ? v : -v);
         public static double ToDegrees(this double a) => a * 180 / Pi;
         public static double ToRadians(this double a) => a * Pi / 180;
 

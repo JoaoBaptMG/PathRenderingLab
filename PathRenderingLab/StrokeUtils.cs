@@ -274,8 +274,6 @@ namespace PathRenderingLab
                         break;
                 case StrokeLineJoin.Arcs:
                     {
-                        throw new NotImplementedException();
-
                         // Compute the curvatures of the curves
                         var exitKappa = prevCurve.ExitCurvature;
                         var entryKappa = nextCurve.EntryCurvature;
@@ -283,50 +281,53 @@ namespace PathRenderingLab
                         // If both of them are zero, fall back to miter
                         if (RoughlyZero(exitKappa) && RoughlyZero(entryKappa))
                             goto case StrokeLineJoin.MiterClip;
-                        // If both of them are nonzero, build the circles
-                        else if (!RoughlyZero(exitKappa) && !RoughlyZero(entryKappa))
+                        // If one (or both) are nonzero, build the possible circles
+                        else 
                         {
                             var exitRadius = 1 / exitKappa - sd * halfWidth;
                             var entryRadius = 1 / entryKappa - sd * halfWidth;
 
-                            var exitCenter = prevCurve.ExitTangent.CCWPerpendicular / exitKappa;
-                            var entryCenter = nextCurve.EntryTangent.CCWPerpendicular / entryKappa;
+                            var exitCenter = exitTangent.CCWPerpendicular / exitKappa;
+                            var entryCenter = entryTangent.CCWPerpendicular / entryKappa;
 
                             // Find the intersection points
-                            var points = GeometricUtils.CircleIntersection(exitCenter, exitRadius, entryCenter, entryRadius);
+                            Double2[] points;
+                            if (!RoughlyZero(exitKappa) && !RoughlyZero(entryKappa))
+                                points = GeometricUtils.CircleIntersection(exitCenter, exitRadius, entryCenter, entryRadius);
+                            else if (!RoughlyZero(exitKappa))
+                                points = GeometricUtils.CircleLineIntersection(exitCenter, exitRadius, entryOffset, entryTangent);
+                            else points = GeometricUtils.CircleLineIntersection(entryCenter, entryRadius, exitOffset, exitTangent);
 
                             // If there are no intersections, adjust the curves (later...)
-                            if (points.Length == 0)
+                            if (points.Length == 0) throw new NotImplementedException();
+
+                            // Check both which point have less travelled distance
+                            double PointParameter(Double2 pt)
                             {
-                                
+                                if (RoughlyZero(exitKappa))
+                                {
+                                    var d = exitTangent.Dot(pt - exitOffset);
+                                    return d < 0 ? double.PositiveInfinity : d;
+                                }
+                                return (Math.Sign(exitKappa) * (exitOffset - exitCenter).AngleBetween(pt - exitCenter)).WrapAngle360();
                             }
 
-                            // Check both angles
-                            double Angle(Double2 v1, Double2 v2) => Math.Atan2(v1.Cross(v2), v1.Dot(v2)).WrapAngle360();
-
-                            var angles = new double[]
-                            {
-                                Angle(exitOffset - exitCenter, points[0] - exitCenter),
-                                Angle(exitOffset - exitCenter, points[1] - exitCenter)
-                            };
+                            var angles = points.Select(PointParameter).ToArray();
 
                             // Pick the point with the least travelled angle
-                            var ik = Math.Abs(angles[0]) <= Math.Abs(angles[1]) ? 0 : 1;
+                            var point = angles[0] <= angles[1] ? points[0] : points[1];
 
                             // Generate the arcs to be rendered
-                            var exitRadii = new Double2(exitRadius, exitRadius);
-                            var entryRadii = new Double2(entryRadius, entryRadius);
+                            if (!RoughlyZero(exitKappa))
+                                yield return Curve.Circle(p + exitCenter, Math.Abs(exitRadius), exitOffset - exitCenter,
+                                    point - exitCenter, exitKappa > 0);
+                            else yield return Curve.Line(p + exitOffset, p + point);
 
-                            var exitAngle = angles[ik];
-                            var entryAngle = Angle(points[ik] - entryCenter, entryOffset - entryCenter);
-
-                            // The curves to be rendered
-                            yield return Curve.EllipticArc(p + exitOffset, exitRadii, 0,
-                                Math.Abs(exitAngle) > Pi, exitAngle > 0, p + points[ik]);
-                            yield return Curve.EllipticArc(p + points[ik], entryRadii, 0,
-                                Math.Abs(entryAngle) > Pi, entryAngle > 0, p + entryOffset);
+                            if (!RoughlyZero(entryKappa))
+                                yield return Curve.Circle(p + entryCenter, Math.Abs(entryRadius), point - entryCenter,
+                                    entryOffset - entryCenter, entryKappa > 0);
+                            else yield return Curve.Line(p + point, p + entryOffset);
                         }
-                        else throw new NotImplementedException();
                     }
                     break;
                 default: throw new ArgumentException("Unrecognized lineJoin", nameof(lineJoin));

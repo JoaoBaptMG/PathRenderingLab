@@ -245,7 +245,7 @@ namespace PathRenderingLab
             var rot = (c2 - c1).Normalized;
 
             // Get the displacement
-            var a = (c2 - c1).RotScale(rot.NegateY).X;
+            var a = (c2 - c1).Dot(rot);
             var x = (r1 * r1 + a * a - r2 * r2) / (2 * a);
             var ys = r1 * r1 - x * x;
 
@@ -255,6 +255,27 @@ namespace PathRenderingLab
             {
                 var y = Math.Sqrt(ys);
                 var pos = new Double2[] { new Double2(x, y), new Double2(x, -y) };
+
+                // Project back to the new position
+                return pos.Select(p => c1 + p.RotScale(rot)).ToArray();
+            }
+        }
+
+        public static Double2[] CircleLineIntersection(Double2 c1, double r1, Double2 c, Double2 v)
+        {
+            // Firstly, rotate the second circle so it stands on the X-axis
+            var rot = v.Normalized;
+
+            // Get the displacement
+            var y = -(c - c1).Cross(rot);
+            var xs = r1 * r1 - y * y;
+
+            // No intersection if this is negative
+            if (xs < 0) return new Double2[0];
+            else
+            {
+                var x = Math.Sqrt(xs);
+                var pos = new Double2[] { new Double2(x, y), new Double2(-x, y) };
 
                 // Project back to the new position
                 return pos.Select(p => c1 + p.RotScale(rot)).ToArray();
