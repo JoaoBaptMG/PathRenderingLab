@@ -38,8 +38,8 @@ namespace PathRenderingLab
             else
             {
                 // Check for circles
-                //bool IsCircle(Curve c) => c.Type == CurveType.EllipticArc && RoughlyEquals(c.Radii.X, c.Radii.Y);
-                //if (IsCircle(c1) && IsCircle(c2)) return CircleCircleIntersections(c1, c2);
+                bool IsCircle(Curve c) => c.Type == CurveType.EllipticArc && RoughlyEquals(c.Radii.X, c.Radii.Y);
+                if (IsCircle(c1) && IsCircle(c2)) return CircleCircleIntersections(c1, c2);
                 return GeneralCurveIntersections(c1, c2);
             }
         }
@@ -283,8 +283,8 @@ namespace PathRenderingLab
             // For each point, generate the angle
             foreach (var p in points)
             {
-                var a1 = ((p - c1.Center).Angle - c1.ComplexRot.Angle).WrapAngle();
-                var a2 = ((p - c2.Center).Angle - c2.ComplexRot.Angle).WrapAngle();
+                var a1 = c1.ComplexRot.AngleBetween(p - c1.Center);
+                var a2 = c2.ComplexRot.AngleBetween(p - c2.Center);
 
                 // And get their parameters
                 var t1 = c1.AngleToParameter(a1);
