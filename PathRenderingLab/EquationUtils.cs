@@ -7,6 +7,9 @@ namespace PathRenderingLab
 {
     internal class Equations
     {
+        static bool FinelyZero(double x) => Math.Abs(x) <= 1E-12;
+        static bool FinelyEquals(double x, double y) => FinelyZero(x - y);
+
         /// <summary>
         /// Solves a quadratic equation.
         /// </summary>
@@ -17,7 +20,7 @@ namespace PathRenderingLab
         /// <returns>The real roots of the equation.</returns>
         internal static double[] SolveQuadratic(double a, double b, double c)
         {
-            if (RoughlyZero(a)) return RoughlyZero(b) ? new double[0] : new[] { -c / b };
+            if (FinelyZero(a)) return FinelyZero(b) ? new double[0] : new[] { -c / b };
 
             double delta = b * b - 4 * a * c;
 
@@ -49,7 +52,7 @@ namespace PathRenderingLab
         /// <returns>The real roots of the equation.</returns>
         internal static double[] SolveCubic(double c3, double c2, double c1, double c0)
         {
-            if (RoughlyZero(c3)) return SolveQuadratic(c2, c1, c0);
+            if (FinelyZero(c3)) return SolveQuadratic(c2, c1, c0);
 
             // Ah, Cardano's long-winded method... let's go
             var a = c2 / c3;
@@ -114,7 +117,7 @@ namespace PathRenderingLab
             else if (f(tl) < 0 && f(tr) < 0)
                 return f(tl) > f(tr) ? tl : tr;
 
-            while (Math.Abs(tl - tr) > 1E-12)
+            while (!FinelyEquals(tl, tr))
             {
                 var tm = tl + (tr - tl) / 2;
                 if (f(tm) == 0) return tm;
