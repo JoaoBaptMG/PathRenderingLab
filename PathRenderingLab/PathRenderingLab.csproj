@@ -89,6 +89,7 @@
     <Compile Include="StringUtils.cs" />
     <Compile Include="StrokeUtils.cs" />
     <Compile Include="SuperSampler.cs" />
+    <Compile Include="SwapUtils.cs" />
     <Compile Include="Triangle.cs" />
     <Compile Include="ArrayExtensions.cs" />
     <Compile Include="Triangulator\Edge.cs" />

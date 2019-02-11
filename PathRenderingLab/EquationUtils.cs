@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using static PathRenderingLab.DoubleUtils;
+using static PathRenderingLab.SwapUtils;
 
 namespace PathRenderingLab
 {
@@ -353,14 +354,6 @@ namespace PathRenderingLab
             }
 
             return new LinearSystemData(cterm, lterms.ToArray());
-        }
-
-        public static void Swap<T>(ref T lhs, ref T rhs)
-        {
-            T temp;
-            temp = lhs;
-            lhs = rhs;
-            rhs = temp;
         }
     }
 }

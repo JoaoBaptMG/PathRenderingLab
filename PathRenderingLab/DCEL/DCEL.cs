@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using static PathRenderingLab.SwapUtils;
 
 namespace PathRenderingLab.DCEL
 {
@@ -584,13 +585,6 @@ namespace PathRenderingLab.DCEL
             }
 
             return output.ToString();
-        }
-
-        private void Swap<T>(ref T lhs, ref T rhs)
-        {
-            var temp = lhs;
-            lhs = rhs;
-            rhs = temp;
         }
     }
 }
