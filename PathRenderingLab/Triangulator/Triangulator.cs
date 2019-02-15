@@ -21,18 +21,35 @@ namespace PathRenderingLab.Triangulator
 
         public static Triangle[] Triangulate(Double2[][] contours)
         {
-            // Firstly, simplify the contours
-            var simplifiedContours = contours.SelectMany(GeometricUtils.RemovePolygonWedges)
-                .Select(GeometricUtils.SimplifyPolygon).ToArray();
+            // There are shapes that have problem with the truncate-DCEL argument on, and there are
+            // ones which have problem with it off, so we ought to try both arguments
 
-            // Discard trivial contours right now
-            if (simplifiedContours.Length == 0) return new Triangle[0];
+            for (int i = 0; i < 2; i++)
+            {
+                try
+                {
+                    // Firstly, simplify the contours
+                    var simplifiedContours = contours.SelectMany(c => GeometricUtils.RemovePolygonWedges(c, i == 0))
+                        .Select(GeometricUtils.SimplifyPolygon).ToArray();
 
-            // First, partition the polygon into y-monotone pieces
-            var polygons = PartitionToMonotone(simplifiedContours);
+                    // Discard trivial contours right now
+                    if (simplifiedContours.Length == 0) return new Triangle[0];
 
-            // Now, triangulate each one of them
-            return polygons.SelectMany(TriangulateMonotone).Where(t => !t.IsDegenerate).ToArray();
+                    // First, partition the polygon into y-monotone pieces
+                    var polygons = PartitionToMonotone(simplifiedContours);
+
+                    // Now, triangulate each one of them
+                    return polygons.SelectMany(TriangulateMonotone).Where(t => !t.IsDegenerate).ToArray();
+                }
+                catch (Exception)
+                {
+                    // If we have tried both arguments and there is still error, throw
+                    if (i > 0) throw;
+                }
+            }
+
+            // This code will never be reached, but the C# compiler is too dumb to reason this
+            return new Triangle[0];
         }
 
         public static IEnumerable<Double2[]> PartitionToMonotone(Double2[][] contours)

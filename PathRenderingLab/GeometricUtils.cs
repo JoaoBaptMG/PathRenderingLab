@@ -209,13 +209,13 @@ namespace PathRenderingLab
             }
         }
 
-        public static IEnumerable<Double2[]> RemovePolygonWedges(Double2[] polygon)
+        public static IEnumerable<Double2[]> RemovePolygonWedges(Double2[] polygon, bool truncateDCEL = true)
         {
             // Quickly discard degenerate polygons
             if (polygon.Length < 3) return Enumerable.Empty<Double2[]>();
 
             // We will use a DCEL to do it
-            var dcel = new DCEL.DCEL();
+            var dcel = new DCEL.DCEL(truncateDCEL);
 
             // Note the polygon winding
             double winding = 0;
