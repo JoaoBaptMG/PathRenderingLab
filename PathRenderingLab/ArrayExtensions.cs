@@ -42,5 +42,21 @@ namespace PathRenderingLab
         {
             foreach (var item in range) collection.Add(item);
         }
+
+        public static void RemoveDuplicates<T>(ref T[] array, IEqualityComparer<T> comparer)
+        {
+            int length = array.Length;
+            int k = 0;
+
+            for (int i = 1; i < length; i++)
+            {
+                if (comparer.Equals(array[i - 1], array[i])) k++;
+                array[i - k] = array[i];
+            }
+
+            Array.Resize(ref array, length - k);
+        }
+
+        public static void RemoveDuplicates<T>(ref T[] array) => RemoveDuplicates(ref array, EqualityComparer<T>.Default);
     }
 }

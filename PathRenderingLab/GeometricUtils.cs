@@ -294,6 +294,44 @@ namespace PathRenderingLab
             }
         }
 
+        public static Double2[] ConvexHull(Double2[] points)
+        {
+            // Sort the points using the canonical comparer
+            Array.Sort(points, CanonicalComparer.Default);
+            ArrayExtensions.RemoveDuplicates(ref points);
 
+            var hull = new List<Double2>(points.Length);
+            // Work with the points array forwards and backwards
+            for (int n = 0; n < 2; n++)
+            {
+                var hullPart = new List<Double2>(points.Length / 2);
+
+                // Add the first two points
+                hullPart.Add(points[0]);
+                hullPart.Add(points[1]);
+
+                // Run through the array
+                for (int i = 2; i < points.Length; i++)
+                {
+                    // Rollback the possible vertices
+                    while (hullPart.Count > 1 &&
+                        (hullPart[hullPart.Count - 1] - hullPart[hullPart.Count - 2])
+                        .Cross(points[i] - hullPart[hullPart.Count - 1]) > 0)
+                        hullPart.RemoveAt(hullPart.Count - 1);
+
+                    // Add the vertex
+                    hullPart.Add(points[i]);
+                }
+
+                // Remove the last vertex
+                hullPart.RemoveAt(hullPart.Count - 1);
+                hull.AddRange(hullPart);
+                Array.Reverse(points);
+            }
+
+            // Reverse the point orientation
+            hull.Reverse();
+            return hull.ToArray();
+        }
     }
 }

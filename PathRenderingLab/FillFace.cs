@@ -41,6 +41,29 @@ namespace PathRenderingLab
             }
         }
 
+        // Check if two curves are eligible for double curve promotion
+        public static bool AreCurvesFusable(Curve c1, Curve c2)
+        {
+            bool Eligible(Curve ca, Curve cb)
+            {
+                // 1) The curves must have a common endpoint
+                if (!DoubleUtils.RoughlyEquals(ca.At(1), cb.At(0))) return false;
+
+                // 2) The tangents on that endpoind must be similar
+                if (ca.ExitTangent.Dot(cb.EntryTangent) >= -0.95) return false;
+
+                // 3) Both must not have the same convexity
+                if (ca.IsConvex == cb.IsConvex) return false;
+
+                // 4) They must describe a positive winding on the plane
+                var pth = (ca.At(0) + cb.At(1)) / 2;
+                return ca.WindingRelativeTo(pth) + cb.WindingRelativeTo(pth) > 0;
+            }
+
+            // If any combination is eligible, return true
+            return Eligible(c1, c2) || Eligible(c2, c1);
+        }
+
         /// <summary>
         /// Subdivide overlapping non-line curves on this face in order to ease for
         /// the path triangulator
@@ -89,6 +112,9 @@ namespace PathRenderingLab
 
                         // Skip degenerate curves
                         if (concave.IsDegenerate) continue;
+
+                        // Do not try to check eligible curves in subdivision
+                        if (AreCurvesFusable(convex, concave)) continue;
 
                         // Check each of the concave polygon's vertices for overlap
                         foreach (var v in ccPoly.Reverse())
@@ -236,6 +262,31 @@ namespace PathRenderingLab
                                 // Retry this iteration with the newly-divided curve
                                 goto retry;
                             }
+                    }
+                }
+            }
+
+            foreach (var contour in contourLists)
+            {
+                // If the contour has less than 3 curves, no problem
+                if (contour.Count < 3) continue;
+
+                // We are going to check whether there are triples of double curves,
+                // because we must subdivide them
+                for (var node = contour.First; node != null; node = node.Next)
+                {
+                    // Get the previous and next node
+                    var prev = node.Previous ?? contour.Last;
+                    var next = node.Next ?? contour.First;
+
+                    // If the triple is an eligible triple for fusion, subdivide the middle curve
+                    if (AreCurvesFusable(prev.Value, node.Value) && AreCurvesFusable(node.Value, next.Value))
+                    {
+                        var c1 = node.Value.Subcurve(0, 0.5);
+                        var c2 = node.Value.Subcurve(0.5, 1);
+
+                        node.Value = c1;
+                        contour.AddAfter(node, c2);
                     }
                 }
             }
