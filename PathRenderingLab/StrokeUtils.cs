@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using static PathRenderingLab.DoubleUtils;
+using static PathRenderingLab.SwapUtils;
 
 namespace PathRenderingLab
 {
@@ -278,14 +279,21 @@ namespace PathRenderingLab
                         var exitKappa = prevCurve.ExitCurvature;
                         var entryKappa = nextCurve.EntryCurvature;
 
+                        // If one of the curvatures is too large, fall back to round
+                        if (Math.Abs(exitKappa) * halfWidth >= 1 || Math.Abs(entryKappa) * halfWidth >= 1)
+                            goto case StrokeLineJoin.Round;
+
                         // If both of them are zero, fall back to miter
                         if (RoughlyZero(exitKappa) && RoughlyZero(entryKappa))
                             goto case StrokeLineJoin.MiterClip;
                         // If one (or both) are nonzero, build the possible circles
                         else 
                         {
-                            var exitRadius = 1 / exitKappa - sd * halfWidth;
-                            var entryRadius = 1 / entryKappa - sd * halfWidth;
+                            // The "arcs" must use a different sign convention
+                            var sign = diff > 0 ? 1 : -1;
+
+                            var exitRadius = 1 / exitKappa - sign * halfWidth;
+                            var entryRadius = 1 / entryKappa - sign * halfWidth;
 
                             var exitCenter = exitTangent.CCWPerpendicular / exitKappa;
                             var entryCenter = entryTangent.CCWPerpendicular / entryKappa;
@@ -298,8 +306,21 @@ namespace PathRenderingLab
                                 points = GeometricUtils.CircleLineIntersection(exitCenter, exitRadius, entryOffset, entryTangent);
                             else points = GeometricUtils.CircleLineIntersection(entryCenter, entryRadius, exitOffset, exitTangent);
 
-                            // If there are no intersections, adjust the curves (later...)
-                            if (points.Length == 0) throw new NotImplementedException();
+                            // If there are no intersections, adjust the curves
+                            if (points.Length == 0)
+                            {
+                                if (!RoughlyZero(exitKappa) && !RoughlyZero(entryKappa))
+                                    points = AdjustCircles(ref exitCenter, ref exitRadius, exitTangent.CCWPerpendicular,
+                                        ref entryCenter, ref entryRadius, entryTangent.CCWPerpendicular);
+                                else if (!RoughlyZero(exitKappa))
+                                    points = AdjustCircleLine(ref exitCenter, ref exitRadius, exitTangent.CCWPerpendicular,
+                                        entryOffset, entryTangent);
+                                else points = AdjustCircleLine(ref entryCenter, ref entryRadius, entryTangent.CCWPerpendicular,
+                                    exitOffset, exitTangent);
+                            }
+
+                            // If still no solutions are found, go to the miter-clip case
+                            if (points.Length == 0) goto case StrokeLineJoin.MiterClip;
 
                             // Check both which point have less travelled distance
                             double PointParameter(Double2 pt)
@@ -332,6 +353,134 @@ namespace PathRenderingLab
                     break;
                 default: throw new ArgumentException("Unrecognized lineJoin", nameof(lineJoin));
             }
+        }
+
+        private static Double2[] AdjustCircles(ref Double2 c1, ref double r1, Double2 n1, ref Double2 c2, ref double r2, Double2 n2)
+        {
+            Double2 pt1, pt2;
+
+            // Negate if necessary, so we are working with positive values of the radius
+            bool neg1 = r1 < 0, neg2 = r2 < 0;
+            if (neg1) { r1 = -r1; n1 = -n1; }
+            if (neg2) { r2 = -r2; n2 = -n2; }
+
+            // There are two cases: if the circles are outside (their radius sum is less than their distance)
+            // and if the circles are inside (their radius difference is less than their distance)
+            var rs = r1 + r2;
+
+            // The first case
+            if (c1.DistanceSquaredTo(c2) > rs*rs)
+            {
+                // Compute the coefficients of the polynomials
+                var p = n1.DistanceSquaredTo(n2);
+                var q = 2 * (c1 - c2).Dot(n1 - n2);
+                var a = c1.DistanceSquaredTo(c2);
+
+                // There are two polyomials that, solved, give the necessary displacement for this adjustment
+                // One of them is pλ² + qλ + a² - (r1-r2)² and the other is (p-4)λ² + (q - 4(r1+r2))λ + a - (r1+r2)²
+                // Experimentally, though, only the latter one gives a "useful" value
+                // We still have an edge case, though, as there might be no positive root to this (this happens if
+                // the circles have to grow at opposite direction). On this case, return an empty array
+                var roots = Equations.SolveQuadratic(p - 4, q - 4 * rs, a - rs * rs);
+                if (!roots.Any(r => r >= 0)) pt1 = pt2 = new Double2(double.NaN, double.NaN);
+                else
+                {
+                    var l = roots.Where(r => r >= 0).Min();
+
+                    // Correctly adjust the centers and radii
+                    c1 += n1 * l;
+                    c2 += n2 * l;
+                    r1 += l;
+                    r2 += l;
+
+                    // The single point as a double root
+                    var dir = (c2 - c1).Normalized;
+                    pt1 = c1 + dir * r1;
+                    pt2 = c2 - dir * r2;
+                }
+            }
+            // The second case
+            else
+            {
+                // Swap the circles if the first one is smaller
+                bool swap = r1 < r2;
+                if (swap)
+                {
+                    Swap(ref c1, ref c2);
+                    Swap(ref r1, ref r2);
+                    Swap(ref n1, ref n2);
+                }
+
+                // Compute the coefficients of the polynomials
+                var p = (n1 + n2).LengthSquared;
+                var q = 2 * (c1 - c2).Dot(n1 + n2);
+                var a = c1.DistanceSquaredTo(c2);
+
+                // Again, here, there are two polynomials: pλ² - qλ + a² - (r1+r2)² and (p-4)λ² + (-q + 4(r1-r2))λ + a - (r1-r2)²
+                // And again, experimentally only the second one will give the "correct" result
+                var rd = r1 - r2;
+                var roots = Equations.SolveQuadratic(p - 4, -q + 4 * rd, a - rd * rd);
+                var l = roots.Where(r => r >= 0).Min();
+
+                // Correctly adjust the centers and radii
+                c1 -= n1 * l;
+                c2 += n2 * l;
+                r1 -= l;
+                r2 += l;
+
+                // Pick the single point intersection
+                var dir = (c2 - c1).Normalized;
+                pt1 = c1 + dir * r1;
+                pt2 = c2 + dir * r2;
+
+                // Finally, swap them again if we had to swap earlier
+                if (swap)
+                {
+                    Swap(ref c1, ref c2);
+                    Swap(ref r1, ref r2);
+                }
+            }
+
+            // Return back their signs
+            if (neg1) r1 = -r1;
+            if (neg2) r2 = -r2;
+
+            if (double.IsNaN(pt1.X)) return new Double2[0];
+            return new[] { (pt1 + pt2) / 2, (pt1 + pt2) / 2 };
+        }
+
+        private static Double2[] AdjustCircleLine(ref Double2 c1, ref double r1, Double2 n1, Double2 c, Double2 v)
+        {
+            // Negate if necessary, so we are working with positive values of the radius
+            bool neg1 = r1 < 0;
+            if (neg1) { r1 = -r1; n1 = -n1; }
+
+            Double2 pt;
+
+            // Get the coefficients
+            var rot = v.Normalized;
+            var h = (c - c1).Cross(rot);
+            var k = n1.Cross(rot);
+
+            // If k = -1, there is no solution
+            if (RoughlyEquals(k, -1)) pt = new Double2(double.NaN, double.NaN);
+            else
+            {
+                // Get the solution
+                var l = (h - r1) / (k + 1);
+
+                r1 += l;
+                c1 += n1 * l;
+
+                // Get the solution
+                pt = c1 - c - rot * (c1 - c).Dot(rot);
+            }
+
+            // Return back their signs
+            if (neg1) r1 = -r1;
+
+            if (double.IsNaN(pt.X)) return new Double2[0];
+            return new[] { pt, pt };
         }
 
         private static IEnumerable<Curve> GenerateLineCaps(Curve curve, bool atEnd, double halfWidth, StrokeLineCap lineCap)
