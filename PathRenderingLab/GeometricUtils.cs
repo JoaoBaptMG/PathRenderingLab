@@ -43,11 +43,14 @@ namespace PathRenderingLab
 
         public RootPair Flip() => new RootPair(B, A);
         public override string ToString() => $"{A} {B}";
+
+        public bool Inside01() => GeometricUtils.Inside01(A) && GeometricUtils.Inside01(B);
     }
 
     public static class GeometricUtils
     {
-        public static bool Inside01(double t) => t >= 0f && t <= 1f;
+        public static bool Inside01(double t) => DoubleUtils.RoughComparer.Compare(t, 0) >= 0 &&
+            DoubleUtils.RoughComparer.Compare(t, 1) <= 0;
 
         public static IEnumerable<RootPair> Remap(this IEnumerable<RootPair> pair, double t1, double t2, double u1, double u2)
         {

@@ -39,6 +39,8 @@ namespace PathRenderingLab.DCEL
         public bool ContainsVertex(Double2 v)
         {
             int numRoots = IsOuterFace ? 1 : 0;
+
+            bool HalfOpenRoot(RootPair p) => DoubleUtils.RoughComparer.Compare(p.B, 1) < 0;
             foreach (var edge in Edges)
             {
                 // Ignore edges which interface on "blank" contours
@@ -48,7 +50,7 @@ namespace PathRenderingLab.DCEL
                 var lspur = Curve.Line(v, v.WithX(Math.Max(bbox.X + bbox.Width, v.X) + 1f));
 
                 // Ensure we get only one of the endpoints if necessary
-                numRoots = unchecked(numRoots + Curve.Intersections(lspur, edge.Curve).Count(p => p.B < 1));
+                numRoots = unchecked(numRoots + Curve.Intersections(lspur, edge.Curve).Count(HalfOpenRoot));
             }
             return numRoots % 2 == 1;
         }
