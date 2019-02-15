@@ -95,7 +95,6 @@
     <Compile Include="Triangulator\Edge.cs" />
     <Compile Include="Triangulator\Triangulator.cs" />
     <Compile Include="Triangulator\Vertex.cs" />
-    <Compile Include="VertexPositionCurveStroke.cs" />
     <Compile Include="VertexPositionCurve.cs" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
