@@ -31,8 +31,8 @@ namespace PathRenderingLab.Triangulator
             IncomingEdges = new AvlTree<Edge, Edge>(Edge.AngleComparer);
 
             // Comparison variables
-            int comparisonCP = GeneralizedComparer.Default.Compare(cur, prev);
-            int comparisonCN = GeneralizedComparer.Default.Compare(cur, next);
+            int comparisonCP = CanonicalComparer.Default.Compare(cur, prev);
+            int comparisonCN = CanonicalComparer.Default.Compare(cur, next);
             bool reflex = (prev - cur).AngleBetween(next - cur) > 0;
 
             // Compute the type of the vertex
@@ -46,7 +46,7 @@ namespace PathRenderingLab.Triangulator
             else Type = comparisonCN > 0 ? VertexType.RegularLeft : VertexType.RegularRight;
         }
 
-        public int CompareTo(Vertex other) => GeneralizedComparer.Default.Compare(Current, other.Current);
+        public int CompareTo(Vertex other) => CanonicalComparer.Default.Compare(Current, other.Current);
 
         public override string ToString() => $"{Current}, {Type}";
 
@@ -86,7 +86,7 @@ namespace PathRenderingLab.Triangulator
             Type = type;
         }
 
-        public int CompareTo(ChainVertex other) => GeneralizedComparer.Default.Compare(Position, other.Position);
+        public int CompareTo(ChainVertex other) => CanonicalComparer.Default.Compare(Position, other.Position);
 
         public override string ToString() => $"{Position} {Type}";
     }

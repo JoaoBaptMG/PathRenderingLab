@@ -25,7 +25,7 @@ namespace PathRenderingLab.Triangulator
             if (A == other.B && B == other.A) return 0;
             
             // Build an upwards-facing edge
-            int comp = GeneralizedComparer.Default.Compare(A, B);
+            int comp = CanonicalComparer.Default.Compare(A, B);
 
             // If the edge is degenerate (i. e. if it is a vertex)
             if (comp == 0) return -other.CompareTo(this);

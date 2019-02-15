@@ -5,15 +5,6 @@ using Bitlush;
 
 namespace PathRenderingLab.Triangulator
 {
-    /// <summary>
-    /// A generalized comparer for vectors, used in the routine
-    /// </summary>
-    public class GeneralizedComparer : Comparer<Double2>
-    {
-        public override int Compare(Double2 a, Double2 b) => a.Y == b.Y ? b.X.CompareTo(a.X) : a.Y.CompareTo(b.Y);
-        public new readonly static GeneralizedComparer Default = new GeneralizedComparer();
-    }
-
     public static class YMonotone
     {
         // The algorithm used here is explained on Chapter 3 on
@@ -249,8 +240,8 @@ namespace PathRenderingLab.Triangulator
                     var cur = polygon[i];
                     var next = polygon[i == length - 1 ? 0 : i + 1];
 
-                    int comparisonCP = GeneralizedComparer.Default.Compare(cur, prev);
-                    int comparisonCN = GeneralizedComparer.Default.Compare(cur, next);
+                    int comparisonCP = CanonicalComparer.Default.Compare(cur, prev);
+                    int comparisonCN = CanonicalComparer.Default.Compare(cur, next);
 
                     if (bflag ? comparisonCP > 0 && comparisonCN > 0 : comparisonCP < 0 && comparisonCN < 0)
                         return i;

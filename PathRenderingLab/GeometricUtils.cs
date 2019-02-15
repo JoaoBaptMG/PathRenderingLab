@@ -47,6 +47,15 @@ namespace PathRenderingLab
         public bool Inside01() => GeometricUtils.Inside01(A) && GeometricUtils.Inside01(B);
     }
 
+    /// <summary>
+    /// A generalized comparer for vectors, used in geometric routines
+    /// </summary>
+    public class CanonicalComparer : Comparer<Double2>
+    {
+        public override int Compare(Double2 a, Double2 b) => a.Y == b.Y ? b.X.CompareTo(a.X) : a.Y.CompareTo(b.Y);
+        public new readonly static CanonicalComparer Default = new CanonicalComparer();
+    }
+
     public static class GeometricUtils
     {
         public static bool Inside01(double t) => DoubleUtils.RoughComparer.Compare(t, 0) >= 0 &&
@@ -284,5 +293,7 @@ namespace PathRenderingLab
                 return pos.Select(p => c1 + p.RotScale(rot)).ToArray();
             }
         }
+
+
     }
 }
