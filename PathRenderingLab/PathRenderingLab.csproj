@@ -54,7 +54,9 @@
     <Compile Include="CSSColor.cs" />
     <Compile Include="CSSEnumPicker.cs" />
     <Compile Include="Curve.Utils.cs" />
+    <Compile Include="DoubleCurveTriangle.cs" />
     <Compile Include="CurveTriangle.cs" />
+    <Compile Include="DoubleCurveVertex.cs" />
     <Compile Include="CurveVertex.cs" />
     <None Include="DCEL Backup\DCEL.cs" />
     <None Include="DCEL Backup\Edge.cs" />
@@ -95,6 +97,7 @@
     <Compile Include="Triangulator\Edge.cs" />
     <Compile Include="Triangulator\Triangulator.cs" />
     <Compile Include="Triangulator\Vertex.cs" />
+    <Compile Include="VertexPositionDoubleCurve.cs" />
     <Compile Include="VertexPositionCurve.cs" />
     <None Include="packages.config">
       <SubType>Designer</SubType>

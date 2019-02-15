@@ -7,6 +7,7 @@ namespace PathRenderingLab
     {
         public Triangle[] Triangles { get; private set; }
         public CurveTriangle[] CurveTriangles { get; private set; }
+        public DoubleCurveTriangle[] DoubleCurveTriangles { get; private set; }
 
         private CompiledDrawing() { }
 
@@ -24,6 +25,8 @@ namespace PathRenderingLab
             var curves = newFace.Contours.SelectMany(v => v.Where(c => c.Type != CurveType.Line));
             fill.CurveTriangles = curves.SelectMany(curve => CurveVertex.MakeTriangleFan(curve.CurveVertices))
                 .Where(ct => !ct.IsDegenerate).ToArray();
+
+            fill.DoubleCurveTriangles = new DoubleCurveTriangle[0];
 
             return fill;
         }
@@ -56,24 +59,28 @@ namespace PathRenderingLab
         {
             var triangles = new List<Triangle>();
             var curveTriangles = new List<CurveTriangle>();
+            var doubleCurveTriangles = new List<DoubleCurveTriangle>();
 
             foreach (var fill in fills)
             {
                 triangles.AddRange(fill.Triangles);
                 curveTriangles.AddRange(fill.CurveTriangles);
+                doubleCurveTriangles.AddRange(fill.DoubleCurveTriangles);
             }
 
             return new CompiledDrawing()
             {
                 Triangles = triangles.ToArray(),
-                CurveTriangles = curveTriangles.ToArray()
+                CurveTriangles = curveTriangles.ToArray(),
+                DoubleCurveTriangles = doubleCurveTriangles.ToArray(),
             };
         }
 
         public static CompiledDrawing Empty => new CompiledDrawing()
         {
             Triangles = new Triangle[0],
-            CurveTriangles = new CurveTriangle[0]
+            CurveTriangles = new CurveTriangle[0],
+            DoubleCurveTriangles = new DoubleCurveTriangle[0]
         };
     }
 }

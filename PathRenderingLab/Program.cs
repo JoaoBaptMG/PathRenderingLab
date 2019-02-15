@@ -56,6 +56,8 @@ namespace PathRenderingLab
             var strokeTriangleIndices = new List<int>();
             var fillCurveVertices = new List<VertexPositionCurve>();
             var strokeCurveVertices = new List<VertexPositionCurve>();
+            var fillDoubleCurveVertices = new List<VertexPositionDoubleCurve>();
+            var strokeDoubleCurveVertices = new List<VertexPositionDoubleCurve>();
             var vertexCache = new Dictionary<Vector2, int>();
 
             int IdForVertex(Vector2 v)
@@ -69,6 +71,7 @@ namespace PathRenderingLab
             var compiledStroke = pd.StrokeColor.HasValue ? PathCompiler.CompileStroke(pd.Path, pd.StrokeWidth, pd.StrokeLineCap,
                 pd.StrokeLineJoin, pd.MiterLimit) : CompiledDrawing.Empty;
 
+            vertexCache.Clear();
             foreach (var tri in compiledFill.Triangles)
             {
                 fillTriangleIndices.Add(IdForVertex((Vector2)tri.A));
@@ -77,21 +80,21 @@ namespace PathRenderingLab
             }
 
             foreach (var tri in compiledFill.CurveTriangles)
-            {
-                fillCurveVertices.AddRange(new[]
+                fillCurveVertices.AddRange(new[] { (VertexPositionCurve)tri.A, (VertexPositionCurve)tri.B, (VertexPositionCurve)tri.C });
+
+            foreach (var tri in compiledFill.DoubleCurveTriangles)
+                fillDoubleCurveVertices.AddRange(new[]
                 {
-                    new VertexPositionCurve(new Vector3((Vector2)tri.A.Position, 0), (Vector4)tri.A.CurveCoords),
-                    new VertexPositionCurve(new Vector3((Vector2)tri.B.Position, 0), (Vector4)tri.B.CurveCoords),
-                    new VertexPositionCurve(new Vector3((Vector2)tri.C.Position, 0), (Vector4)tri.C.CurveCoords)
+                    (VertexPositionDoubleCurve)tri.A,
+                    (VertexPositionDoubleCurve)tri.B,
+                    (VertexPositionDoubleCurve)tri.C
                 });
-            }
 
             int length = vertexCache.Count == 0 ? 0 : vertexCache.Max(p => p.Value) + 1;
             var fillVertices = new Vector2[length];
             foreach (var kvp in vertexCache) fillVertices[kvp.Value] = kvp.Key;
 
             vertexCache.Clear();
-
             foreach (var tri in compiledStroke.Triangles)
             {
                 strokeTriangleIndices.Add(IdForVertex((Vector2)tri.A));
@@ -100,24 +103,30 @@ namespace PathRenderingLab
             }
 
             foreach (var tri in compiledStroke.CurveTriangles)
-            {
-                strokeCurveVertices.AddRange(new[]
+                strokeCurveVertices.AddRange(new[] { (VertexPositionCurve)tri.A, (VertexPositionCurve)tri.B, (VertexPositionCurve)tri.C });
+
+            foreach (var tri in compiledStroke.DoubleCurveTriangles)
+                strokeDoubleCurveVertices.AddRange(new[]
                 {
-                    new VertexPositionCurve(new Vector3((Vector2)tri.A.Position, 0), (Vector4)tri.A.CurveCoords),
-                    new VertexPositionCurve(new Vector3((Vector2)tri.B.Position, 0), (Vector4)tri.B.CurveCoords),
-                    new VertexPositionCurve(new Vector3((Vector2)tri.C.Position, 0), (Vector4)tri.C.CurveCoords)
+                    (VertexPositionDoubleCurve)tri.A,
+                    (VertexPositionDoubleCurve)tri.B,
+                    (VertexPositionDoubleCurve)tri.C
                 });
-            }
 
             length = vertexCache.Count == 0 ? 0 : vertexCache.Max(p => p.Value) + 1;
             var strokeVertices = new Vector2[length];
             foreach (var kvp in vertexCache) strokeVertices[kvp.Value] = kvp.Key;
 
             Console.WriteLine("Statistics:");
-            Console.WriteLine($"{fillTriangleIndices.Count / 3 + fillCurveVertices.Count / 3} fill triangles, " +
-                $"{fillTriangleIndices.Count / 3} full and {fillCurveVertices.Count / 3} curve.");
-            Console.WriteLine($"{strokeTriangleIndices.Count / 3 + strokeCurveVertices.Count / 3} stroke triangles, " +
-                $"{strokeTriangleIndices.Count / 3} full and {strokeCurveVertices.Count / 3} curve.");
+
+            void WriteStats(string name, int numIndices, int numCurveVertices, int numDoubleCurveVertices)
+            {
+                Console.WriteLine($"{(numIndices + numCurveVertices + numDoubleCurveVertices) / 3} {name} triangles " +
+                    $"({numIndices / 3} filled, {numCurveVertices / 3} curve and {numDoubleCurveVertices / 3} double curves)");
+            }
+
+            WriteStats("fill", fillTriangleIndices.Count, fillCurveVertices.Count, fillDoubleCurveVertices.Count);
+            WriteStats("stroke", strokeTriangleIndices.Count, strokeCurveVertices.Count, strokeDoubleCurveVertices.Count);
 
             using (var game = new PathRenderingLab())
             {
@@ -126,10 +135,12 @@ namespace PathRenderingLab
                 game.FillVertices = fillVertices;
                 game.FillIndices = fillTriangleIndices.ToArray();
                 game.FillCurveVertices = fillCurveVertices.ToArray();
+                game.FillDoubleCurveVertices = fillDoubleCurveVertices.ToArray();
                 game.StrokeColor = pd.StrokeColor ?? Color.Transparent;
                 game.StrokeVertices = strokeVertices;
                 game.StrokeIndices = strokeTriangleIndices.ToArray();
                 game.StrokeCurveVertices = strokeCurveVertices.ToArray();
+                game.StrokeDoubleCurveVertices = strokeDoubleCurveVertices.ToArray();
                 game.StrokeHalfWidth = (float)pd.StrokeWidth / 2;
                 game.InvertY = pd.InvertY;
                 game.PathString = str;

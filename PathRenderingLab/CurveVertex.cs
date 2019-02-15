@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.Xna.Framework;
+using System.Collections.Generic;
 
 namespace PathRenderingLab
 {
@@ -25,5 +26,8 @@ namespace PathRenderingLab
             for (int i = 2; i < vertices.Length; i++)
                 yield return new CurveTriangle(vertices[0], vertices[i - 1], vertices[i]);
         }
+
+        public static explicit operator VertexPositionCurve(CurveVertex v)
+            => new VertexPositionCurve(new Vector3((Vector2)v.Position, 0), (Vector4)v.CurveCoords);
     }
 }
