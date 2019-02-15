@@ -122,7 +122,7 @@ namespace PathRenderingLab
             void WriteStats(string name, int numIndices, int numCurveVertices, int numDoubleCurveVertices)
             {
                 Console.WriteLine($"{(numIndices + numCurveVertices + numDoubleCurveVertices) / 3} {name} triangles " +
-                    $"({numIndices / 3} filled, {numCurveVertices / 3} curve and {numDoubleCurveVertices / 3} double curves)");
+                    $"({numIndices / 3} filled, {numCurveVertices / 3} curves and {numDoubleCurveVertices / 3} double curves)");
             }
 
             WriteStats("fill", fillTriangleIndices.Count, fillCurveVertices.Count, fillDoubleCurveVertices.Count);

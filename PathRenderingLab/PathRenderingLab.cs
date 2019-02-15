@@ -187,6 +187,14 @@ namespace PathRenderingLab
                 maxy = Math.Max(maxy, v.Position.Y);
             }
 
+            foreach (var v in FillDoubleCurveVertices.Concat(StrokeDoubleCurveVertices))
+            {
+                minx = Math.Min(minx, v.Position.X);
+                maxx = Math.Max(maxx, v.Position.X);
+                miny = Math.Min(miny, v.Position.Y);
+                maxy = Math.Max(maxy, v.Position.Y);
+            }
+
             var rectangle = new FloatRectangle(minx, miny, maxx - minx, maxy - miny);
 
             // Adjust it to the aspect ratio
@@ -306,11 +314,11 @@ namespace PathRenderingLab
             if (ShowFill)
             {
                 effect.Parameters["Color"].SetValue(FillColor.ToVector4());
+                effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
 
                 // Fill triangles
                 if (FillIndices.Length > 0)
                 {
-                    effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
                     GraphicsDevice.SetVertexBuffer(triangleVertexBuffer);
                     GraphicsDevice.Indices = indexBuffer;
 
@@ -351,11 +359,11 @@ namespace PathRenderingLab
             if (ShowStroke)
             {
                 effect.Parameters["Color"].SetValue(StrokeColor.ToVector4());
+                effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
 
                 // Stroke triangles
                 if (StrokeIndices.Length > 0)
                 {
-                    effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
                     GraphicsDevice.SetVertexBuffer(triangleVertexBuffer);
                     GraphicsDevice.Indices = indexBuffer;
 
@@ -424,7 +432,7 @@ namespace PathRenderingLab
             {
                 if (numIndices + numCurveVertices + numDoubleCurveVertices > 0)
                     sb.AppendLine($"{(numIndices + numCurveVertices + numDoubleCurveVertices) / 3} {name} triangles " +
-                        $"({numIndices / 3} filled, {numCurveVertices / 3} curve and {numDoubleCurveVertices / 3} double curves)");
+                        $"({numIndices / 3} filled, {numCurveVertices / 3} curves and {numDoubleCurveVertices / 3} double curves)");
             }
 
             AppendDrawing("fill", FillIndices.Length, FillCurveVertices.Length, FillDoubleCurveVertices.Length);
