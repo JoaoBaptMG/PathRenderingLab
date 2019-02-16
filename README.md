@@ -9,7 +9,7 @@ This repository aims to do research on vector graphics rendering and to (possibl
 The idea is to preprocess the path data, transforming it into graphics primitives, and sending them to the GPU alongside the required fragment shader in order to let it do the heavy lifting to correctly render the curves and straight lines. For that, two primitive types are used, which I call _triangles_ and _curve triangles_.
 
  * The _triangles_ are simple primitives which only store the position of the vertices, used to render the completely filled portions of the curve. Because of that, since they store only positional data, they can be cached and indexed, reducing their footprint on memory.
- * The _curve triangles_ are also equipped with carefully-crafted texture coordinates that correspond to special lines on the projective space (more info on [Loop--Blinn](https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/p1000-loop.pdf)). Those primitives, when equipped with the appropriate fragment shader, will render the Bézier curves as implicit curves on the projective space.
+ * The _curve triangles_ are also equipped with carefully-crafted texture coordinates that correspond to special lines on the projective space (more info on [Loop--Blinn](https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/p1000-loop.pdf)). Those primitives, when equipped with the appropriate fragment shader, will render the Bï¿½zier curves as implicit curves on the projective space.
 
 The core of this project is to convert the path representation according to the [SVG Specification on Paths](https://svgwg.org/svg2-draft/paths.html) into the adequate primitives to send to the GPU. This part is almost entirely done. The next part is parse the SVG file to gather the paths and be able to correctly render an entire SVG file -- thus making it available to be drawn on MonoGame projects. The project is still a work in progress, and I do not consider it reaching even into alpha.
 
@@ -35,12 +35,18 @@ Once you have a path specification file, just drag it to the icon of the compile
 ![img7](imgs/pathrendering7.png)
 ![img8](imgs/pathrendering8.png)
 ![img9](imgs/pathrendering9.png)
-![img9](imgs/pathrendering10.png)
-![img9](imgs/pathrendering11.png)
-![img9](imgs/pathrendering12.png)
-![img9](imgs/pathrendering13.png)
-![img9](imgs/pathrendering14.png)
-![img9](imgs/pathrendering15.png)
+![img10](imgs/pathrendering10.png)
+![img11](imgs/pathrendering11.png)
+![img12](imgs/pathrendering12.png)
+![img13](imgs/pathrendering13.png)
+![img14](imgs/pathrendering14.png)
+![img15](imgs/pathrendering15.png)
+![img16](imgs/pathrendering16.png)
+![img17](imgs/pathrendering17.png)
+![img18](imgs/pathrendering18.png)
+![img19](imgs/pathrendering19.png)
+![img20](imgs/pathrendering20.png)
+![img21](imgs/pathrendering21.png)
 
 ## How can I help?
 
@@ -48,7 +54,7 @@ You want to help? You are absolutely welcome! You can signal issues using the Is
 
 ## License
 
-The entirety of this project (without the _Bitlush.AvlTree_ folder) is under the MIT license, copyright 2018--2019 João Baptista de Paula e Silva.
+The entirety of this project (without the _Bitlush.AvlTree_ folder) is under the MIT license, copyright 2018--2019 Joï¿½o Baptista de Paula e Silva.
 
 ## References
 
