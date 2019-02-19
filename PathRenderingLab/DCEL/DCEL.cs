@@ -78,7 +78,7 @@ namespace PathRenderingLab.DCEL
         /// Adds a curve to the DCEL.
         /// </summary>
         /// <param name="curve">The curve to be added</param>
-        public void AddCurve(Curve curve)
+        public void AddCurve(Curve curve, int canonicityChange = 1)
         {
             var vert1 = curve.At(0);
             var vert2 = curve.At(1);
@@ -119,7 +119,7 @@ namespace PathRenderingLab.DCEL
 
                 PairOfEdges(vertex1, vertex2, out var e1, out var e2);
 
-                e1.Canonicity++;
+                e1.Canonicity += canonicityChange;
 
                 // If the vertices are different, wire they on a loop
                 if (vertex1 != vertex2)
@@ -173,11 +173,11 @@ namespace PathRenderingLab.DCEL
                 if (vertex1.SearchOutgoingEdges(e1, out var e1lo, out var e1ro))
                 {
                     // Just up the canonicity of the edge, so we can track it
-                    e1lo.Canonicity++;
+                    e1lo.Canonicity += canonicityChange;
                     return;
                 }
 
-                e1.Canonicity++;
+                e1.Canonicity += canonicityChange;
 
                 // The other matching edge is guaranteed not to be found
                 vertex2.SearchOutgoingEdges(e2, out var e2lo, out var e2ro);
@@ -269,7 +269,7 @@ namespace PathRenderingLab.DCEL
 
                 // Create the new pair of edges and set the right canonicity
                 PairOfEdges(oldVertex, newVertex, out var e1, out var e2, found2);
-                (found1 ? e1 : e2).Canonicity++;
+                (found1 ? e1 : e2).Canonicity += canonicityChange;
 
                 // Search for the adjacent edges of the new vertex
                 oldVertex.SearchOutgoingEdges(e1, out var e1lo, out var e1ro);
