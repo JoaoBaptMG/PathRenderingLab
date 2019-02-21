@@ -20,7 +20,7 @@ namespace PathRenderingLab.Triangulator
                 try
                 {
                     // Firstly, simplify the contours
-                    var simplifiedContours = contours.SelectMany(c => GeometricUtils.RemovePolygonWedges(c, i == 0))
+                    var simplifiedContours = contours.SelectMany(c => GeometricUtils.RemovePolygonWedges(c, i != 0))
                         .Select(GeometricUtils.SimplifyPolygon).ToArray();
 
                     // Discard trivial contours right now
