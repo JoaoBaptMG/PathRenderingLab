@@ -25,12 +25,12 @@ namespace PathRenderingLab.DCEL
         public ReadOnlyCollection<Edge> Edges => edges.AsReadOnly();
         public ReadOnlyCollection<Face> Faces => faces.AsReadOnly();
 
-        private readonly bool truncate;
+        private readonly bool inexact;
 
         /// <summary>
         /// Initializes the DCEL and constructs everything
         /// </summary>
-        public DCEL(bool trunc = true)
+        public DCEL(bool inexact = true)
         {
             vertices = new List<Vertex>();
             edges = new List<Edge>();
@@ -40,7 +40,7 @@ namespace PathRenderingLab.DCEL
                 new Face(true)
             };
 
-            truncate = trunc;
+            this.inexact = inexact;
         }
 
         // Values necessary to "align" the curves in the right places
@@ -55,7 +55,7 @@ namespace PathRenderingLab.DCEL
         /// <returns>The vertex added</returns>
         public Vertex AddVertex(Double2 v)
         {
-            if (truncate) v = Truncate(v);
+            if (inexact) v = Truncate(v);
             var vertex = new Vertex(v);
             vertices.Add(vertex);
             return vertex;
@@ -69,7 +69,7 @@ namespace PathRenderingLab.DCEL
         /// <returns></returns>
         public bool FindVertex(Double2 v, out Vertex vertex)
         {
-            if (truncate) v = Truncate(v);
+            if (inexact) v = Truncate(v);
             vertex = vertices.FirstOrDefault(vt => vt.Position == v);
             return vertex != null;
         }
