@@ -27,21 +27,24 @@ namespace PathRenderingLab
             var curveTriangles = new List<CurveTriangle>();
             var doubleCurveTriangles = new List<DoubleCurveTriangle>();
 
-            // Check first if the last and first curve aren't joinable
-            bool lastFirstJoin = FillFace.AreCurvesFusable(curves[curves.Length - 1], curves[0]);
-            if (lastFirstJoin) doubleCurveTriangles.AddRange(FuseCurveTriangles(curves[curves.Length - 1], curves[0]));
-            else curveTriangles.AddRange(CurveVertex.MakeTriangleFan(curves[0].CurveVertices));
-
-            // Now, scan the curve list for pairs of scannable curves
-            var k = lastFirstJoin ? 1 : 0;
-            for (int i = k; i < curves.Length - k; i++)
+            if (curves.Length > 0)
             {
-                if (i < curves.Length - 1 && FillFace.AreCurvesFusable(curves[i], curves[i + 1]))
+                // Check first if the last and first curve aren't joinable
+                bool lastFirstJoin = curves.Length > 1 && FillFace.AreCurvesFusable(curves[curves.Length - 1], curves[0]);
+                if (lastFirstJoin) doubleCurveTriangles.AddRange(FuseCurveTriangles(curves[curves.Length - 1], curves[0]));
+                else curveTriangles.AddRange(CurveVertex.MakeTriangleFan(curves[0].CurveVertices));
+
+                // Now, scan the curve list for pairs of scannable curves
+                var k = lastFirstJoin ? 1 : 0;
+                for (int i = k; i < curves.Length - k; i++)
                 {
-                    doubleCurveTriangles.AddRange(FuseCurveTriangles(curves[i], curves[i + 1]));
-                    i++;
+                    if (i < curves.Length - 1 && FillFace.AreCurvesFusable(curves[i], curves[i + 1]))
+                    {
+                        doubleCurveTriangles.AddRange(FuseCurveTriangles(curves[i], curves[i + 1]));
+                        i++;
+                    }
+                    else curveTriangles.AddRange(CurveVertex.MakeTriangleFan(curves[i].CurveVertices));
                 }
-                else curveTriangles.AddRange(CurveVertex.MakeTriangleFan(curves[i].CurveVertices));
             }
 
             fill.CurveTriangles = curveTriangles.ToArray();
