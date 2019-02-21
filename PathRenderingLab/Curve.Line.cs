@@ -9,7 +9,7 @@ namespace PathRenderingLab
         public static Curve Line(Double2 a, Double2 b) => new Curve(CurveType.Line, a, b);
         private Curve Line_Reverse => Line(B, A);
 
-        private Double2 Line_At(double t) => A + t * (B - A);
+        private Double2 Line_At(double t) => (1 - t) * A + t * B;
 
         private Curve Line_Derivative => Line(B - A, B - A);
 
