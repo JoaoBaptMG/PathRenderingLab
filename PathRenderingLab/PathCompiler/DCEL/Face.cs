@@ -1,44 +1,35 @@
-﻿#if false
-
-using Microsoft.Xna.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using static PathRenderingLab.GeometricUtils;
 
-namespace PathRenderingLab.DCEL
+namespace PathRenderingLab.PathCompiler.DCEL
 {
 
     // Stored face data: the vertices (in edge order) that form the face and the sub-DCEL it has
     public class Face
     {
-        public Edge PrimaryEdge;
-        public DCEL SubDCEL;
+        public List<Edge> Contours;
         public int FillNumber;
-        public HashSet<Face> Cluster;
+        public readonly bool IsOuterFace;
 
-        public Face()
+        public Face(bool outer = false)
         {
-            PrimaryEdge = null;
-            Cluster = null;
-            SubDCEL = new DCEL();
+            Contours = new List<Edge>();
             FillNumber = 0;
+            IsOuterFace = outer;
         }
 
         /// <summary>
         /// Enumerate through all the edges (starting in its primary edge)
         /// </summary>
-        public IEnumerable<Edge> Edges => PrimaryEdge?.CyclicalSequence ?? Enumerable.Empty<Edge>();
+        public IEnumerable<Edge> Edges => Contours.SelectMany(e => e.CyclicalSequence);
+
+        public IEnumerable<Edge> GetContour(int id) => Contours[id].CyclicalSequence;
 
         /// <summary>
         /// Computes the face winding, which is double the signed area of the face
         /// </summary>
         public double Winding => Edges.Sum(e => e.Winding);
-
-        /// <summary>
-        /// A vertex inside the face, used to
-        /// </summary>
-        public Vertex ReferenceVertex => PrimaryEdge?.E1;
 
         /// <summary>
         /// Checks if the face contains the specified vertex.
@@ -47,14 +38,19 @@ namespace PathRenderingLab.DCEL
         /// <returns></returns>
         public bool ContainsVertex(Double2 v)
         {
-            int numRoots = 0;
+            int numRoots = IsOuterFace ? 1 : 0;
+
+            bool HalfOpenRoot(RootPair p) => DoubleUtils.RoughComparer.Compare(p.B, 1) < 0;
             foreach (var edge in Edges)
             {
+                // Ignore edges which interface on "blank" contours
+                if (edge.Face == edge.Twin.Face) continue;
+
                 var bbox = edge.Curve.BoundingBox;
                 var lspur = Curve.Line(v, v.WithX(Math.Max(bbox.X + bbox.Width, v.X) + 1f));
 
                 // Ensure we get only one of the endpoints if necessary
-                numRoots = unchecked(numRoots + Curve.Intersections(lspur, edge.Curve).Count(p => p.B < 1));
+                numRoots = unchecked(numRoots + Curve.Intersections(lspur, edge.Curve).Count(HalfOpenRoot));
             }
             return numRoots % 2 == 1;
         }
@@ -64,14 +60,16 @@ namespace PathRenderingLab.DCEL
             get
             {
                 var list = new List<PathCommand>();
-                list.Add(PathCommand.MoveTo(ReferenceVertex.Position));
-                list.AddRange(Edges.Select(e => e.PathCommandFrom()));
-                list.Add(PathCommand.ClosePath());
+
+                foreach (var edge in Contours)
+                {
+                    list.Add(PathCommand.MoveTo(edge.E1.Position));
+                    list.AddRange(edge.CyclicalSequence.Select(e => e.PathCommandFrom()));
+                    list.Add(PathCommand.ClosePath());
+                }
 
                 return string.Join(" ", list);
             }
         }
     }
 }
-
-#endif

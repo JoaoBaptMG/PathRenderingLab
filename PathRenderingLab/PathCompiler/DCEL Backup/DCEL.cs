@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 
-namespace PathRenderingLab.DCEL
+namespace PathRenderingLab.PathCompiler.DCEL
 {
     [Flags]
     public enum Show { Vertices = 1, Edges = 2, Faces = 4, All = Vertices | Edges | Faces }

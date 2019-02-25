@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PathRenderingLab
+namespace PathRenderingLab.PathCompiler
 {
 
     public partial struct Curve

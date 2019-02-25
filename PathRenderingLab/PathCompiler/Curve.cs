@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace PathRenderingLab
+namespace PathRenderingLab.PathCompiler
 {
     public enum CurveType { Line, QuadraticBezier, CubicBezier, EllipticArc }
 

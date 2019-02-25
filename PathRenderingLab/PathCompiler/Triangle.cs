@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace PathRenderingLab
+namespace PathRenderingLab.PathCompiler
 {
     /// <summary>
     /// Represents a triangle in the plane

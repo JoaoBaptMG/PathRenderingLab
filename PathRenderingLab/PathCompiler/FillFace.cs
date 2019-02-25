@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace PathRenderingLab
+namespace PathRenderingLab.PathCompiler
 {
     /// <summary>
     /// Represents a face to be filled with a specific fill mode.

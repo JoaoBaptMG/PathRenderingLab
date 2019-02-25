@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using static PathRenderingLab.DoubleUtils;
 
-namespace PathRenderingLab
+namespace PathRenderingLab.PathCompiler
 {
 
     public partial struct Curve

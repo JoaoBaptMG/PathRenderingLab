@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 
-namespace PathRenderingLab.DCEL
+namespace PathRenderingLab.PathCompiler.DCEL
 {
     // An edge with cached vertices - we'll come back here later
     public class Edge

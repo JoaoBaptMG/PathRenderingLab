@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace PathRenderingLab.Triangulator
+namespace PathRenderingLab.PathCompiler.Triangulator
 {
     /// <summary>
     /// An edge on the polygon. Its comparison method checks if one edge is "to the left" of another

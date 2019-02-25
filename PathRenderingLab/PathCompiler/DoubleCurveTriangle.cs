@@ -1,4 +1,4 @@
-﻿namespace PathRenderingLab
+﻿namespace PathRenderingLab.PathCompiler
 {
     public struct DoubleCurveTriangle
     {

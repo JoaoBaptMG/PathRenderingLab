@@ -2,13 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PathRenderingLab
+namespace PathRenderingLab.PathCompiler
 {
-    public enum FillRule { Nonzero, Evenodd }
-    public enum StrokeLineCap { Butt, Round, Square }
-    public enum StrokeLineJoin { Bevel, Miter, MiterClip, Round, Arcs }
-
-    public class PathCompiler
+    public class PathCompilerMethods
     {
         public static int FindOrAddPoint(List<Double2> vertices, Double2 vertex)
         {

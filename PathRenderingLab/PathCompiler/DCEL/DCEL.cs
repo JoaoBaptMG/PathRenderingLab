@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using static PathRenderingLab.SwapUtils;
 
-namespace PathRenderingLab.DCEL
+namespace PathRenderingLab.PathCompiler.DCEL
 {
     [Flags]
     public enum Show { Vertices = 1, Edges = 2, Faces = 4, All = Vertices | Edges | Faces }

@@ -4,7 +4,7 @@ using System.Linq;
 using static PathRenderingLab.DoubleUtils;
 using static PathRenderingLab.SwapUtils;
 
-namespace PathRenderingLab
+namespace PathRenderingLab.PathCompiler
 {
     public static class StrokeUtils
     {

@@ -218,7 +218,7 @@ namespace PathRenderingLab
             if (polygon.Length < 3) return Enumerable.Empty<Double2[]>();
 
             // We will use a DCEL to do it
-            var dcel = new DCEL.DCEL(truncateDCEL);
+            var dcel = new PathCompiler.DCEL.DCEL(truncateDCEL);
 
             // Note the polygon winding
             double winding = 0;
@@ -226,7 +226,7 @@ namespace PathRenderingLab
             for (int i = 0; i < polygon.Length; i++)
             {
                 var ik = (i + 1) % polygon.Length;
-                dcel.AddCurve(Curve.Line(polygon[i], polygon[ik]));
+                dcel.AddCurve(PathCompiler.Curve.Line(polygon[i], polygon[ik]));
                 winding += polygon[i].Cross(polygon[ik]);
 
                 Console.WriteLine(dcel);
@@ -237,7 +237,7 @@ namespace PathRenderingLab
             dcel.RemoveWedges();
 
             // Now, ensure the windings are coherent with the original face's winding
-            Double2[] ConstructPolygon(DCEL.Face face)
+            Double2[] ConstructPolygon(PathCompiler.DCEL.Face face)
             {
                 var array = face.Edges.Select(p => p.Curve.A).ToArray();
                 if (winding < 0) Array.Reverse(array);

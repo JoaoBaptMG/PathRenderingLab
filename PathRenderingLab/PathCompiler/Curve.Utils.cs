@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PathRenderingLab
+namespace PathRenderingLab.PathCompiler
 {
     public partial struct Curve
     {

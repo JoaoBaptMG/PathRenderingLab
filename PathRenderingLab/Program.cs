@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using PathRenderingLab.PathCompiler;
 
 namespace PathRenderingLab
 {
@@ -67,8 +68,8 @@ namespace PathRenderingLab
                 return vertexCache[v];
             }
 
-            var compiledFill = pd.FillColor.HasValue ? PathCompiler.CompileFill(pd.Path, pd.FillRule) : CompiledDrawing.Empty;
-            var compiledStroke = pd.StrokeColor.HasValue ? PathCompiler.CompileStroke(pd.Path, pd.StrokeWidth, pd.StrokeLineCap,
+            var compiledFill = pd.FillColor.HasValue ? PathCompilerMethods.CompileFill(pd.Path, pd.FillRule) : CompiledDrawing.Empty;
+            var compiledStroke = pd.StrokeColor.HasValue ? PathCompilerMethods.CompileStroke(pd.Path, pd.StrokeWidth, pd.StrokeLineCap,
                 pd.StrokeLineJoin, pd.MiterLimit) : CompiledDrawing.Empty;
 
             vertexCache.Clear();

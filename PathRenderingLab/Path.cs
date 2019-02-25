@@ -1,8 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using PathRenderingLab.PathCompiler;
 
 namespace PathRenderingLab
 {
+    public enum FillRule { Nonzero, Evenodd }
+    public enum StrokeLineCap { Butt, Round, Square }
+    public enum StrokeLineJoin { Bevel, Miter, MiterClip, Round, Arcs }
+
     public enum PathCommandType { None, MoveTo, LineTo, QuadraticCurveTo, CubicCurveTo, ArcTo, ClosePath }
 
     public struct PathCommand

@@ -4,7 +4,7 @@ using System.Linq;
 using static PathRenderingLab.DoubleUtils;
 using static PathRenderingLab.GeometricUtils;
 
-namespace PathRenderingLab
+namespace PathRenderingLab.PathCompiler
 {
     public partial struct Curve
     {

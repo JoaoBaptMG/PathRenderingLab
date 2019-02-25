@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 
-namespace PathRenderingLab
+namespace PathRenderingLab.PathCompiler
 {
     /// <summary>
     /// Represents a vertex used to draw vertex attributes

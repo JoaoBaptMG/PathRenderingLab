@@ -1,9 +1,8 @@
 ﻿using System;
 using Bitlush;
 
-namespace PathRenderingLab.Triangulator
+namespace PathRenderingLab.PathCompiler.Triangulator
 {
-
     /// <summary>
     /// Denotes the type of the vertex, used on the triangulation routine.
     /// </summary>
