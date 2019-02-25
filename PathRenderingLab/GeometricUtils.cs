@@ -202,16 +202,10 @@ namespace PathRenderingLab
                 var points = new List<Double2>(len) { polygon[istart] };
                 Double2 LastAddedPoint() => points[points.Count - 1];
 
+                // Only add the point if it doesn't form a parallel line with the next point on the line
                 for (int i = (istart + 1) % len; i != istart; i = (i + 1) % len)
-                {
-                    // Check for collinearity
-                    var ik = (i + 1) % len;
-                    var ip = (i + len - 1) % len;
-
-                    // Add if the point isn't collinear
-                    if (!DoubleUtils.RoughlyZero((polygon[ik] - polygon[i]).Cross(LastAddedPoint() - polygon[i])))
+                    if (!DoubleUtils.RoughlyZero((polygon[(i + 1) % len] - polygon[i]).Cross(LastAddedPoint() - polygon[i])))
                         points.Add(polygon[i]);
-                }
 
                 // Return the new formed polygon
                 return points.ToArray();
@@ -234,6 +228,9 @@ namespace PathRenderingLab
                 var ik = (i + 1) % polygon.Length;
                 dcel.AddCurve(Curve.Line(polygon[i], polygon[ik]));
                 winding += polygon[i].Cross(polygon[ik]);
+
+                Console.WriteLine(dcel);
+                Console.ReadLine();
             }
 
             // Now, remove the wedges
