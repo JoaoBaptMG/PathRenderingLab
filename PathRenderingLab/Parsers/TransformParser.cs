@@ -84,12 +84,12 @@ namespace PathRenderingLab.Parsers
             SkipWhitespace();
 
             // Then, check if it matches one of the function names
-            if (parseString.MatchesOn(index, "translate")) return TransformFunctionType.Translate;
-            if (parseString.MatchesOn(index, "scale")) return TransformFunctionType.Scale;
-            if (parseString.MatchesOn(index, "rotate")) return TransformFunctionType.Rotate;
-            if (parseString.MatchesOn(index, "skewX")) return TransformFunctionType.SkewX;
-            if (parseString.MatchesOn(index, "skewY")) return TransformFunctionType.SkewY;
-            if (parseString.MatchesOn(index, "matrix")) return TransformFunctionType.Matrix;
+            if (parseString.MatchesOn(ref index, "translate")) return TransformFunctionType.Translate;
+            if (parseString.MatchesOn(ref index, "scale")) return TransformFunctionType.Scale;
+            if (parseString.MatchesOn(ref index, "rotate")) return TransformFunctionType.Rotate;
+            if (parseString.MatchesOn(ref index, "skewX")) return TransformFunctionType.SkewX;
+            if (parseString.MatchesOn(ref index, "skewY")) return TransformFunctionType.SkewY;
+            if (parseString.MatchesOn(ref index, "matrix")) return TransformFunctionType.Matrix;
 
             // If not, unrecognized command
             throw new ParserException("Unrecognized transform function matched!");

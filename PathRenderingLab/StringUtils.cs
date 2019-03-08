@@ -25,7 +25,15 @@ namespace PathRenderingLab
 
         public static string ConvertToCSSCase(string name) => string.Join("-", name.SplitIntoWords().Select(x => x.ToLowerInvariant()));
 
-        public static bool MatchesOn(this string str, int pos, string match)
-            => str.Substring(pos, match.Length) == match;
+        // Used only for parsers
+        public static bool MatchesOn(this string str, ref int pos, string match)
+        {
+            if (str.Substring(pos, match.Length) == match)
+            {
+                pos += match.Length;
+                return true;
+            }
+            return false;
+        }
     }
 }
