@@ -24,5 +24,8 @@ namespace PathRenderingLab
         }
 
         public static string ConvertToCSSCase(string name) => string.Join("-", name.SplitIntoWords().Select(x => x.ToLowerInvariant()));
+
+        public static bool MatchesOn(this string str, int pos, string match)
+            => str.Substring(pos, match.Length) == match;
     }
 }

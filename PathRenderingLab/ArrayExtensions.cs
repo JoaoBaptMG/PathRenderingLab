@@ -58,5 +58,11 @@ namespace PathRenderingLab
         }
 
         public static void RemoveDuplicates<T>(ref T[] array) => RemoveDuplicates(ref array, EqualityComparer<T>.Default);
+
+        public static T TryGetOr<T>(this T[] array, int index, T def)
+        {
+            if (index >= array.Length) return def;
+            return array[index];
+        }
     }
 }
