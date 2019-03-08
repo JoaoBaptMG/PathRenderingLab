@@ -74,6 +74,21 @@ namespace PathRenderingLab.SvgContents
 
         public static TransformFunction[] ParseCollectionFromString(string transformString)
             => new TransformParser(transformString).TransformFunctions.ToArray();
+
+        public override string ToString()
+        {
+            switch (Type)
+            {
+                case TransformFunctionType.Matrix: return $"matrix({A}, {B}, {C}, {D}, {E}, {F})";
+                case TransformFunctionType.Translate: return $"translate({A}, {B})";
+                case TransformFunctionType.Rotate: return $"rotate({A}, {B}, {C})";
+                case TransformFunctionType.Scale: return $"scale({A}, {B})";
+                case TransformFunctionType.Skew: return $"skew({A}, {B})";
+                case TransformFunctionType.SkewX: return $"skewX({A})";
+                case TransformFunctionType.SkewY: return $"skewY({A})";
+                default: throw new InvalidOperationException("Unrecognized transform function type!");
+            }
+        }
     }
 
     public static class TransformFunctionCollection
