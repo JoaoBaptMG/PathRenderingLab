@@ -28,7 +28,7 @@ namespace PathRenderingLab
         // Used only for parsers
         public static bool MatchesOn(this string str, ref int pos, string match)
         {
-            if (str.Substring(pos, match.Length) == match)
+            if (pos + match.Length <= str.Length && str.Substring(pos, match.Length) == match)
             {
                 pos += match.Length;
                 return true;
