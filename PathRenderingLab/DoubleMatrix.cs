@@ -48,7 +48,7 @@ namespace PathRenderingLab
                 m1.A * m2.C + m1.C * m2.D,
                 m1.B * m2.C + m1.D * m2.D,
                 m1.A * m2.E + m1.C * m2.F + m1.E,
-                m1.B * m2.E + m2.D * m2.F + m1.F);
+                m1.B * m2.E + m1.D * m2.F + m1.F);
 
         public static Double2 operator *(DoubleMatrix m, Double2 v) => m.Apply(v);
             
