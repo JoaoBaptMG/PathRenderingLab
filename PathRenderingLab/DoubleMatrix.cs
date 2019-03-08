@@ -57,5 +57,7 @@ namespace PathRenderingLab
 
         public static DoubleMatrix Apply(DoubleMatrix m1, DoubleMatrix m2) => m1 * m2;
         public static Double2 Apply(DoubleMatrix m, Double2 v) => m * v;
+
+        public override string ToString() => $"[{A} {B} {C} {D} {E} {F}]";
     }
 }
