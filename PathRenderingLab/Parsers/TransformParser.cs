@@ -41,6 +41,7 @@ namespace PathRenderingLab.Parsers
             // Check if the first thing is a parenthesis
             if (parseString[index] != '(') throw new ParserException("Expected '(' to begin parenthesized " +
                 "floating-point sequence!");
+            index++;
 
             // Now, check for the delimited sequence itself
             double? val = null;
@@ -69,6 +70,7 @@ namespace PathRenderingLab.Parsers
             // Now, close the parentheses
             if (parseString[index] != ')') throw new ParserException("Expected ')' to end parenthesized " +
                 "floating-point sequence!");
+            index++;
 
             // Throw away the list if it does not have the required number of parameters
             if (list.Count < minValue) throw new ParserException($"Delimited floating-point sequence expected " +
