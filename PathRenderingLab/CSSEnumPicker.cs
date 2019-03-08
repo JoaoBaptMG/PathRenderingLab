@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PathRenderingLab
 {
@@ -10,6 +11,7 @@ namespace PathRenderingLab
         static CSSEnumPicker()
         {
             if (!typeof(T).IsEnum) throw new ArgumentException("T must be an enumerated type");
+
             enumValues = new Dictionary<string, T>();
             foreach (T v in Enum.GetValues(typeof(T)))
                 enumValues.Add(StringUtils.ConvertToCSSCase(v.ToString()), v);

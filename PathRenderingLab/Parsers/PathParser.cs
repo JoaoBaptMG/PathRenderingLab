@@ -6,7 +6,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 
-namespace PathRenderingLab
+namespace PathRenderingLab.Parsers
 {
     /// <summary>
     /// A class that parses a string according to the SVG Documentation in a series of path commands.

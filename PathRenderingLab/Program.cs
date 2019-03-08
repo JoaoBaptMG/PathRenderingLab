@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using PathRenderingLab.PathCompiler;
+using System.Xml;
 
 namespace PathRenderingLab
 {
@@ -46,6 +47,30 @@ namespace PathRenderingLab
                 Console.Write("Enter path of file containing path details: ");
                 file = Console.ReadLine();
             }
+
+            var document = new XmlDocument();
+            document.Load(file);
+
+            void RecursivelyEnumerateNodes(XmlNode node, int depth = 0)
+            {
+                var separator = new string(' ', 3 * depth);
+                Console.Write($"{separator}- [({node.Name}){node.LocalName}]");
+
+                if (node.Attributes != null)
+                    foreach (var attr in node.Attributes.Cast<XmlAttribute>())
+                        Console.Write($" ({attr.NamespaceURI}){attr.LocalName}=\"{attr.Value}\"");
+
+                Console.WriteLine();
+
+                if (node.ChildNodes != null)
+                    foreach (var n in node.ChildNodes.Cast<XmlNode>())
+                        RecursivelyEnumerateNodes(n, depth + 1);
+            }
+
+            RecursivelyEnumerateNodes(document);
+            Console.ReadLine();
+
+#if false
 
             var str = File.ReadAllText(file);
             var pd = GetPathDetailsFromString(str);
@@ -148,6 +173,7 @@ namespace PathRenderingLab
 
                 game.Run();
             }
+#endif
         }
 
         public static T? NullIfThrow<T>(Func<T> f) where T : struct
@@ -213,4 +239,4 @@ namespace PathRenderingLab
         }
     }
 #endif
-}
+        }

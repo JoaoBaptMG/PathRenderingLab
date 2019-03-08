@@ -49,6 +49,7 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="CompiledStroke.Backup.cs" />
+    <Compile Include="DoubleMatrix.cs" />
     <Compile Include="PathCompiler\CompiledDrawing.cs" />
     <Compile Include="ContentManagerExtensions.cs" />
     <Compile Include="CSSColor.cs" />
@@ -82,7 +83,7 @@
     <Compile Include="LinkedListUtils.cs" />
     <Compile Include="Path.cs" />
     <Compile Include="PathCompiler\PathCompiler.cs" />
-    <Compile Include="PathParser.cs" />
+    <Compile Include="Parsers\PathParser.cs" />
     <Compile Include="PathRenderingLab.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -91,6 +92,10 @@
     <Compile Include="StringUtils.cs" />
     <Compile Include="PathCompiler\StrokeUtils.cs" />
     <Compile Include="SuperSampler.cs" />
+    <Compile Include="SvgContents\PathStyle.cs" />
+    <Compile Include="SvgContents\Svg.cs" />
+    <Compile Include="SvgContents\SvgNode.cs" />
+    <Compile Include="SvgContents\TransformFunction.cs" />
     <Compile Include="SwapUtils.cs" />
     <Compile Include="PathCompiler\Triangle.cs" />
     <Compile Include="ArrayExtensions.cs" />
@@ -135,7 +140,12 @@
       <HintPath>..\packages\SharpDX.XInput.4.0.1\lib\net45\SharpDX.XInput.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Icon.ico" />
