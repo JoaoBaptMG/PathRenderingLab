@@ -125,7 +125,7 @@ namespace PathRenderingLab.Parsers
                         case TransformFunctionType.Rotate:
                             {
                                 var a = DelimitedParenthesizedSequence(1, 1);
-                                transformFunctions.Add(TransformFunction.Rotate(a[0]));
+                                transformFunctions.Add(TransformFunction.Rotate(a[0].ToRadians()));
                                 break;
                             }
                         case TransformFunctionType.Scale:
@@ -137,13 +137,13 @@ namespace PathRenderingLab.Parsers
                         case TransformFunctionType.SkewX:
                             {
                                 var a = DelimitedParenthesizedSequence(1, 1);
-                                transformFunctions.Add(TransformFunction.SkewX(a[0]));
+                                transformFunctions.Add(TransformFunction.SkewX(a[0].ToRadians()));
                                 break;
                             }
                         case TransformFunctionType.SkewY:
                             {
                                 var a = DelimitedParenthesizedSequence(1, 1);
-                                transformFunctions.Add(TransformFunction.SkewY(a[0]));
+                                transformFunctions.Add(TransformFunction.SkewY(a[0].ToRadians()));
                                 break;
                             }
                         default:
