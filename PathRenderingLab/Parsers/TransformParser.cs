@@ -98,6 +98,9 @@ namespace PathRenderingLab.Parsers
         // Main parse loop
         void Parse()
         {
+            // First, try to see if the transform is actually "no transform"
+            if (parseString.Trim() == "none") return;
+
             try
             {
                 while (true)
