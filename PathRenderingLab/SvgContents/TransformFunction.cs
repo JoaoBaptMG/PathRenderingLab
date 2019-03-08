@@ -35,8 +35,10 @@ namespace PathRenderingLab.SvgContents
             F = f;
         }
 
-        public static TransformFunction Matrix(DoubleMatrix m) =>
-            new TransformFunction(TransformFunctionType.Matrix, m.A, m.B, m.C, m.D, m.E, m.F);
+        public static TransformFunction Matrix(double a, double b, double c, double d, double e, double f)
+            => new TransformFunction(TransformFunctionType.Matrix, a, b, c, d, e, f);
+
+        public static TransformFunction Matrix(DoubleMatrix m) => Matrix(m.A, m.B, m.C, m.D, m.E, m.F);
 
         public static TransformFunction Translate(double x, double y) => new TransformFunction(TransformFunctionType.Translate, x, y);
 
@@ -69,6 +71,9 @@ namespace PathRenderingLab.SvgContents
         }
 
         public static explicit operator DoubleMatrix(TransformFunction tf) => tf.ToMatrix();
+
+        public static TransformFunction[] ParseCollectionFromString(string transformString)
+            => new TransformParser(transformString).TransformFunctions.ToArray();
     }
 
     public static class TransformFunctionCollection
