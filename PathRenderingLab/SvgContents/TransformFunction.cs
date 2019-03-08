@@ -85,7 +85,7 @@ namespace PathRenderingLab.SvgContents
                 case TransformFunctionType.Scale: return $"scale({A}, {B})";
                 case TransformFunctionType.Skew: return $"skew({A}, {B})";
                 case TransformFunctionType.SkewX: return $"skewX({A})";
-                case TransformFunctionType.SkewY: return $"skewY({A})";
+                case TransformFunctionType.SkewY: return $"skewY({B})";
                 default: throw new InvalidOperationException("Unrecognized transform function type!");
             }
         }
