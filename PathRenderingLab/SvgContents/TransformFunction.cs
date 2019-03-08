@@ -81,11 +81,11 @@ namespace PathRenderingLab.SvgContents
             {
                 case TransformFunctionType.Matrix: return $"matrix({A}, {B}, {C}, {D}, {E}, {F})";
                 case TransformFunctionType.Translate: return $"translate({A}, {B})";
-                case TransformFunctionType.Rotate: return $"rotate({A}, {B}, {C})";
+                case TransformFunctionType.Rotate: return $"rotate({A.ToDegrees()}, {B}, {C})";
                 case TransformFunctionType.Scale: return $"scale({A}, {B})";
-                case TransformFunctionType.Skew: return $"skew({A}, {B})";
-                case TransformFunctionType.SkewX: return $"skewX({A})";
-                case TransformFunctionType.SkewY: return $"skewY({B})";
+                case TransformFunctionType.Skew: return $"skew({A.ToDegrees()}, {B.ToDegrees()})";
+                case TransformFunctionType.SkewX: return $"skewX({A.ToDegrees()})";
+                case TransformFunctionType.SkewY: return $"skewY({B.ToDegrees()})";
                 default: throw new InvalidOperationException("Unrecognized transform function type!");
             }
         }
