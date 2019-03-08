@@ -35,7 +35,8 @@ namespace PathRenderingLab.Parsers
         }
 
         // Skip delimiter
-        protected void SkipWhitespaceAndDelimiters()
+        // Returns whether a comma was read and skipped
+        protected bool SkipWhitespaceAndDelimiters()
         {
             // Only a single comma must be skipped
             SkipWhitespace();
@@ -45,7 +46,9 @@ namespace PathRenderingLab.Parsers
                 SkipWhitespace();
                 if (parseString[index] == ',')
                     throw new ParserException($"Unexpected double comma delimiter at position {index}.");
+                return true;
             }
+            else return false;
         }
 
         // Parse a double-precision floating-point number
@@ -73,7 +76,7 @@ namespace PathRenderingLab.Parsers
                 if (!param.HasValue)
                 {
                     if (i < minValue) throw new ParserException($"Delimited floating-point sequence expected " +
-                        $"minimum of {maxValue} values.");
+                        $"minimum of {minValue} values.");
                     yield break;
                 }
                 yield return param.Value;
