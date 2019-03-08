@@ -93,7 +93,7 @@ namespace PathRenderingLab.SvgContents
 
     public static class TransformFunctionCollection
     {
-        public static DoubleMatrix ToMatrix(this TransformFunction[] tfs) => tfs.Cast<DoubleMatrix>().Aggregate(DoubleMatrix.Apply);
+        public static DoubleMatrix ToMatrix(this TransformFunction[] tfs) => tfs.Select(tf => tf.ToMatrix()).Aggregate(DoubleMatrix.Apply);
         public static TransformFunction[] Concat(this TransformFunction[] tf1, TransformFunction[] tf2)
             => Enumerable.Concat(tf1, tf2).ToArray();
     }
