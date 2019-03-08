@@ -50,6 +50,8 @@
     <None Include="app.config" />
     <None Include="CompiledStroke.Backup.cs" />
     <Compile Include="DoubleMatrix.cs" />
+    <Compile Include="Parsers\ParserBase.cs" />
+    <Compile Include="Parsers\ParserExceptions.cs" />
     <Compile Include="PathCompiler\CompiledDrawing.cs" />
     <Compile Include="ContentManagerExtensions.cs" />
     <Compile Include="CSSColor.cs" />

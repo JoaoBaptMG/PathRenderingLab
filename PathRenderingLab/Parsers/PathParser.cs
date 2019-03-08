@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.Linq;
-using System.Runtime.Serialization;
-using System.Text.RegularExpressions;
 
 namespace PathRenderingLab.Parsers
 {
@@ -12,15 +9,9 @@ namespace PathRenderingLab.Parsers
     /// A class that parses a string according to the SVG Documentation in a series of path commands.
     /// See also: https://svgwg.org/specs/paths/
     /// </summary>
-    public class PathParser
+    public class PathParser : ParserBase
     {
-        // Space characters
-        public static readonly char[] SpaceCharacters = "\x9\x20\xA\xC\xD".ToCharArray();
-        public static readonly char[] CommandCharacters = "ZzMmLlHhVvCcSsQqTtAaBb".ToCharArray();
-
-        // Float regex
-        public static readonly Regex FloatRegex = new Regex(@"\G[+-]?(\d+(\.\d*)?|\.\d+)([Ee][+-]?\d+)?",
-            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+        static readonly char[] CommandCharacters = "ZzMmLlHhVvCcSsQqTtAaBb".ToCharArray();
 
         // Internal list of commands
         List<PathCommand> commands;
@@ -30,18 +21,13 @@ namespace PathRenderingLab.Parsers
         /// </summary>
         public ReadOnlyCollection<PathCommand> Commands => commands.AsReadOnly();
 
-        readonly string pathString;
-        int index;
-
         double currentBearing, lastTangent;
         Double2 lastValue, lastControl;
         PathCommandType lastCommand;
 
-        public PathParser(string parseString)
+        public PathParser(string parseString) : base(parseString)
         {
-            pathString = parseString;
             commands = new List<PathCommand>();
-            index = 0;
             currentBearing = 0;
             lastTangent = 0;
 
@@ -52,55 +38,14 @@ namespace PathRenderingLab.Parsers
             Parse();
         }
 
-        // Skip whitespace
-        void SkipWhitespace()
-        {
-            while (true)
-            {
-                if (index >= pathString.Length) throw new EndParseException();
-
-                if (SpaceCharacters.Contains(pathString[index])) index++;
-                else break;
-            }
-        }
-
         public static bool IsCommand(char c) => CommandCharacters.Contains(c);
-
-        // Skip delimiter
-        void SkipWhitespaceAndDelimiters()
-        {
-            // Only a single comma must be skipped
-            SkipWhitespace();
-            if (pathString[index] == ',')
-            {
-                index++;
-                SkipWhitespace();
-                if (pathString[index] == ',')
-                    throw new PathParserException($"Unexpected double comma delimiter at position {index}.");
-            }
-        }
-
-        // Parse a doubleing-point number
-        double? ParseFloat()
-        {
-            SkipWhitespace();
-
-            // Search for a doubleing-point match
-            var match = FloatRegex.Match(pathString, index);
-
-            // If the match isn't successful, return null
-            if (!match.Success) return null;
-
-            index += match.Length;
-            return double.Parse(match.Value, CultureInfo.InvariantCulture);
-        }
 
         // Parse a flag (used for that arc command)
         bool? ParseFlag()
         {
             SkipWhitespace();
 
-            var ch = pathString[index++];
+            var ch = parseString[index++];
             if (ch == '0') return false;
             else if (ch == '1') return true;
             else return null;
@@ -112,13 +57,13 @@ namespace PathRenderingLab.Parsers
             SkipWhitespace();
 
             // If not a command, return an unrecognized command
-            if (!IsCommand(pathString[index]))
+            if (!IsCommand(parseString[index]))
             {
                 relative = false;
                 return '!';
             }
 
-            var ch = pathString[index++];
+            var ch = parseString[index++];
             relative = char.IsLower(ch);
             return char.ToUpperInvariant(ch);
         }
@@ -139,19 +84,6 @@ namespace PathRenderingLab.Parsers
 
             if (updateLast) lastValue = lval;
             return lval;
-        }
-
-        // Helper function to iterate through doubleing points delimited by commas
-        IEnumerable<double> DelimitedSequence()
-        {
-            double? param = double.NaN;
-            while (true)
-            {
-                param = ParseFloat();
-                if (!param.HasValue) yield break;
-                yield return param.Value;
-                SkipWhitespaceAndDelimiters();
-            }
         }
 
         // Helper function to iterate through collections of vertices)
@@ -185,11 +117,11 @@ namespace PathRenderingLab.Parsers
                     }
 
                     // Check for early closepath commands
-                    if (i != 0 && (pathString[index] == 'z' || pathString[index] == 'Z'))
+                    if (i != 0 && (parseString[index] == 'z' || parseString[index] == 'Z'))
                     {
                         // Make sure that an even number of coordinates is supplied
                         if (!first)
-                            throw new PathParserException("Supply early closepath command after an EVEN number of coordinates." +
+                            throw new ParserException("Supply early closepath command after an EVEN number of coordinates." +
                                 $" At position {index}.");
 
                         index++;
@@ -206,7 +138,7 @@ namespace PathRenderingLab.Parsers
                 // Check if the wrong number of arguments was given
                 // This is inside a 'finally' block to catch a possible EndParseException, which would
                 // report the wrong exception
-                if (i != 0 || !first) throw new PathParserException($"Wrong number of parameters passed to command at position {index}.");
+                if (i != 0 || !first) throw new ParserException($"Wrong number of parameters passed to command at position {index}.");
             }
         }
 
@@ -225,7 +157,7 @@ namespace PathRenderingLab.Parsers
 
                     // First command MUST be a moveto
                     if (isfirst && cmd != 'M')
-                        throw new PathParserException($"First path command MUST be a moveto! Error at position {index}.");
+                        throw new ParserException($"First path command MUST be a moveto! Error at position {index}.");
 
                     // Moveto command
                     if (cmd == 'M')
@@ -357,22 +289,22 @@ namespace PathRenderingLab.Parsers
                     // Arc command
                     else if (cmd == 'A')
                     {
-                        double ThrowF() => throw new PathParserException($"Invalid parameter passed to arc command at position {index}.");
+                        double ThrowF() => throw new ParserException($"Invalid parameter passed to arc command at position {index}.");
                         bool ThrowB() => ThrowF() == 0;
 
                         // Pick parameters
                         while (true)
                         {
                             // If there isn't a next double, end the command
-                            var next = ParseFloat();
+                            var next = ParseDouble();
                             if (!next.HasValue) break;
 
                             // Pick the doubles and flags in order
                             var rx = next.Value;
                             SkipWhitespaceAndDelimiters();
-                            var ry = ParseFloat() ?? ThrowF();
+                            var ry = ParseDouble() ?? ThrowF();
                             SkipWhitespaceAndDelimiters();
-                            var rAngle = ParseFloat() ?? ThrowF();
+                            var rAngle = ParseDouble() ?? ThrowF();
                             SkipWhitespaceAndDelimiters();
                             var largeArc = ParseFlag() ?? ThrowB();
                             SkipWhitespaceAndDelimiters();
@@ -380,18 +312,18 @@ namespace PathRenderingLab.Parsers
 
                             Double2 target;
                             // Check if the target isn't a premature closepath
-                            next = ParseFloat();
+                            next = ParseDouble();
                             SkipWhitespaceAndDelimiters();
                             if (!next.HasValue)
                             {
-                                if (pathString[index] == 'z' || pathString[index] == 'Z')
+                                if (parseString[index] == 'z' || parseString[index] == 'Z')
                                     target = new Double2(double.NaN, double.NaN);
                                 else ThrowF();
                             }
 
                             // Assign the target
                             target.X = next.Value;
-                            target.Y = ParseFloat() ?? ThrowF();
+                            target.Y = ParseDouble() ?? ThrowF();
 
                             // Adjust for relative
                             rAngle = (rAngle.ToRadians() + (relative ? currentBearing : 0)).WrapAngle();
@@ -416,7 +348,7 @@ namespace PathRenderingLab.Parsers
                         lastCommand = PathCommandType.ClosePath;
                     }
                     // Unknown command
-                    else throw new PathParserException($"Unrecognized command at position {index-1}.");
+                    else throw new ParserException($"Unrecognized command at position {index-1}.");
 
                     isfirst = false;
                 }
@@ -426,23 +358,5 @@ namespace PathRenderingLab.Parsers
                 // The expression says it
             }
         }
-    }
-
-    [Serializable]
-    internal class EndParseException : Exception
-    {
-        public EndParseException() {}
-        public EndParseException(string message) : base(message) {}
-        public EndParseException(string message, Exception innerException) : base(message, innerException) {}
-        protected EndParseException(SerializationInfo info, StreamingContext context) : base(info, context) {}
-    }
-
-    [Serializable]
-    public class PathParserException : Exception
-    {
-        public PathParserException() { }
-        public PathParserException(string message) : base(message) { }
-        public PathParserException(string message, Exception inner) : base(message, inner) { }
-        protected PathParserException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }
