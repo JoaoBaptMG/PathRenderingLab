@@ -1,11 +1,20 @@
 ﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace PathRenderingLab
 {
     public static class CSSColor
     {
+        static readonly Regex RGBRegex = new Regex(@"\Grgb\(\s*([+-]?\d+)\s*,\s*([+-]?\d+)\s*,\s*([+-]?\d+)\s*\)",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+        static readonly Regex RGBPRegex = new Regex(@"\Grgb\(\s*([+-]?\d+)%\s*,\s*([+-]?\d+)%\s*,\s*([+-]?\d+)%\s*\)",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+        static readonly Regex HSLRegex = new Regex(@"\Ghsl\(\s*([+-]?\d+)\s*,\s*([+-]?\d+)%\s*,\s*([+-]?\d+)%\s*\)",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+
         private static readonly Dictionary<string, Color> AllColors = new Dictionary<string, Color>()
         {
             ["aliceblue"] = new Color(240, 248, 255),
@@ -158,16 +167,85 @@ namespace PathRenderingLab
                 return result;
             else
             {
+                int Clamp(int x, int v0, int v1) => x < v0 ? v0 : x > v1 ? v1 : x;
+                int r, g, b;
+
                 if (color[0] == '#')
                 {
-                    string r = color.Substring(1, 2);
-                    string g = color.Substring(3, 2);
-                    string b = color.Substring(5, 2);
+                    int PHex(string str) => int.Parse(str, NumberStyles.HexNumber);
 
-                    int PHex(string x) => int.Parse(x, NumberStyles.HexNumber);
-                    return new Color(PHex(r), PHex(g), PHex(b));
+                    try
+                    {
+                        if (color.Length == 4)
+                        {
+                            r = 17 * PHex(color.Substring(1, 1));
+                            g = 17 * PHex(color.Substring(2, 1));
+                            b = 17 * PHex(color.Substring(3, 1));
+                        }
+                        else if (color.Length == 7)
+                        {
+                            r = PHex(color.Substring(1, 2));
+                            g = PHex(color.Substring(3, 2));
+                            b = PHex(color.Substring(5, 2));
+                        }
+                        else return null;
+                    }
+                    catch (FormatException)
+                    {
+                        return null;
+                    }
                 }
-                else return null;
+                else
+                {
+                    Match match;
+                    if ((match = RGBRegex.Match(color)) != null)
+                    {
+                        r = Clamp(int.Parse(match.Groups[0].Value), 0, 255);
+                        g = Clamp(int.Parse(match.Groups[1].Value), 0, 255);
+                        b = Clamp(int.Parse(match.Groups[2].Value), 0, 255);
+                    }
+                    else if ((match = RGBPRegex.Match(color)) != null)
+                    {
+                        r = Clamp(int.Parse(match.Groups[0].Value), 0, 100) * 255 / 100;
+                        g = Clamp(int.Parse(match.Groups[1].Value), 0, 100) * 255 / 100;
+                        b = Clamp(int.Parse(match.Groups[2].Value), 0, 100) * 255 / 100;
+                    }
+                    else if ((match = HSLRegex.Match(color)) != null)
+                    {
+                        var h = (int.Parse(match.Groups[0].Value) % 360 + 360) % 360;
+                        var s = Clamp(int.Parse(match.Groups[1].Value), 0, 100);
+                        var l = Clamp(int.Parse(match.Groups[2].Value), 0, 100);
+
+                        ConvertHslToRgb(h, s, l, out r, out g, out b);
+                    }
+                    else return null;
+                }
+
+
+                return new Color(r, g, b);
+            }
+        }
+
+        private static void ConvertHslToRgb(int h, int s, int l, out int r, out int g, out int b)
+        {
+            // Convert to RGB as explained here: https://www.w3.org/TR/css-color-3/#hsl-color
+            // I will use the non-normalized values here
+            var m2 = l <= 50 ? l * (s + 100) : 100 * (l + s) - l * s;
+            var m1 = 200 * l - m2;
+
+            r = HueToRgb(h + 120); g = HueToRgb(h); b = HueToRgb(h - 120);
+
+            int HueToRgb(int hue)
+            {
+                hue = (hue + 360) % 360;
+
+                int amount;
+                if (hue < 60) amount = m1 + (m2 - m1) * hue / 60;
+                else if (hue < 180) amount = m2;
+                else if (hue < 240) amount = m1 + (m2 - m1) * (240 - hue) / 60;
+                else amount = m1;
+
+                return amount * 255 / 10000;
             }
         }
     }
