@@ -228,9 +228,6 @@ namespace PathRenderingLab
                 var ik = (i + 1) % polygon.Length;
                 dcel.AddCurve(PathCompiler.Curve.Line(polygon[i], polygon[ik]));
                 winding += polygon[i].Cross(polygon[ik]);
-
-                Console.WriteLine(dcel);
-                Console.ReadLine();
             }
 
             // Now, remove the wedges
