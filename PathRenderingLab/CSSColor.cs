@@ -8,11 +8,11 @@ namespace PathRenderingLab
 {
     public static class CSSColor
     {
-        static readonly Regex RGBRegex = new Regex(@"\Grgb\(\s*([+-]?\d+)\s*,\s*([+-]?\d+)\s*,\s*([+-]?\d+)\s*\)",
+        static readonly Regex RGBRegex = new Regex(@"\Grgb\(\s*?([+-]?\d+?)\s*?,\s*?([+-]?\d+?)\s*?,\s*?([+-]?\d+?)\s*?\)",
             RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
-        static readonly Regex RGBPRegex = new Regex(@"\Grgb\(\s*([+-]?\d+)%\s*,\s*([+-]?\d+)%\s*,\s*([+-]?\d+)%\s*\)",
+        static readonly Regex RGBPRegex = new Regex(@"\Grgb\(\s*?([+-]?\d+?)%\s*?,\s*?([+-]?\d+?)%\s*?,\s*?([+-]?\d+?)%\s*?\)",
             RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
-        static readonly Regex HSLRegex = new Regex(@"\Ghsl\(\s*([+-]?\d+)\s*,\s*([+-]?\d+)%\s*,\s*([+-]?\d+)%\s*\)",
+        static readonly Regex HSLRegex = new Regex(@"\Ghsl\(\s*?([+-]?\d+?)\s*?,\s*?([+-]?\d+?)%\s*?,\s*?([+-]?\d+?)%\s*?\)",
             RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
 
         private static readonly Dictionary<string, Color> AllColors = new Dictionary<string, Color>()
@@ -155,7 +155,9 @@ namespace PathRenderingLab
             ["white"] = new Color(255, 255, 255),
             ["whitesmoke"] = new Color(245, 245, 245),
             ["yellow"] = new Color(255, 255, 0),
-            ["yellowgreen"] = new Color(154, 205, 50)
+            ["yellowgreen"] = new Color(154, 205, 50),
+
+            ["transparent"] = new Color(0, 0, 0, 0)
         };
 
         public static Color? Parse(string color)
@@ -198,23 +200,23 @@ namespace PathRenderingLab
                 else
                 {
                     Match match;
-                    if ((match = RGBRegex.Match(color)) != null)
+                    if ((match = RGBRegex.Match(color)).Success)
                     {
-                        r = Clamp(int.Parse(match.Groups[0].Value), 0, 255);
-                        g = Clamp(int.Parse(match.Groups[1].Value), 0, 255);
-                        b = Clamp(int.Parse(match.Groups[2].Value), 0, 255);
+                        r = Clamp(int.Parse(match.Groups[1].Value), 0, 255);
+                        g = Clamp(int.Parse(match.Groups[2].Value), 0, 255);
+                        b = Clamp(int.Parse(match.Groups[3].Value), 0, 255);
                     }
-                    else if ((match = RGBPRegex.Match(color)) != null)
+                    else if ((match = RGBPRegex.Match(color)).Success)
                     {
-                        r = Clamp(int.Parse(match.Groups[0].Value), 0, 100) * 255 / 100;
-                        g = Clamp(int.Parse(match.Groups[1].Value), 0, 100) * 255 / 100;
-                        b = Clamp(int.Parse(match.Groups[2].Value), 0, 100) * 255 / 100;
+                        r = Clamp(int.Parse(match.Groups[1].Value), 0, 100) * 255 / 100;
+                        g = Clamp(int.Parse(match.Groups[2].Value), 0, 100) * 255 / 100;
+                        b = Clamp(int.Parse(match.Groups[3].Value), 0, 100) * 255 / 100;
                     }
-                    else if ((match = HSLRegex.Match(color)) != null)
+                    else if ((match = HSLRegex.Match(color)).Success)
                     {
-                        var h = (int.Parse(match.Groups[0].Value) % 360 + 360) % 360;
-                        var s = Clamp(int.Parse(match.Groups[1].Value), 0, 100);
-                        var l = Clamp(int.Parse(match.Groups[2].Value), 0, 100);
+                        var h = (int.Parse(match.Groups[1].Value) % 360 + 360) % 360;
+                        var s = Clamp(int.Parse(match.Groups[2].Value), 0, 100);
+                        var l = Clamp(int.Parse(match.Groups[3].Value), 0, 100);
 
                         ConvertHslToRgb(h, s, l, out r, out g, out b);
                     }
