@@ -13,7 +13,9 @@ namespace PathRenderingLab.SvgContents
         /// <summary>
         /// The XML Namespace for the SVG specification
         /// </summary>
-        public static readonly string XmlNamespace = "http://www.w3.org/2000/svg";
+        public static readonly string Namespace = "http://www.w3.org/2000/svg";
+
+        public SvgGroup Root { get; private set; }
 
         /// <summary>
         /// Constructs an SVG file representation from an XML node
@@ -24,6 +26,11 @@ namespace PathRenderingLab.SvgContents
             Parse(node);
         }
 
+        public Svg(XmlDocument document)
+        {
+            Parse(document.ChildElements().Single());
+        }
+
         /// <summary>
         /// Constructs an SVG file representation from a stream
         /// </summary>
@@ -32,7 +39,7 @@ namespace PathRenderingLab.SvgContents
         {
             var document = new XmlDocument();
             document.Load(inStream);
-            Parse(document);
+            Parse(document.ChildElements().Single());
         }
 
         /// <summary>
@@ -43,13 +50,20 @@ namespace PathRenderingLab.SvgContents
         {
             var document = new XmlDocument();
             document.Load(filename);
-            Parse(document);
+            Parse(document.ChildElements().Single());
         }
 
         // Actual parsing is done here
         private void Parse(XmlNode node)
         {
+            // First, check if it iself is on the SVG namespace and if it is "svg"
+            if (node.NamespaceURI != Namespace)
+                throw new InvalidDataException("The SVG root element must be in the SVG namespace!");
+            if (node.LocalName != "svg")
+                throw new InvalidDataException("The SVG root element must be svg!");
 
+            // Now, parse the root element
+            Root = new SvgGroup(node, null);
         }
     }
 }

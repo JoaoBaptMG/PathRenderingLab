@@ -44,15 +44,15 @@ namespace PathRenderingLab.SvgContents
             foreach (XmlAttribute attr in node.Attributes)
             {
                 // Skip if the attribute doesn't belong to the SVG namespace or no namespace
-                if (!string.IsNullOrEmpty(attr.NamespaceURI) && attr.NamespaceURI != Svg.XmlNamespace) continue;
+                if (!string.IsNullOrEmpty(attr.NamespaceURI) && attr.NamespaceURI != Svg.Namespace) continue;
 
                 // Skip if the attribute is style or id
                 if (attr.LocalName == "style" || attr.LocalName == "id") continue;
 
                 // Attach it to the properties
                 if (attr.LocalName == transformAttributeName)
-                    properties["transform"] = attr.Value;
-                else properties[attr.LocalName] = attr.Value;
+                    properties["transform"] = attr.Value.Trim();
+                else properties[attr.LocalName] = attr.Value.Trim();
             }
 
             // Parse the CSS property list in style
