@@ -118,12 +118,14 @@ namespace PathRenderingLab
             else if (f(tl) < 0 && f(tr) < 0)
                 return f(tl) > f(tr) ? tl : tr;
 
-            while (!FinelyEquals(tl, tr))
+            while (!FinelyZero((tl - tr) / Math.Max(Math.Abs(tl), Math.Abs(tr))))
             {
                 var tm = tl + (tr - tl) / 2;
-                if (f(tm) == 0) return tm;
+                var fm = f(tm);
 
-                if (f(tm) > 0)
+                if (FinelyZero(fm)) return tm;
+
+                if (fm > 0)
                 {
                     if (f(tl) > 0) tl = tm;
                     else tr = tm;
