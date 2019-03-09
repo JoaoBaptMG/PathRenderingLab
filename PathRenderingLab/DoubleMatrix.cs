@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -63,5 +64,8 @@ namespace PathRenderingLab
         public static DoubleMatrix Prepend(DoubleMatrix m1, DoubleMatrix m2) => m2 * m1;
 
         public override string ToString() => $"[{A} {B} {C} {D} {E} {F}]";
+
+        public static explicit operator Matrix(DoubleMatrix m)
+            => new Matrix((float)m.A, (float)m.B, 0, 0, (float)m.C, (float)m.D, 0, 0, 0, 0, 1, 0, (float)m.E, (float)m.F, 0, 1);
     }
 }
