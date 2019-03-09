@@ -162,6 +162,7 @@ namespace PathRenderingLab
 
         public static Color? Parse(string color)
         {
+            if (color == null) return null;
             color = color.Trim().ToLowerInvariant();
 
             if (color == "none") return null;

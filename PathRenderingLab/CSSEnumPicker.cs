@@ -17,6 +17,6 @@ namespace PathRenderingLab
                 enumValues.Add(StringUtils.ConvertToCSSCase(v.ToString()), v);
         }
 
-        public static T? Get(string name) => enumValues.ContainsKey(name) ? enumValues[name] : new T?();
+        public static T? Get(string name) => name != null && enumValues.ContainsKey(name) ? enumValues[name] : new T?();
     }
 }
