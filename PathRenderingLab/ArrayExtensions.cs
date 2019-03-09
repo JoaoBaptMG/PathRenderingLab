@@ -64,5 +64,14 @@ namespace PathRenderingLab
             if (index >= array.Length) return def;
             return array[index];
         }
+
+        public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, TValue defaultValue)
+        {
+            if (dict.ContainsKey(key)) return dict[key];
+            return defaultValue;
+        }
+
+        public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key)
+            => dict.GetOrDefault(key, default(TValue));
     }
 }

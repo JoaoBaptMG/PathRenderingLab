@@ -39,9 +39,7 @@ namespace PathRenderingLab.Parsers
             SkipWhitespace();
 
             // Check if the first thing is a parenthesis
-            if (parseString[index] != '(') throw new ParserException("Expected '(' to begin parenthesized " +
-                "floating-point sequence!");
-            index++;
+            if (!Matches('(')) throw new ParserException("Expected '(' to begin parenthesized floating-point sequence!");
 
             // Now, check for the delimited sequence itself
             double? val = null;
@@ -68,9 +66,7 @@ namespace PathRenderingLab.Parsers
             if (comma) throw new ParserException("Unexpected ',' before parenthesized floating-point sequence end!");
 
             // Now, close the parentheses
-            if (parseString[index] != ')') throw new ParserException("Expected ')' to end parenthesized " +
-                "floating-point sequence!");
-            index++;
+            if (!Matches(')')) throw new ParserException("Expected ')' to end parenthesized floating-point sequence!");
 
             // Throw away the list if it does not have the required number of parameters
             if (list.Count < minValue) throw new ParserException($"Delimited floating-point sequence expected " +
@@ -86,12 +82,12 @@ namespace PathRenderingLab.Parsers
             SkipWhitespace();
 
             // Then, check if it matches one of the function names
-            if (parseString.MatchesOn(ref index, "translate")) return TransformFunctionType.Translate;
-            if (parseString.MatchesOn(ref index, "scale")) return TransformFunctionType.Scale;
-            if (parseString.MatchesOn(ref index, "rotate")) return TransformFunctionType.Rotate;
-            if (parseString.MatchesOn(ref index, "skewX")) return TransformFunctionType.SkewX;
-            if (parseString.MatchesOn(ref index, "skewY")) return TransformFunctionType.SkewY;
-            if (parseString.MatchesOn(ref index, "matrix")) return TransformFunctionType.Matrix;
+            if (Matches("translate")) return TransformFunctionType.Translate;
+            if (Matches("scale")) return TransformFunctionType.Scale;
+            if (Matches("rotate")) return TransformFunctionType.Rotate;
+            if (Matches("skewX")) return TransformFunctionType.SkewX;
+            if (Matches("skewY")) return TransformFunctionType.SkewY;
+            if (Matches("matrix")) return TransformFunctionType.Matrix;
 
             // If not, unrecognized command
             throw new ParserException("Unrecognized transform function matched!");
@@ -103,12 +99,19 @@ namespace PathRenderingLab.Parsers
             // First, try to see if the transform is actually "no transform"
             if (parseString.Trim() == "none") return;
 
+            // Flag to report an error if a transform function ends too soon
+            bool allowEnd = true;
+
             try
             {
                 while (true)
                 {
                     // First, try to extract a command
-                    switch (ParseTransformFunctionType())
+                    allowEnd = true;
+                    var function = ParseTransformFunctionType();
+                    allowEnd = false;
+
+                    switch (function)
                     {
                         case TransformFunctionType.Matrix:
                             {
@@ -155,6 +158,7 @@ namespace PathRenderingLab.Parsers
             catch (EndParseException)
             {
                 // The name says it all
+                if (!allowEnd) throw new ParserException("Unexpected end of transform string!");
             }
         }
     }

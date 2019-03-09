@@ -61,5 +61,8 @@ namespace PathRenderingLab
             list.Clear();
             list.AddRange(temp);
         }
+
+        public static double? TryParse(string str)
+            => double.TryParse(str, out var result) ? result : new double?();
     }
 }

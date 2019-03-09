@@ -55,8 +55,12 @@ namespace PathRenderingLab
         public DoubleMatrix Apply(DoubleMatrix o) => this * o;
         public Double2 Apply(Double2 v) => new Double2(A * v.X + C * v.Y + E, B * v.X + D * v.Y + F);
 
+        public DoubleMatrix Prepend(DoubleMatrix o) => o * this;
+
         public static DoubleMatrix Apply(DoubleMatrix m1, DoubleMatrix m2) => m1 * m2;
         public static Double2 Apply(DoubleMatrix m, Double2 v) => m * v;
+
+        public static DoubleMatrix Prepend(DoubleMatrix m1, DoubleMatrix m2) => m2 * m1;
 
         public override string ToString() => $"[{A} {B} {C} {D} {E} {F}]";
     }

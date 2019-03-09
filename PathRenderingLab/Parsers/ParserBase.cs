@@ -85,5 +85,24 @@ namespace PathRenderingLab.Parsers
             throw new ParserException($"Delimited floating-point sequence expected maximum of {maxValue} values.");
         }
 
+        protected bool Matches(char m)
+        {
+            if (index < parseString.Length && parseString[index] == m)
+            {
+                index++;
+                return true;
+            }
+            return false;
+        }
+
+        protected bool Matches(string match)
+        {
+            if (index + match.Length <= parseString.Length && parseString.Substring(index, match.Length) == match)
+            {
+                index += match.Length;
+                return true;
+            }
+            return false;
+        }
     }
 }

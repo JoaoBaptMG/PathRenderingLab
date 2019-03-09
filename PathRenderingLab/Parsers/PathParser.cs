@@ -44,11 +44,7 @@ namespace PathRenderingLab.Parsers
         bool? ParseFlag()
         {
             SkipWhitespace();
-
-            var ch = parseString[index++];
-            if (ch == '0') return false;
-            else if (ch == '1') return true;
-            else return null;
+            return Matches('0') ? false : Matches('1') ? true : new bool?();
         }
 
         // Parse a command

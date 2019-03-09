@@ -153,7 +153,8 @@ namespace PathRenderingLab
         {
             color = color.Trim().ToLowerInvariant();
 
-            if (AllColors.TryGetValue(color, out var result))
+            if (color == "none") return null;
+            else if (AllColors.TryGetValue(color, out var result))
                 return result;
             else
             {
