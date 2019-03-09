@@ -11,6 +11,11 @@ namespace PathRenderingLab.SvgContents
     public class Svg
     {
         /// <summary>
+        /// The XML Namespace for the SVG specification
+        /// </summary>
+        public static readonly string XmlNamespace = "http://www.w3.org/2000/svg";
+
+        /// <summary>
         /// Constructs an SVG file representation from an XML node
         /// </summary>
         /// <param name="node">The node to be parsed for SVG</param>

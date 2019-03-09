@@ -52,6 +52,7 @@
     <Compile Include="DoubleMatrix.cs" />
     <Compile Include="Parsers\ParserBase.cs" />
     <Compile Include="Parsers\ParserExceptions.cs" />
+    <Compile Include="Parsers\PropertyListParser.cs" />
     <Compile Include="Parsers\TransformParser.cs" />
     <Compile Include="PathCompiler\CompiledDrawing.cs" />
     <Compile Include="ContentManagerExtensions.cs" />
@@ -98,6 +99,7 @@
     <Compile Include="SvgContents\PathStyle.cs" />
     <Compile Include="SvgContents\Svg.cs" />
     <Compile Include="SvgContents\SvgNode.cs" />
+    <Compile Include="SvgContents\SvgUtils.cs" />
     <Compile Include="SvgContents\TransformFunction.cs" />
     <Compile Include="SwapUtils.cs" />
     <Compile Include="PathCompiler\Triangle.cs" />
