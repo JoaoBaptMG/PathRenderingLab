@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace PathRenderingLab
@@ -23,31 +24,26 @@ namespace PathRenderingLab
         GraphicsDeviceManager graphics;
 
         public Color BackgroundColor;
-        public Color FillColor;
-        public Color StrokeColor;
+        public Color[] DrawingColors;
 
-        public Vector2[] FillVertices;
-        public int[] FillIndices;
-        public VertexPositionCurve[] FillCurveVertices;
-        public VertexPositionDoubleCurve[] FillDoubleCurveVertices;
+        public Vector2[] AllVertices;
+        public int NumDrawings;
 
-        public Vector2[] StrokeVertices;
-        public int[] StrokeIndices;
-        public VertexPositionCurve[] StrokeCurveVertices;
-        public VertexPositionDoubleCurve[] StrokeDoubleCurveVertices;
+        public Matrix[] DrawingTransforms;
+        public int[] DrawingIndices;
+        public VertexPositionCurve[] DrawingCurveVertices;
+        public VertexPositionDoubleCurve[] DrawingDoubleCurveVertices;
 
-        public float StrokeHalfWidth;
-
-        public bool InvertY, ShowFill, ShowStroke;
+        public int[] DrawingIndicesStartingIds;
+        public int[] DrawingCurveVerticesStartingIds;
+        public int[] DrawingDoubleCurveVerticesStartingIds;
 
         public Matrix Projection;
         public float LogZoom;
         public Vector2 Position;
         public float Amount;
 
-        public string PathString;
-
-        private SuperSampler superSampler;
+        //private SuperSampler superSampler;
 
         Effect effect;
 
@@ -85,9 +81,6 @@ namespace PathRenderingLab
             lastY = false;
             lastX = false;
             lastB = false;
-
-            ShowFill = true;
-            ShowStroke = true;
         }
 
         /// <summary>
@@ -110,36 +103,34 @@ namespace PathRenderingLab
         protected override void LoadContent()
         {
             // Create the vertex buffer
-            var vertices = FillVertices.Concat(StrokeVertices).Select(v => new VertexPosition(new Vector3(v, 0))).ToArray();
-            if (vertices.Length > 0)
+            var vertices = AllVertices.Select(v => new VertexPosition(new Vector3(v, 0))).ToArray();
+            if (AllVertices.Length > 0)
             {
                 triangleVertexBuffer = new VertexBuffer(GraphicsDevice, VertexPosition.VertexDeclaration,
-                    vertices.Length, BufferUsage.WriteOnly);
+                    AllVertices.Length, BufferUsage.WriteOnly);
                 triangleVertexBuffer.SetData(vertices);
             }
 
-            var curveVertices = FillCurveVertices.Concat(StrokeCurveVertices).ToArray();
-            if (curveVertices.Length > 0)
+            if (DrawingCurveVertices.Length > 0)
             {
                 curveVertexBuffer = new VertexBuffer(GraphicsDevice, VertexPositionCurve.VertexDeclaration,
-                    curveVertices.Length, BufferUsage.WriteOnly);
-                curveVertexBuffer.SetData(curveVertices);
+                    DrawingCurveVertices.Length, BufferUsage.WriteOnly);
+                curveVertexBuffer.SetData(DrawingCurveVertices);
             }
 
-            var doubleCurveVertices = FillDoubleCurveVertices.Concat(StrokeDoubleCurveVertices).ToArray();
-            if (doubleCurveVertices.Length > 0)
+            if (DrawingDoubleCurveVertices.Length > 0)
             {
                 doubleCurveVertexBuffer = new VertexBuffer(GraphicsDevice, VertexPositionDoubleCurve.VertexDeclaration,
-                    doubleCurveVertices.Length, BufferUsage.WriteOnly);
-                doubleCurveVertexBuffer.SetData(doubleCurveVertices);
+                    DrawingDoubleCurveVertices.Length, BufferUsage.WriteOnly);
+                doubleCurveVertexBuffer.SetData(DrawingDoubleCurveVertices);
             }
 
             // Create the index buffer
-            var indices = FillIndices.Concat(StrokeIndices).ToArray();
-            if (indices.Length > 0)
+            if (DrawingIndices.Length > 0)
             {
-                indexBuffer = new IndexBuffer(GraphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Length, BufferUsage.WriteOnly);
-                indexBuffer.SetData(indices);
+                indexBuffer = new IndexBuffer(GraphicsDevice, IndexElementSize.ThirtyTwoBits,
+                    DrawingIndices.Length, BufferUsage.WriteOnly);
+                indexBuffer.SetData(DrawingIndices);
             }
 
             // Create the basic effect
@@ -149,7 +140,7 @@ namespace PathRenderingLab
             var bbox = DeriveBoundingBox();
             Amount = Math.Min(bbox.Width, bbox.Height) / 4;
             Projection = Matrix.CreateOrthographic(bbox.Width, bbox.Height, -1, 100);
-            if (InvertY) Projection *= Matrix.CreateScale(new Vector3(1, -1, 1));
+            Projection *= Matrix.CreateScale(new Vector3(1, -1, 1));
             Position = new Vector2(bbox.X + bbox.Width / 2, bbox.Y + bbox.Height / 2);
 
             effect.Parameters["ScreenSize"].SetValue(new Vector2(
@@ -171,28 +162,37 @@ namespace PathRenderingLab
             float miny = float.PositiveInfinity;
             float maxy = float.NegativeInfinity;
 
-            foreach (var v in FillVertices.Concat(StrokeVertices))
+            for (int i = 0; i < NumDrawings; i++)
             {
-                minx = Math.Min(minx, v.X);
-                maxx = Math.Max(maxx, v.X);
-                miny = Math.Min(miny, v.Y);
-                maxy = Math.Max(maxy, v.Y);
-            }
+                for (int j = DrawingIndicesStartingIds[i]; j < DrawingIndicesStartingIds[i + 1]; j++)
+                {
+                    var v = Vector4.Transform(AllVertices[DrawingIndices[j]], DrawingTransforms[i]);
 
-            foreach (var v in FillCurveVertices.Concat(StrokeCurveVertices))
-            {
-                minx = Math.Min(minx, v.Position.X);
-                maxx = Math.Max(maxx, v.Position.X);
-                miny = Math.Min(miny, v.Position.Y);
-                maxy = Math.Max(maxy, v.Position.Y);
-            }
+                    minx = Math.Min(minx, v.X);
+                    maxx = Math.Max(maxx, v.X);
+                    miny = Math.Min(miny, v.Y);
+                    maxy = Math.Max(maxy, v.Y);
+                }
 
-            foreach (var v in FillDoubleCurveVertices.Concat(StrokeDoubleCurveVertices))
-            {
-                minx = Math.Min(minx, v.Position.X);
-                maxx = Math.Max(maxx, v.Position.X);
-                miny = Math.Min(miny, v.Position.Y);
-                maxy = Math.Max(maxy, v.Position.Y);
+                for (int j = DrawingCurveVerticesStartingIds[i]; j < DrawingCurveVerticesStartingIds[i + 1]; j++)
+                {
+                    var v = Vector4.Transform(DrawingCurveVertices[j].Position, DrawingTransforms[i]);
+
+                    minx = Math.Min(minx, v.X);
+                    maxx = Math.Max(maxx, v.X);
+                    miny = Math.Min(miny, v.Y);
+                    maxy = Math.Max(maxy, v.Y);
+                }
+
+                for (int j = DrawingDoubleCurveVerticesStartingIds[i]; j < DrawingDoubleCurveVerticesStartingIds[i + 1]; j++)
+                {
+                    var v = Vector4.Transform(DrawingDoubleCurveVertices[j].Position, DrawingTransforms[i]);
+
+                    minx = Math.Min(minx, v.X);
+                    maxx = Math.Max(maxx, v.X);
+                    miny = Math.Min(miny, v.Y);
+                    maxy = Math.Max(maxy, v.Y);
+                }
             }
 
             var rectangle = new FloatRectangle(minx, miny, maxx - minx, maxy - miny);
@@ -255,12 +255,6 @@ namespace PathRenderingLab
             if (EventJustOccurred(ref lastY, gamepadState.IsButtonDown(Buttons.Y) || keyboardState.IsKeyDown(Keys.Z)))
                 WireFrame = !WireFrame;
 
-            if (EventJustOccurred(ref lastB, gamepadState.IsButtonDown(Buttons.B) || keyboardState.IsKeyDown(Keys.X)))
-                ShowFill = !ShowFill;
-
-            if (EventJustOccurred(ref lastX, gamepadState.IsButtonDown(Buttons.X) || keyboardState.IsKeyDown(Keys.C)))
-                ShowStroke = !ShowStroke;
-
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             var logZoomAmountGamepad = gamepadState.Triggers.Right - gamepadState.Triggers.Left;
@@ -280,7 +274,7 @@ namespace PathRenderingLab
             if (keyboardState.IsKeyDown(Keys.Space)) displacementKeyboard *= 4f;
 
             var displacement = displacementGamepad + displacementKeyboard;
-            if (InvertY) displacement.Y = -displacement.Y;
+            displacement.Y = -displacement.Y;
 
             Position += displacement * Amount * dt;
 
@@ -296,11 +290,7 @@ namespace PathRenderingLab
             //superSampler.SetSupersamplingTarget();
             GraphicsDevice.Clear(BackgroundColor);
 
-            var modelView = Matrix.CreateScale((float)Math.Exp(LogZoom)) * Matrix.CreateTranslation(new Vector3(-Position, 0));
-            var modelViewProjection = modelView * Projection;
-
-
-            effect.Parameters["WorldViewProjection"].SetValue(modelViewProjection);
+            var view = Matrix.CreateScale((float)Math.Exp(LogZoom)) * Matrix.CreateTranslation(new Vector3(-Position, 0));
 
             // Draw the triangles
             GraphicsDevice.RasterizerState = new RasterizerState
@@ -311,13 +301,15 @@ namespace PathRenderingLab
 
             GraphicsDevice.BlendState = BlendState.AlphaBlend;
 
-            if (ShowFill)
+            for (int i = 0; i < NumDrawings; i++)
             {
-                effect.Parameters["Color"].SetValue(FillColor.ToVector4());
+                effect.Parameters["Color"].SetValue(DrawingColors[i].ToVector4());
+                effect.Parameters["WorldViewProjection"].SetValue(DrawingTransforms[i] * view * Projection);
+
                 effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
 
                 // Fill triangles
-                if (FillIndices.Length > 0)
+                if (DrawingIndicesStartingIds[i] < DrawingIndicesStartingIds[i + 1])
                 {
                     GraphicsDevice.SetVertexBuffer(triangleVertexBuffer);
                     GraphicsDevice.Indices = indexBuffer;
@@ -325,12 +317,13 @@ namespace PathRenderingLab
                     foreach (var pass in effect.CurrentTechnique.Passes)
                     {
                         pass.Apply();
-                        GraphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, FillIndices.Length / 3);
+                        GraphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, DrawingIndicesStartingIds[i],
+                            (DrawingIndicesStartingIds[i + 1] - DrawingIndicesStartingIds[i]) / 3);
                     }
                 }
 
                 // Fill curve triangles
-                if (FillCurveVertices.Length > 0)
+                if (DrawingCurveVerticesStartingIds[i] < DrawingCurveVerticesStartingIds[i + 1])
                 {
                     if (!WireFrame) effect.CurrentTechnique = effect.Techniques["CurveDrawing"];
                     GraphicsDevice.SetVertexBuffer(curveVertexBuffer);
@@ -338,12 +331,13 @@ namespace PathRenderingLab
                     foreach (var pass in effect.CurrentTechnique.Passes)
                     {
                         pass.Apply();
-                        GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, FillCurveVertices.Length / 3);
+                        GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, DrawingCurveVerticesStartingIds[i],
+                            (DrawingCurveVerticesStartingIds[i + 1] - DrawingCurveVerticesStartingIds[i]) / 3);
                     }
                 }
 
                 // Fill double curve triangles
-                if (FillDoubleCurveVertices.Length > 0)
+                if (DrawingDoubleCurveVerticesStartingIds[i] < DrawingDoubleCurveVerticesStartingIds[i + 1])
                 {
                     if (!WireFrame) effect.CurrentTechnique = effect.Techniques["DoubleCurveDrawing"];
                     GraphicsDevice.SetVertexBuffer(doubleCurveVertexBuffer);
@@ -351,67 +345,19 @@ namespace PathRenderingLab
                     foreach (var pass in effect.CurrentTechnique.Passes)
                     {
                         pass.Apply();
-                        GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, FillDoubleCurveVertices.Length / 3);
-                    }
-                }
-            }
-
-            if (ShowStroke)
-            {
-                effect.Parameters["Color"].SetValue(StrokeColor.ToVector4());
-                effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
-
-                // Stroke triangles
-                if (StrokeIndices.Length > 0)
-                {
-                    GraphicsDevice.SetVertexBuffer(triangleVertexBuffer);
-                    GraphicsDevice.Indices = indexBuffer;
-
-                    foreach (var pass in effect.CurrentTechnique.Passes)
-                    {
-                        pass.Apply();
-                        GraphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, FillVertices.Length, 
-                            FillIndices.Length, StrokeIndices.Length / 3);
-                    }
-                }
-
-                // Stroke curve triangles
-                if (StrokeCurveVertices.Length > 0)
-                {
-                    if (!WireFrame) effect.CurrentTechnique = effect.Techniques["CurveDrawing"];
-                    GraphicsDevice.SetVertexBuffer(curveVertexBuffer);
-
-                    foreach (var pass in effect.CurrentTechnique.Passes)
-                    {
-                        pass.Apply();
-                        GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, FillCurveVertices.Length,
-                            StrokeCurveVertices.Length / 3);
-                    }
-                }
-
-                // Stroke double curve triangles
-                if (StrokeDoubleCurveVertices.Length > 0)
-                {
-                    if (!WireFrame) effect.CurrentTechnique = effect.Techniques["DoubleCurveDrawing"];
-                    GraphicsDevice.SetVertexBuffer(doubleCurveVertexBuffer);
-
-                    foreach (var pass in effect.CurrentTechnique.Passes)
-                    {
-                        pass.Apply();
-                        GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, FillDoubleCurveVertices.Length,
-                            StrokeDoubleCurveVertices.Length / 3);
+                        GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, DrawingDoubleCurveVerticesStartingIds[i],
+                            (DrawingDoubleCurveVerticesStartingIds[i + 1] - DrawingDoubleCurveVerticesStartingIds[i]) / 3);
                     }
                 }
             }
 
             //superSampler.DrawSupersampledTarget();
-
             var text1 = WrapText(font, CommandText(), GraphicsDevice.PresentationParameters.BackBufferWidth);
-            var text2 = WrapText(font, PathString, GraphicsDevice.PresentationParameters.BackBufferWidth);
+            var text2 = WrapText(font, PathDebugText(), GraphicsDevice.PresentationParameters.BackBufferWidth);
 
             var pos = new Vector2(0, GraphicsDevice.PresentationParameters.BackBufferHeight - font.MeasureString(text2).Y);
 
-            var textColor = StrokeColor.A > 0 ? StrokeColor : Color.Black;
+            var textColor = Color.Black;
 
             spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearWrap,
                 DepthStencilState.Default, RasterizerState.CullNone);
@@ -422,23 +368,23 @@ namespace PathRenderingLab
             base.Draw(gameTime);
         }
 
-        public string CommandText()
+        public string CommandText() => HelpText.HelpTextKeyboard + '\n' + HelpText.HelpTextGamepad;
+
+        public string PathDebugText()
         {
             var sb = new StringBuilder();
-            sb.AppendLine(HelpText.HelpTextKeyboard);
-            sb.AppendLine(HelpText.HelpTextGamepad);
 
             void AppendDrawing(string name, int numIndices, int numCurveVertices, int numDoubleCurveVertices)
-            {
-                if (numIndices + numCurveVertices + numDoubleCurveVertices > 0)
-                    sb.AppendLine($"{(numIndices + numCurveVertices + numDoubleCurveVertices) / 3} {name} triangles " +
-                        $"({numIndices / 3} filled, {numCurveVertices / 3} curves and {numDoubleCurveVertices / 3} double curves)");
-            }
+                => sb.AppendLine($"{name}: {(numIndices + numCurveVertices + numDoubleCurveVertices) / 3} triangles " +
+                    $"({numIndices / 3} filled, {numCurveVertices / 3} curves and {numDoubleCurveVertices / 3} double curves)");
 
-            AppendDrawing("fill", FillIndices.Length, FillCurveVertices.Length, FillDoubleCurveVertices.Length);
-            AppendDrawing("stroke", StrokeIndices.Length, StrokeCurveVertices.Length, StrokeDoubleCurveVertices.Length);
+            for (int i = 0; i < NumDrawings; i++)
+                AppendDrawing($"drawing {i}",
+                    DrawingIndicesStartingIds[i + 1] - DrawingIndicesStartingIds[i],
+                    DrawingCurveVerticesStartingIds[i + 1] - DrawingCurveVerticesStartingIds[i],
+                    DrawingDoubleCurveVerticesStartingIds[i + 1] - DrawingDoubleCurveVerticesStartingIds[i]);
 
-            return sb.ToString();
+            return sb.ToString().Trim();
         }
 
         public string WrapText(SpriteFont spriteFont, string text, float maxLineWidth)

@@ -16,14 +16,7 @@ The core of this project is to convert the path representation according to the 
 
 ## How do I run the current project?
 
-You can test the path processor using a locally specified _path specification file_. It is just a text file with two lines: the first line is the path commands according to the SVG Specification above link (the string you would put on the `d` attribute); the second file are the style attributes, what you would put on the `style` attribute. Currently, the attributes accepted are only `fill`, `fill-rule`, `stroke`, `stroke-width`, `stroke-linejoin`, `stroke-linecap` and `stroke-miterlimit` (and not every `stroke-linejoin` is supported, most notably the `arcs` one is not), and also `background` to set the background color. Furthermore, you would like to set `invert-y` attribute to `yes` depending on where you are copying the path data from. You can find examples of well-formed path specification files on the _examples_ folder.
-
-Example of a path specification file:
-```
-M 20 10 L 30 10 Q 40 10 40 0 40 -10 30 -10 L 20 -10 Q 10 -10 10 -20 L 10 -30 Q 10 -40 0 -40 -10 -40 -10 -30 L -10 -20 Q -10 -10 -20 -10 L -30 -10 Q -40 -10 -40 0 -40 10 -30 10 L -20 10 Q -10 10 -10 20 L -10 30 Q -10 40 0 40 10 40 10 30 L 10 20 Q 10 10 20 10 Z
-fill: teal; stroke: black; stroke-width: 4;
-```
-Once you have a path specification file, just drag it to the icon of the compiled executable (the more technically-oriented ones can also call the program with the file as only argument), or launch the file (possibly with Visual Studio) and wait for the program to ask you the path of the path specification file. The program will then process the app and launch the viewer. You can navigate through the preprocessed path according to the instructions in the screen.
+Before, you needed a specially-crafted _path specification file_ to run an example. However, this new commit adds the possibility to specify simple SVG files. Unfortunately, the SVG support is not complete and the only thing it supports are solid colors and no use of shadow DOMs.
 
 ## Screenshots
 ![img0](imgs/pathrendering0.png)
@@ -48,6 +41,8 @@ Once you have a path specification file, just drag it to the icon of the compile
 ![img19](imgs/pathrendering19.png)
 ![img20](imgs/pathrendering20.png)
 ![img21](imgs/pathrendering21.png)
+![img22](imgs/pathrendering22.png)
+![img23](imgs/pathrendering23.png)
 
 ## How can I help?
 

@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using PathRenderingLab.PathCompiler;
 using System.Xml;
+using PathRenderingLab.Parsers;
+using PathRenderingLab.SvgContents;
 
 namespace PathRenderingLab
 {
@@ -44,47 +46,42 @@ namespace PathRenderingLab
             if (args.Length > 0) file = args[0];
             else
             {
-                Console.Write("Enter path of file containing path details: ");
+                Console.Write("Enter path of SVG file: ");
                 file = Console.ReadLine();
             }
 
-            var document = new XmlDocument();
-            document.Load(file);
+            var svg = new Svg(file);
+            var paths = new List<SvgPath>();
 
-            void RecursivelyEnumerateNodes(XmlNode node, int depth = 0)
+            void EnumeratePaths(SvgGroup g)
             {
-                var separator = new string(' ', 3 * depth);
-                Console.Write($"{separator}- [({node.Name}){node.LocalName}]");
+                if (!g.Renderable) return;
 
-                if (node.Attributes != null)
-                    foreach (var attr in node.Attributes.Cast<XmlAttribute>())
-                        Console.Write($" ({attr.NamespaceURI}){attr.LocalName}=\"{attr.Value}\"");
-
-                Console.WriteLine();
-
-                if (node.ChildNodes != null)
-                    foreach (var n in node.ChildNodes.Cast<XmlNode>())
-                        RecursivelyEnumerateNodes(n, depth + 1);
+                foreach (var node in g.Children)
+                {
+                    if (node is SvgGroup) EnumeratePaths(node as SvgGroup);
+                    else if (node is SvgPath) paths.Add(node as SvgPath);
+                }
             }
 
-            RecursivelyEnumerateNodes(document);
-            Console.ReadLine();
+            EnumeratePaths(svg.Root);
 
-#if false
+            int pathId = 0;
+            var triangleIndices = new List<int>();
+            var curveVertices = new List<VertexPositionCurve>();
+            var doubleCurveVertices = new List<VertexPositionDoubleCurve>();
 
-            var str = File.ReadAllText(file);
-            var pd = GetPathDetailsFromString(str);
+            var triangleIndicesStartingIds = new List<int>() { 0 };
+            var curveVerticesStartingIds = new List<int>() { 0 };
+            var doubleCurveVerticesStartingIds = new List<int>() { 0 };
 
-            Console.WriteLine($"Parsed path: {pd.Path}");
-            Console.WriteLine();
-
-            var fillTriangleIndices = new List<int>();
-            var strokeTriangleIndices = new List<int>();
-            var fillCurveVertices = new List<VertexPositionCurve>();
-            var strokeCurveVertices = new List<VertexPositionCurve>();
-            var fillDoubleCurveVertices = new List<VertexPositionDoubleCurve>();
-            var strokeDoubleCurveVertices = new List<VertexPositionDoubleCurve>();
+            var colors = new List<Color>();
+            var transforms = new List<Matrix>();
             var vertexCache = new Dictionary<Vector2, int>();
+
+            int curTriangleIndicesStartingId = 0;
+            int curCurveVerticesStartingId = 0;
+            int curDoubleCurveVerticesStartingId = 0;
 
             int IdForVertex(Vector2 v)
             {
@@ -93,99 +90,111 @@ namespace PathRenderingLab
                 return vertexCache[v];
             }
 
-            var compiledFill = pd.FillColor.HasValue ? PathCompilerMethods.CompileFill(pd.Path, pd.FillRule) : CompiledDrawing.Empty;
-            var compiledStroke = pd.StrokeColor.HasValue ? PathCompilerMethods.CompileStroke(pd.Path, pd.StrokeWidth, pd.StrokeLineCap,
-                pd.StrokeLineJoin, pd.MiterLimit) : CompiledDrawing.Empty;
-
-            vertexCache.Clear();
-            foreach (var tri in compiledFill.Triangles)
+            foreach (var svgPath in paths)
             {
-                fillTriangleIndices.Add(IdForVertex((Vector2)tri.A));
-                fillTriangleIndices.Add(IdForVertex((Vector2)tri.B));
-                fillTriangleIndices.Add(IdForVertex((Vector2)tri.C));
+                var path = svgPath.Path;
+                var ps = svgPath.PathStyle;
+
+                Console.WriteLine($"Parsed path {pathId++}: {svgPath.Path}");
+                Console.WriteLine();
+
+                var compiledFill = ps.FillColor.HasValue ? PathCompilerMethods.CompileFill(path, ps.FillRule) : CompiledDrawing.Empty;
+                var compiledStroke = ps.StrokeColor.HasValue ? PathCompilerMethods.CompileStroke(path, ps.StrokeWidth,
+                    ps.StrokeLineCap, ps.StrokeLineJoin, ps.MiterLimit) : CompiledDrawing.Empty;
+
+                foreach (var drawing in new[] { compiledFill, compiledStroke })
+                {
+                    var curTriangleIndices = new List<int>();
+                    var curCurveVertices = new List<VertexPositionCurve>();
+                    var curDoubleCurveVertices = new List<VertexPositionDoubleCurve>();
+
+                    foreach (var tri in drawing.Triangles)
+                    {
+                        curTriangleIndices.Add(IdForVertex((Vector2)tri.A));
+                        curTriangleIndices.Add(IdForVertex((Vector2)tri.B));
+                        curTriangleIndices.Add(IdForVertex((Vector2)tri.C));
+                    }
+
+                    foreach (var tri in drawing.CurveTriangles)
+                        curCurveVertices.AddRange(new[]
+                        {
+                            (VertexPositionCurve)tri.A,
+                            (VertexPositionCurve)tri.B,
+                            (VertexPositionCurve)tri.C
+                        });
+
+                    foreach (var tri in drawing.DoubleCurveTriangles)
+                        curDoubleCurveVertices.AddRange(new[]
+                        {
+                            (VertexPositionDoubleCurve)tri.A,
+                            (VertexPositionDoubleCurve)tri.B,
+                            (VertexPositionDoubleCurve)tri.C
+                        });
+
+                    triangleIndices.AddRange(curTriangleIndices);
+                    curveVertices.AddRange(curCurveVertices);
+                    doubleCurveVertices.AddRange(curDoubleCurveVertices);
+
+                    curTriangleIndicesStartingId += curTriangleIndices.Count;
+                    triangleIndicesStartingIds.Add(curTriangleIndicesStartingId);
+
+                    curCurveVerticesStartingId += curCurveVertices.Count;
+                    curveVerticesStartingIds.Add(curCurveVerticesStartingId);
+
+                    curDoubleCurveVerticesStartingId += curDoubleCurveVertices.Count;
+                    doubleCurveVerticesStartingIds.Add(curDoubleCurveVerticesStartingId);
+                }
+
+                colors.Add(ps.FillColor ?? Color.Transparent);
+                colors.Add(ps.StrokeColor ?? Color.Transparent);
+
+                var matrix = (Matrix)svgPath.Transform.ToMatrix();
+                transforms.Add(matrix);
+                transforms.Add(matrix);
             }
 
-            foreach (var tri in compiledFill.CurveTriangles)
-                fillCurveVertices.AddRange(new[] { (VertexPositionCurve)tri.A, (VertexPositionCurve)tri.B, (VertexPositionCurve)tri.C });
-
-            foreach (var tri in compiledFill.DoubleCurveTriangles)
-                fillDoubleCurveVertices.AddRange(new[]
-                {
-                    (VertexPositionDoubleCurve)tri.A,
-                    (VertexPositionDoubleCurve)tri.B,
-                    (VertexPositionDoubleCurve)tri.C
-                });
+            var numPaths = 2 * pathId;
 
             int length = vertexCache.Count == 0 ? 0 : vertexCache.Max(p => p.Value) + 1;
-            var fillVertices = new Vector2[length];
-            foreach (var kvp in vertexCache) fillVertices[kvp.Value] = kvp.Key;
-
-            vertexCache.Clear();
-            foreach (var tri in compiledStroke.Triangles)
-            {
-                strokeTriangleIndices.Add(IdForVertex((Vector2)tri.A));
-                strokeTriangleIndices.Add(IdForVertex((Vector2)tri.B));
-                strokeTriangleIndices.Add(IdForVertex((Vector2)tri.C));
-            }
-
-            foreach (var tri in compiledStroke.CurveTriangles)
-                strokeCurveVertices.AddRange(new[] { (VertexPositionCurve)tri.A, (VertexPositionCurve)tri.B, (VertexPositionCurve)tri.C });
-
-            foreach (var tri in compiledStroke.DoubleCurveTriangles)
-                strokeDoubleCurveVertices.AddRange(new[]
-                {
-                    (VertexPositionDoubleCurve)tri.A,
-                    (VertexPositionDoubleCurve)tri.B,
-                    (VertexPositionDoubleCurve)tri.C
-                });
-
-            length = vertexCache.Count == 0 ? 0 : vertexCache.Max(p => p.Value) + 1;
-            var strokeVertices = new Vector2[length];
-            foreach (var kvp in vertexCache) strokeVertices[kvp.Value] = kvp.Key;
+            var allVertices = new Vector2[length];
+            foreach (var kvp in vertexCache) allVertices[kvp.Value] = kvp.Key;
 
             Console.WriteLine("Statistics:");
 
             void WriteStats(string name, int numIndices, int numCurveVertices, int numDoubleCurveVertices)
             {
-                Console.WriteLine($"{(numIndices + numCurveVertices + numDoubleCurveVertices) / 3} {name} triangles " +
+                Console.WriteLine($"{name}: {(numIndices + numCurveVertices + numDoubleCurveVertices) / 3} triangles " +
                     $"({numIndices / 3} filled, {numCurveVertices / 3} curves and {numDoubleCurveVertices / 3} double curves)");
             }
 
-            WriteStats("fill", fillTriangleIndices.Count, fillCurveVertices.Count, fillDoubleCurveVertices.Count);
-            WriteStats("stroke", strokeTriangleIndices.Count, strokeCurveVertices.Count, strokeDoubleCurveVertices.Count);
+            for (int i = 0; i < numPaths; i++)
+                WriteStats($"path {i}",
+                    triangleIndicesStartingIds[i + 1] - triangleIndicesStartingIds[i],
+                    curveVerticesStartingIds[i + 1] - curveVerticesStartingIds[i],
+                    doubleCurveVerticesStartingIds[i + 1] - doubleCurveVerticesStartingIds[i]);
 
             using (var game = new PathRenderingLab())
             {
-                game.BackgroundColor = pd.BackgroundColor;
-                game.FillColor = pd.FillColor ?? Color.Transparent;
-                game.FillVertices = fillVertices;
-                game.FillIndices = fillTriangleIndices.ToArray();
-                game.FillCurveVertices = fillCurveVertices.ToArray();
-                game.FillDoubleCurveVertices = fillDoubleCurveVertices.ToArray();
-                game.StrokeColor = pd.StrokeColor ?? Color.Transparent;
-                game.StrokeVertices = strokeVertices;
-                game.StrokeIndices = strokeTriangleIndices.ToArray();
-                game.StrokeCurveVertices = strokeCurveVertices.ToArray();
-                game.StrokeDoubleCurveVertices = strokeDoubleCurveVertices.ToArray();
-                game.StrokeHalfWidth = (float)pd.StrokeWidth / 2;
-                game.InvertY = pd.InvertY;
-                game.PathString = str;
+                game.BackgroundColor = Color.White;
+                game.AllVertices = allVertices;
+                game.DrawingColors = colors.ToArray();
+                game.DrawingTransforms = transforms.ToArray();
+                game.DrawingIndices = triangleIndices.ToArray();
+                game.DrawingCurveVertices = curveVertices.ToArray();
+                game.DrawingDoubleCurveVertices = doubleCurveVertices.ToArray();
+                game.DrawingIndicesStartingIds = triangleIndicesStartingIds.ToArray();
+                game.DrawingCurveVerticesStartingIds = curveVerticesStartingIds.ToArray();
+                game.DrawingDoubleCurveVerticesStartingIds = doubleCurveVerticesStartingIds.ToArray();
+                game.NumDrawings = numPaths;
 
                 game.Run();
             }
-#endif
         }
 
         public static T? NullIfThrow<T>(Func<T> f) where T : struct
         {
             try { return new T?(f()); }
             catch { return new T?(); }
-        }
-
-        public static TValue GetOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, TValue defaultValue)
-        {
-            if (dict.ContainsKey(key)) return dict[key];
-            return defaultValue;
         }
 
         private static PathDetails GetPathDetailsFromString(string str)
@@ -239,4 +248,4 @@ namespace PathRenderingLab
         }
     }
 #endif
-        }
+}
