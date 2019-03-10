@@ -266,8 +266,8 @@ namespace PathRenderingLab.PathCompiler
                     // Find the roots of the equation
                     var rs = Equations.SolveQuadratic(d1, -d2, d3 / 3);
 
-                    var l = Math.Max(rs[0], rs[1]);
-                    var m = Math.Min(rs[0], rs[1]);
+                    var l = rs[0];
+                    var m = rs[1];
 
                     f0 = new Double4(l * m, l * l * l, m * m * m, 0);
                     f1 = new Double4(-l - m, -3 * l * l, -3 * m * m, 0);
@@ -283,8 +283,8 @@ namespace PathRenderingLab.PathCompiler
                     // Find the roots of the equation
                     var rs = Equations.SolveQuadratic(d1, -d2, -d3 + d2 * d2 / d1);
 
-                    var d = Math.Max(rs[0], rs[1]);
-                    var e = Math.Min(rs[0], rs[1]);
+                    var d = rs[0];
+                    var e = rs[1];
 
                     f0 = new Double4(d * e, d * d * e, d * e * e, 0);
                     f1 = new Double4(-d - e, -d * d - 2 * e * d, -e * e - 2 * d * e, 0);
