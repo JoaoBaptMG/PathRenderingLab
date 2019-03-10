@@ -68,7 +68,28 @@ namespace PathRenderingLab.PathCompiler
             {
                 if (i < contour.Length - 1 && FillFace.AreCurvesFusable(contour[i], contour[i + 1]))
                 {
-                    list.Add(contour[i + 1].At(1));
+                    // If they describe a positive winding on the plane, add only its endpoint
+                    var endp0 = contour[i].At(0);
+                    var endp1 = contour[i + 1].At(1);
+                    var pth = (endp0 + endp1) / 2;
+                    if (contour[i].WindingRelativeTo(pth) + contour[i + 1].WindingRelativeTo(pth) > 0)
+                        list.Add(endp1);
+                    else
+                    {
+                        // Else, compute the convex hull and add the correct point sequence
+                        var points = contour[i].EnclosingPolygon.Concat(contour[i + 1].EnclosingPolygon).ToArray();
+                        var hull = GeometricUtils.ConvexHull(points);
+                        var hl = hull.Length;
+
+                        // We have to go through the hull clockwise. Find the first point
+                        int ik;
+                        for (ik = 0; ik < hl; ik++)
+                            if (hull[ik] == endp0) break;
+
+                        // And run through it
+                        for (int i0 = ik; i0 != (ik + 1) % hl; i0 = (i0 + hl - 1) % hl)
+                            list.Add(hull[i0]);
+                    }
                     i++;
                 }
                 else if (contour[i].Type == CurveType.Line || contour[i].IsConvex) list.Add(contour[i].At(1));

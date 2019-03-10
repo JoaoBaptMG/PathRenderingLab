@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using static PathRenderingLab.SwapUtils;
 
 namespace PathRenderingLab.PathCompiler
 {
@@ -53,11 +55,7 @@ namespace PathRenderingLab.PathCompiler
                 if (ca.ExitTangent.Dot(cb.EntryTangent) >= -0.95) return false;
 
                 // 3) Both must not have the same convexity
-                if (ca.IsConvex == cb.IsConvex) return false;
-
-                // 4) They must describe a positive winding on the plane
-                var pth = (ca.At(0) + cb.At(1)) / 2;
-                return ca.WindingRelativeTo(pth) + cb.WindingRelativeTo(pth) > 0;
+                return ca.IsConvex != cb.IsConvex;
             }
 
             // If any combination is eligible, return true
@@ -95,76 +93,101 @@ namespace PathRenderingLab.PathCompiler
 
                 for (var onode = convexCurves.First; onode != null; onode = onode.Next)
                 {
-                    // The curves and their enclosing polygons
-                    var convex = onode.Value.Value;
-                    var cvPoly = convex.EnclosingPolygon;
-                    var cvstr = Triangulator.YMonotone.PolygonRepresentation(cvPoly);
-
                     // Skip degenerate curves
-                    if (convex.IsDegenerate) continue;
+                    if (onode.Value.Value.IsDegenerate) continue;
 
                     for (var inode = concaveCurves.First; inode != null; inode = inode.Next)
                     {
-                        retry: // Return-to label if the concave curve needs to be subdivided further
-                        var concave = inode.Value.Value;
-                        var ccPoly = concave.EnclosingPolygon;
-                        var ccstr = Triangulator.YMonotone.PolygonRepresentation(ccPoly);
-
                         // Skip degenerate curves
-                        if (concave.IsDegenerate) continue;
+                        if (inode.Value.Value.IsDegenerate) continue;
 
-                        // Do not try to check eligible curves in subdivision
-                        if (AreCurvesFusable(convex, concave)) continue;
-
-                        // Check each of the concave polygon's vertices for overlap
-                        foreach (var v in ccPoly.Reverse())
+                        while (true)
                         {
-                            // Get the segment that joins the point to the nearest point on the curve
-                            double wk = concave.NearestPointTo(v);
-                            var w = concave.At(wk);
+                            // Try to subdivide the curve combinations that are locally clockwise
+                            if (CombinedWindings(onode.Value.Value, inode.Value.Value) >= 0)
+                                if (TrySubdivide(ref onode, ref inode)) continue;
+                            else if (TrySubdivide(ref inode, ref onode)) continue;
+                            break;
+                        }
 
-                            // If the segment intersects the polygon, do the subdivision
-                            if (GeometricUtils.PolygonSegmentIntersect(cvPoly, v, w))
+                        // The function to try to subdivide the two curves
+                        bool TrySubdivide(ref LinkedListNode<LinkedListNode<Curve>> cvnode,
+                            ref LinkedListNode<LinkedListNode<Curve>> ccnode)
+                        {
+                            // The curves and their enclosing polygons
+                            var convex = cvnode.Value.Value;
+                            var cvPoly = convex.EnclosingPolygon;
+                            var cvstr = Triangulator.YMonotone.PolygonRepresentation(cvPoly);
+
+                            var concave = ccnode.Value.Value;
+                            var ccPoly = concave.EnclosingPolygon;
+                            var ccstr = Triangulator.YMonotone.PolygonRepresentation(ccPoly);
+
+                            // Do not try to check eligible curves in subdivision
+                            if (AreCurvesFusable(convex, concave)) return false;
+
+                            // Check each of the concave polygon's vertices for overlap
+                            foreach (var v in ccPoly.Reverse())
                             {
-                                double t = convex.NearestPointTo(v);
-                                var p = convex.At(t);
+                                // Get the segment that joins the point to the nearest point on the curve
+                                double wk = concave.NearestPointTo(v);
+                                var w = concave.At(wk);
 
-                                // The only way for the nearest point to be one of the convex curve's endpoints
-                                // is if it is equal to one of the concave curve's endpoints too, skip this
-                                if (DoubleUtils.RoughlyZero(t) || DoubleUtils.RoughlyEquals(t, 1)) continue;
-
-                                subdivide = true;
-
-                                // If the nearest point is below the convex curve, subdivide the convex curve
-                                if ((p - v).Cross(convex.Derivative.At(t)) >= 0)
+                                // If the segment intersects the polygon, do the subdivision
+                                if (GeometricUtils.PolygonSegmentIntersect(cvPoly, v, w))
                                 {
-                                    var c1 = convex.Subcurve(0, t);
-                                    var c2 = convex.Subcurve(t, 1);
+                                    double t = convex.NearestPointTo(v);
+                                    var p = convex.At(t);
 
-                                    // Update the linked list accordingly
-                                    onode.List.AddBefore(onode, onode.Value.List.AddBefore(onode.Value, c1));
-                                    onode.Value.Value = c2;
+                                    // The only way for the nearest point to be one of the convex curve's endpoints
+                                    // is if it is equal to one of the concave curve's endpoints too, skip this
+                                    if (DoubleUtils.RoughlyZero(t) || DoubleUtils.RoughlyEquals(t, 1)) continue;
 
-                                    // Update the locally present values
-                                    convex = c2;
-                                    cvPoly = convex.EnclosingPolygon;
-                                    cvstr = Triangulator.YMonotone.PolygonRepresentation(cvPoly);
-                                }
-                                else // Subdivide the concave curve
-                                {
-                                    double u = concave.NearestPointTo(p);
+                                    // If the nearest point is below the convex curve, subdivide the convex curve
+                                    if ((p - v).Cross(convex.Derivative.At(t)) >= 0)
+                                    {
+                                        subdivide = true;
 
-                                    var k1 = concave.Subcurve(0, u);
-                                    var k2 = concave.Subcurve(u, 1);
+                                        var c1 = convex.Subcurve(0, t);
+                                        var c2 = convex.Subcurve(t, 1);
 
-                                    // Update the linked list
-                                    inode.Value.Value = k1;
-                                    inode.List.AddAfter(inode, inode.Value.List.AddAfter(inode.Value, k2));
+                                        Console.WriteLine($"{convex.PathRepresentation()}({c1.PathRepresentation()}" +
+                                            $" / {c2.PathRepresentation()}) x {concave.PathRepresentation()}");
 
-                                    // Retry this iteration with the newly-divided curve
-                                    goto retry;
+                                        // Update the linked list accordingly
+                                        cvnode.Value.Value = c1;
+                                        cvnode.List.AddAfter(cvnode, cvnode.Value.List.AddAfter(cvnode.Value, c2));
+
+                                        // Retry this iteration with the newly-divided curve
+                                        return true;
+                                    }
+                                    else // Subdivide the concave curve
+                                    {
+                                        double u = concave.NearestPointTo(p);
+
+                                        // If it is possible for the nearest point on the convex curve to one of the
+                                        // endpoints, the subdivision will be ill-formed. Skip
+                                        if (DoubleUtils.RoughlyZero(u) || DoubleUtils.RoughlyEquals(u, 1)) continue;
+
+                                        subdivide = true;
+
+                                        var k1 = concave.Subcurve(0, u);
+                                        var k2 = concave.Subcurve(u, 1);
+
+                                        Console.WriteLine($"{convex.PathRepresentation()} x {concave.PathRepresentation()}" +
+                                            $" ({k1.PathRepresentation()} / {k2.PathRepresentation()})");
+
+                                        // Update the linked list
+                                        ccnode.Value.Value = k1;
+                                        ccnode.List.AddAfter(ccnode, ccnode.Value.List.AddAfter(ccnode.Value, k2));
+
+                                        // Retry this iteration with the newly-divided curve
+                                        return true;
+                                    }
                                 }
                             }
+
+                            return false;
                         }
                     }
                 }
@@ -294,5 +317,8 @@ namespace PathRenderingLab.PathCompiler
             // When all subdivisions are done, we can return the result
             return new FillFace(contourLists.Select(list => list.ToArray()).ToArray());
         }
+
+        static double CombinedWindings(Curve convex, Curve concave)
+            => convex.Winding + convex.At(1).Cross(concave.At(0)) + concave.Winding + concave.At(1).Cross(convex.At(0));
     }
 }
