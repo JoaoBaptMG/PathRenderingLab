@@ -98,11 +98,24 @@ namespace PathRenderingLab
                 Console.WriteLine($"Parsed path {pathId++}: {svgPath.Path}");
                 Console.WriteLine();
 
-                var compiledFill = ps.FillColor.HasValue ? PathCompilerMethods.CompileFill(path, ps.FillRule) : CompiledDrawing.Empty;
-                var compiledStroke = ps.StrokeColor.HasValue ? PathCompilerMethods.CompileStroke(path, ps.StrokeWidth,
-                    ps.StrokeLineCap, ps.StrokeLineJoin, ps.MiterLimit) : CompiledDrawing.Empty;
+                var matrix = (Matrix)svgPath.Transform.ToMatrix();
 
-                foreach (var drawing in new[] { compiledFill, compiledStroke })
+                if (ps.FillColor.HasValue)
+                {
+                    AddDrawing(PathCompilerMethods.CompileFill(path, ps.FillRule));
+                    colors.Add(ps.FillColor.Value);
+                    transforms.Add(matrix);
+                }
+
+                if (ps.StrokeColor.HasValue)
+                {
+                    AddDrawing(PathCompilerMethods.CompileStroke(path, ps.StrokeWidth, ps.StrokeLineCap,
+                        ps.StrokeLineJoin, ps.MiterLimit));
+                    colors.Add(ps.StrokeColor.Value);
+                    transforms.Add(matrix);
+                }
+
+                void AddDrawing(CompiledDrawing drawing)
                 {
                     var curTriangleIndices = new List<int>();
                     var curCurveVertices = new List<VertexPositionCurve>();
@@ -144,13 +157,6 @@ namespace PathRenderingLab
                     curDoubleCurveVerticesStartingId += curDoubleCurveVertices.Count;
                     doubleCurveVerticesStartingIds.Add(curDoubleCurveVerticesStartingId);
                 }
-
-                colors.Add(ps.FillColor ?? Color.Transparent);
-                colors.Add(ps.StrokeColor ?? Color.Transparent);
-
-                var matrix = (Matrix)svgPath.Transform.ToMatrix();
-                transforms.Add(matrix);
-                transforms.Add(matrix);
             }
 
             var numPaths = 2 * pathId;
