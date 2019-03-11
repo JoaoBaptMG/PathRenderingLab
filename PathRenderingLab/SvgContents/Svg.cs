@@ -38,6 +38,7 @@ namespace PathRenderingLab.SvgContents
         public Svg(Stream inStream)
         {
             var document = new XmlDocument();
+            document.XmlResolver = null;
             document.Load(inStream);
             Parse(document.ChildElements().Single());
         }
@@ -49,6 +50,7 @@ namespace PathRenderingLab.SvgContents
         public Svg(string filename)
         {
             var document = new XmlDocument();
+            document.XmlResolver = null;
             document.Load(filename);
             Parse(document.ChildElements().Single());
         }
