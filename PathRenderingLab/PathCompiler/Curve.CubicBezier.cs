@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using static PathRenderingLab.DoubleUtils;
 
 namespace PathRenderingLab.PathCompiler
 {
@@ -63,8 +64,8 @@ namespace PathRenderingLab.PathCompiler
         private double CubicBezier_Winding => (6 * A.Cross(B) + 3 * A.Cross(C) + A.Cross(D) + 3 * B.Cross(C)
             + 3 * B.Cross(D) + 6 * C.Cross(D)) / 10;
 
-        private bool CubicBezier_IsDegenerate => DoubleUtils.RoughlyEquals(A, B) &&
-            DoubleUtils.RoughlyEquals(B, C) && DoubleUtils.RoughlyEquals(C, D);
+        private bool CubicBezier_IsDegenerate => RoughlyEquals(A, B) &&
+            RoughlyEquals(B, C) && RoughlyEquals(C, D);
 
         private OuterAngles CubicBezier_OuterAngles
         {
@@ -75,7 +76,7 @@ namespace PathRenderingLab.PathCompiler
                 var dv3 = D - C;
 
                 // If dv1 is zero, the following angles will fall apart, so we take the limit
-                if (DoubleUtils.RoughlyZero(dv1)) return CubicBezier_Derivative.QuadraticBezier_OuterAngles;
+                if (RoughlyZero(dv1)) return CubicBezier_Derivative.QuadraticBezier_OuterAngles;
 
                 double dAngle = 2 * dv1.Cross(dv2 - dv1) / dv1.LengthSquared;
                 double ddAngle = (2 * dv1.Cross(dv3 - 2 * dv2 + dv1) -
@@ -85,17 +86,19 @@ namespace PathRenderingLab.PathCompiler
         }
 
         private Double2 CubicBezier_EntryTangent =>
-            DoubleUtils.RoughlyEquals(B, A) ? CubicBezier_Derivative.QuadraticBezier_ExitTangent : (B - A).Normalized;
+            RoughlyEquals(B, A) ? CubicBezier_Derivative.QuadraticBezier_ExitTangent : (B - A).Normalized;
         private Double2 CubicBezier_ExitTangent =>
-            DoubleUtils.RoughlyEquals(C, D) ? CubicBezier_Derivative.QuadraticBezier_ExitTangent : (D - C).Normalized;
+            RoughlyEquals(C, D) ? CubicBezier_Derivative.QuadraticBezier_ExitTangent : (D - C).Normalized;
 
         private string CubicBezier_ToString() => $"C({A.X} {A.Y})-({B.X} {B.Y})-({C.X} {C.Y})-({D.X} {D.Y})";
 
         private IEnumerable<Curve> CubicBezier_Simplify(bool split = false)
         {
             // If the Bézier is lines
-            if (DoubleUtils.RoughlyZero((B - A).Normalized.Cross((C - B).Normalized))
-                && DoubleUtils.RoughlyZero((D - C).Normalized.Cross((C - B).Normalized)))
+            if (RoughlyEquals(A, B) && RoughlyEquals(C, D))
+                yield return Line((A + B) / 2, (C + D) / 2);
+            else if ((RoughlyEquals(A, B) || RoughlyZero((B - A).Normalized.Cross((C - B).Normalized)))
+                && (RoughlyEquals(C, D) || RoughlyZero((D - C).Normalized.Cross((C - B).Normalized))))
             {
                 var d = Derivative;
                 var rx = Equations.SolveQuadratic(d.A.X - 2 * d.B.X + d.C.X, 2 * (d.B.X - d.A.X), d.A.X);
@@ -109,7 +112,7 @@ namespace PathRenderingLab.PathCompiler
                     yield return Line(CubicBezier_At(tests[i - 1]), CubicBezier_At(tests[i]));
             }
             // If the Bézier should be a quadratic instead
-            else if (DoubleUtils.RoughlyZero(A - 3 * B + 3 * C - D))
+            else if (RoughlyZero(A - 3 * B + 3 * C - D))
             {
                 // Estimates
                 var b1 = 3 * B - A;
@@ -136,7 +139,7 @@ namespace PathRenderingLab.PathCompiler
                     var c3 = da + dc - 2 * db;
 
                     // Rotate it beforehand if necessary
-                    if (!DoubleUtils.RoughlyZero(c3.Y))
+                    if (!RoughlyZero(c3.Y))
                     {
                         c3 = c3.NegateY;
                         da = da.RotScale(c3);

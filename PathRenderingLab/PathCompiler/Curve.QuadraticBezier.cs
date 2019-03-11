@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using static PathRenderingLab.DoubleUtils;
 
 namespace PathRenderingLab.PathCompiler
 {
@@ -63,7 +64,7 @@ namespace PathRenderingLab.PathCompiler
         }
 
         private double QuadraticBezier_Winding => (2 * A.Cross(B) + 2 * B.Cross(C) + A.Cross(C)) / 3;
-        private bool QuadraticBezier_IsDegenerate => DoubleUtils.RoughlyEquals(A, B) && DoubleUtils.RoughlyEquals(B, C);
+        private bool QuadraticBezier_IsDegenerate => RoughlyEquals(A, B) && RoughlyEquals(B, C);
 
         private OuterAngles QuadraticBezier_OuterAngles
         {
@@ -73,7 +74,7 @@ namespace PathRenderingLab.PathCompiler
                 var dv2 = C - B;
 
                 // If dv1 is zero, the following angles will fall apart, so we take the limit
-                if (DoubleUtils.RoughlyZero(dv1)) return QuadraticBezier_Derivative.Line_OuterAngles;
+                if (RoughlyZero(dv1)) return QuadraticBezier_Derivative.Line_OuterAngles;
 
                 double dAngle = dv1.Cross(dv2 - dv1) / dv1.LengthSquared;
                 double ddAngle = -2 * dv1.Dot(dv2 - dv1) * dAngle / dv1.LengthSquared;
@@ -89,7 +90,9 @@ namespace PathRenderingLab.PathCompiler
         private IEnumerable<Curve> QuadraticBezier_Simplify()
         {
             // If the quadratic bezier is roughly a line, treat it as a line
-            if (DoubleUtils.RoughlyZero((C - B).Normalized.Cross((B - A).Normalized)))
+            if (RoughlyEquals(A, B)) yield return Line((A + B) / 2, C);
+            else if (RoughlyEquals(B, C)) yield return Line(A, (B + C) / 2);
+            else if (RoughlyZero((C - B).Normalized.Cross((B - A).Normalized)))
             {
                 // Find the maximum point
                 var d = QuadraticBezier_Derivative;
