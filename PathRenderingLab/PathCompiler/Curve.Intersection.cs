@@ -10,18 +10,6 @@ namespace PathRenderingLab.PathCompiler
     {
         public static IEnumerable<RootPair> Intersections(Curve c1, Curve c2)
         {
-            var c1s = c1.Simplify();
-            var c2s = c2.Simplify();
-
-            // Pass through the simplified curves
-            foreach (var k1 in c1s)
-                foreach (var k2 in c2s)
-                    foreach (var p in IntersectionsInternal(k1, k2))
-                        yield return p;
-        }
-
-        private static IEnumerable<RootPair> IntersectionsInternal(Curve c1, Curve c2)
-        {
             if (c1.Type == CurveType.Line)
             {
                 switch (c2.Type)
@@ -34,7 +22,7 @@ namespace PathRenderingLab.PathCompiler
                 }
             }
             else if (c2.Type == CurveType.Line)
-                return IntersectionsInternal(c2, c1).Select(p => p.Flip());
+                return Intersections(c2, c1).Select(p => p.Flip());
             else
             {
                 // Check for circles
