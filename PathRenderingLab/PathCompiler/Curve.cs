@@ -31,7 +31,7 @@ namespace PathRenderingLab.PathCompiler
     /// <summary>
     /// A variant struct describing an SVG curve, which can be a line, a quadratic or cubic Bézier curve, or an elliptic arc
     /// </summary>
-    public partial struct Curve
+    public partial class Curve
     {
         /// <summary>
         /// The curve's type

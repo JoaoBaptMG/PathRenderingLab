@@ -5,7 +5,7 @@ using static PathRenderingLab.DoubleUtils;
 namespace PathRenderingLab.PathCompiler
 {
 
-    public partial struct Curve
+    public partial class Curve
     {
         public static Curve QuadraticBezier(Double2 a, Double2 b, Double2 c) => new Curve(CurveType.QuadraticBezier, a, b, c);
         private Curve QuadraticBezier_Reverse => QuadraticBezier(C, B, A);

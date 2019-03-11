@@ -2,20 +2,27 @@
 
 namespace PathRenderingLab.PathCompiler
 {
-    public partial struct Curve
+    public partial class Curve
     {
+        Double2[] cachedEnclosingPolygon;
+
         public Double2[] EnclosingPolygon
         {
             get
             {
-                switch (Type)
+                if (cachedEnclosingPolygon == null)
                 {
-                    case CurveType.Line: return new[] { A, B };
-                    case CurveType.QuadraticBezier: return new[] { A, B, C };
-                    case CurveType.CubicBezier: return new[] { A, B, C, D };
-                    case CurveType.EllipticArc: return EllipticArc_EnclosingPolygon();
-                    default: throw new InvalidOperationException("Unrecognized type.");
+                    switch (Type)
+                    {
+                        case CurveType.Line: cachedEnclosingPolygon = new[] { A, B }; break;
+                        case CurveType.QuadraticBezier: cachedEnclosingPolygon = new[] { A, B, C }; break;
+                        case CurveType.CubicBezier: cachedEnclosingPolygon = new[] { A, B, C, D }; break;
+                        case CurveType.EllipticArc: cachedEnclosingPolygon = EllipticArc_EnclosingPolygon(); break;
+                        default: throw new InvalidOperationException("Unrecognized type.");
+                    }
                 }
+
+                return cachedEnclosingPolygon;
             }
         }
 
