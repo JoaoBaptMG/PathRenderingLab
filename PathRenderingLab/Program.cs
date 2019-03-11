@@ -8,6 +8,7 @@ using PathRenderingLab.PathCompiler;
 using System.Xml;
 using PathRenderingLab.Parsers;
 using PathRenderingLab.SvgContents;
+using System.Diagnostics;
 
 namespace PathRenderingLab
 {
@@ -90,12 +91,24 @@ namespace PathRenderingLab
                 return vertexCache[v];
             }
 
+            var watch = new Stopwatch();
+            var totalTimes = new List<TimeSpan>();
+
+            TReturn MeasureTime<TReturn>(Func<TReturn> func, out TimeSpan time)
+            {
+                watch.Restart();
+                var result = func();
+                watch.Stop();
+                time = watch.Elapsed;
+                return result;
+            }
+
             foreach (var svgPath in paths)
             {
                 var path = svgPath.Path;
                 var ps = svgPath.PathStyle;
 
-                Console.WriteLine($"Parsed path {pathId++}: {svgPath.Path}");
+                Console.WriteLine($"Parsed path {++pathId}: {svgPath.Path}");
                 Console.WriteLine();
 
                 // Normalize the path
@@ -104,18 +117,20 @@ namespace PathRenderingLab
 
                 if (ps.FillColor.HasValue)
                 {
-                    AddDrawing(PathCompilerMethods.CompileFill(path, ps.FillRule));
+                    AddDrawing(MeasureTime(() => PathCompilerMethods.CompileFill(path, ps.FillRule), out var time));
                     colors.Add(ps.FillColor.Value);
                     transforms.Add(matrix);
+                    totalTimes.Add(time);
                     numPaths++;
                 }
 
                 if (ps.StrokeColor.HasValue)
                 {
-                    AddDrawing(PathCompilerMethods.CompileStroke(path, ps.StrokeWidth / normalMatrix.A,
-                        ps.StrokeLineCap, ps.StrokeLineJoin, ps.MiterLimit));
+                    AddDrawing(MeasureTime(()=> PathCompilerMethods.CompileStroke(path, ps.StrokeWidth / normalMatrix.A,
+                        ps.StrokeLineCap, ps.StrokeLineJoin, ps.MiterLimit), out var time));
                     colors.Add(ps.StrokeColor.Value);
                     transforms.Add(matrix);
+                    totalTimes.Add(time);
                     numPaths++;
                 }
 
@@ -169,21 +184,35 @@ namespace PathRenderingLab
 
             Console.WriteLine("Statistics:");
 
-            void WriteStats(string name, int numIndices, int numCurveVertices, int numDoubleCurveVertices)
+            void WriteStats(string name, int numIndices, int numCurveVertices, int numDoubleCurveVertices, TimeSpan time)
             {
                 Console.WriteLine($"{name}: {(numIndices + numCurveVertices + numDoubleCurveVertices) / 3} triangles " +
-                    $"({numIndices / 3} filled, {numCurveVertices / 3} curves and {numDoubleCurveVertices / 3} double curves)");
+                    $"({numIndices / 3} filled, {numCurveVertices / 3} curves and {numDoubleCurveVertices / 3} double curves), " +
+                    $"parsed in {time.TotalMilliseconds:0.00} ms");
             }
 
             for (int i = 0; i < numPaths; i++)
                 WriteStats($"path {i}",
                     triangleIndicesStartingIds[i + 1] - triangleIndicesStartingIds[i],
                     curveVerticesStartingIds[i + 1] - curveVerticesStartingIds[i],
-                    doubleCurveVerticesStartingIds[i + 1] - doubleCurveVerticesStartingIds[i]);
+                    doubleCurveVerticesStartingIds[i + 1] - doubleCurveVerticesStartingIds[i], totalTimes[i]);
+
+            Color backgroundColor;
+            while (true)
+            {
+                Console.Write("Select background color: ");
+                var color = CSSColor.Parse(Console.ReadLine());
+                if (!color.HasValue) Console.WriteLine("Could not parse the color correctly!");
+                else
+                {
+                    backgroundColor = color.Value;
+                    break;
+                }
+            }
 
             using (var game = new PathRenderingLab())
             {
-                game.BackgroundColor = Color.White;
+                game.BackgroundColor = backgroundColor;
                 game.AllVertices = allVertices;
                 game.DrawingColors = colors.ToArray();
                 game.DrawingTransforms = transforms.ToArray();
