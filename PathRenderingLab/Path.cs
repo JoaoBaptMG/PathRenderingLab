@@ -2,6 +2,7 @@
 using System.Linq;
 using PathRenderingLab.PathCompiler;
 using PathRenderingLab.Parsers;
+using System;
 
 namespace PathRenderingLab
 {
@@ -148,6 +149,67 @@ namespace PathRenderingLab
 
         public IEnumerable<CurveData> SplitCurves() => SplitCurves(PathCommands);
         public IEnumerable<Curve> Curves() => Curves(PathCommands);
+
+        public DoubleMatrix Normalize(double halfSize = 2048)
+        {
+            // Calculate the bounding box of the path
+            var points = Curves().SelectMany(c => c.EnclosingPolygon).ToArray();
+
+            // Don't normalize an empty path
+            if (points.Length == 0) return DoubleMatrix.Identity;
+
+            var minx = double.PositiveInfinity;
+            var maxx = double.NegativeInfinity;
+            var miny = double.PositiveInfinity;
+            var maxy = double.NegativeInfinity;
+
+            // Find the bounding box
+            foreach (var pt in points)
+            {
+                minx = Math.Min(minx, pt.X);
+                maxx = Math.Max(maxx, pt.X);
+                miny = Math.Min(miny, pt.Y);
+                maxy = Math.Max(maxy, pt.Y);
+            }
+
+            // Calculate the points
+            var center = new Double2(minx + maxx, miny + maxy) / 2;
+
+            // And the half-sizes
+            var hx = (maxx - minx) / 2;
+            var hy = (maxy - miny) / 2;
+
+            // Chose the maximum value of it
+            var d = halfSize / Math.Min(hx, hy);
+
+            // And transform the points
+            for (int i = 0; i < PathCommands.Length; i++)
+            {
+                switch (PathCommands[i].Type)
+                {
+                    case PathCommandType.MoveTo:
+                    case PathCommandType.LineTo:
+                        PathCommands[i].Target = (PathCommands[i].Target - center) * d; break;
+                    case PathCommandType.QuadraticCurveTo:
+                        PathCommands[i].Target = (PathCommands[i].Target - center) * d;
+                        PathCommands[i].Control = (PathCommands[i].Control - center) * d;
+                        break;
+                    case PathCommandType.CubicCurveTo:
+                        PathCommands[i].Target = (PathCommands[i].Target - center) * d;
+                        PathCommands[i].Control = (PathCommands[i].Control - center) * d;
+                        PathCommands[i].Control2 = (PathCommands[i].Control2 - center) * d;
+                        break;
+                    case PathCommandType.ArcTo:
+                        PathCommands[i].Target = (PathCommands[i].Target - center) * d;
+                        PathCommands[i].Control *= d;
+                        break;
+                    default: break;
+                }
+            }
+
+            // Mount the inverse matrix
+            return new DoubleMatrix(1 / d, 0, 0, 1 / d, center.X, center.Y);
+        }
 
         public override string ToString() => string.Join(" ", PathCommands);
     }

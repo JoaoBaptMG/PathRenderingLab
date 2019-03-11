@@ -66,7 +66,7 @@ namespace PathRenderingLab
 
             EnumeratePaths(svg.Root);
 
-            int pathId = 0;
+            int pathId = 0, numPaths = 0;
             var triangleIndices = new List<int>();
             var curveVertices = new List<VertexPositionCurve>();
             var doubleCurveVertices = new List<VertexPositionDoubleCurve>();
@@ -98,21 +98,25 @@ namespace PathRenderingLab
                 Console.WriteLine($"Parsed path {pathId++}: {svgPath.Path}");
                 Console.WriteLine();
 
-                var matrix = (Matrix)svgPath.Transform.ToMatrix();
+                // Normalize the path
+                var normalMatrix = path.Normalize();
+                var matrix = (Matrix)(svgPath.Transform.ToMatrix() * normalMatrix);
 
                 if (ps.FillColor.HasValue)
                 {
                     AddDrawing(PathCompilerMethods.CompileFill(path, ps.FillRule));
                     colors.Add(ps.FillColor.Value);
                     transforms.Add(matrix);
+                    numPaths++;
                 }
 
                 if (ps.StrokeColor.HasValue)
                 {
-                    AddDrawing(PathCompilerMethods.CompileStroke(path, ps.StrokeWidth, ps.StrokeLineCap,
-                        ps.StrokeLineJoin, ps.MiterLimit));
+                    AddDrawing(PathCompilerMethods.CompileStroke(path, ps.StrokeWidth / normalMatrix.A,
+                        ps.StrokeLineCap, ps.StrokeLineJoin, ps.MiterLimit));
                     colors.Add(ps.StrokeColor.Value);
                     transforms.Add(matrix);
+                    numPaths++;
                 }
 
                 void AddDrawing(CompiledDrawing drawing)
@@ -159,8 +163,6 @@ namespace PathRenderingLab
                 }
             }
 
-            var numPaths = 2 * pathId;
-
             int length = vertexCache.Count == 0 ? 0 : vertexCache.Max(p => p.Value) + 1;
             var allVertices = new Vector2[length];
             foreach (var kvp in vertexCache) allVertices[kvp.Value] = kvp.Key;
@@ -195,62 +197,6 @@ namespace PathRenderingLab
 
                 game.Run();
             }
-        }
-
-        public static T? NullIfThrow<T>(Func<T> f) where T : struct
-        {
-            try { return new T?(f()); }
-            catch { return new T?(); }
-        }
-
-        private static PathDetails GetPathDetailsFromString(string str)
-        {
-            // It must have exactly two lines
-            var lines = str.Split('\n', '\r').Where(s => s.Length > 0).ToArray();
-            if (lines.Length != 2) throw new InvalidOperationException("The path details file must have two non-blank lines!");
-
-            // The first line is the path
-            var path = new Path(lines[0]);
-
-            // The second line is a list of options
-            var opts = lines[1].Split(';').Select(s => s.Trim()).Where(s => s.Length > 0).Select(s => s.Split(':')).ToArray();
-            // All options must be... options
-            if (!opts.All(l => l.Length == 2)) throw new InvalidOperationException("Ill-formed option list");
-
-            // Concatenate all of them in a dictionary
-            var optsDict = new Dictionary<string, string>();
-            foreach (var opt in opts) optsDict.Add(opt[0].Trim(), opt[1].Trim());
-
-            // And pick the options
-            var fillColor = optsDict.GetOrDefault("fill", "none").ToLowerInvariant();
-            var strokeColor = optsDict.GetOrDefault("stroke", "black").ToLowerInvariant();
-            var backgroundColor = optsDict.GetOrDefault("background", "white").ToLowerInvariant();
-            var fillRule = optsDict.GetOrDefault("fill-rule", "nonzero").ToLowerInvariant();
-
-            var strokeWidth = optsDict.GetOrDefault("stroke-width", "0");
-            var strokeLineCap = optsDict.GetOrDefault("stroke-linecap", "butt").ToLowerInvariant();
-            var strokeLineJoin = optsDict.GetOrDefault("stroke-linejoin", "bevel").ToLowerInvariant();
-            var miterLimit = optsDict.GetOrDefault("stroke-miterlimit", "Infinity");
-            var invertY = optsDict.GetOrDefault("invert-y", "false").ToLowerInvariant();
-
-            double? GetDouble(string s) => NullIfThrow(() => double.Parse(s, CultureInfo.InvariantCulture));
-
-            return new PathDetails()
-            {
-                Path = path,
-
-                FillColor = CSSColor.Parse(fillColor),
-                StrokeColor = CSSColor.Parse(strokeColor),
-                BackgroundColor = CSSColor.Parse(backgroundColor) ?? Color.White,
-
-                FillRule = CSSEnumPicker<FillRule>.Get(fillRule) ?? FillRule.Nonzero,
-                StrokeWidth = strokeColor == "none" ? 0 : GetDouble(strokeWidth) ?? 0,
-                StrokeLineCap = CSSEnumPicker<StrokeLineCap>.Get(strokeLineCap) ?? StrokeLineCap.Butt,
-                StrokeLineJoin = CSSEnumPicker<StrokeLineJoin>.Get(strokeLineJoin) ?? StrokeLineJoin.Bevel,
-                MiterLimit = GetDouble(miterLimit) ?? double.PositiveInfinity,
-
-                InvertY = invertY == "true" || invertY == "yes" || invertY == "y",
-            };
         }
     }
 #endif
