@@ -267,10 +267,14 @@ namespace PathRenderingLab.PathCompiler
                 if (D > -double.Epsilon)
                 {
                     // Find the roots of the equation
-                    var rs = Equations.SolveQuadratic(d1, -d2, d3 / 3);
+                    var dv = d2 >= 0 ? Math.Sqrt(D / 3) : -Math.Sqrt(D / 3);
+                    var q = 0.5 * (d2 + dv);
 
-                    var l = rs[0];
-                    var m = rs[1];
+                    var x1 = q / d1;
+                    var x2 = (d3 / 3) / q;
+
+                    var l = Math.Min(x1, x2);
+                    var m = Math.Max(x1, x2);
 
                     f0 = new Double4(l * m, l * l * l, m * m * m, 0);
                     f1 = new Double4(-l - m, -3 * l * l, -3 * m * m, 0);
@@ -284,10 +288,14 @@ namespace PathRenderingLab.PathCompiler
                 else
                 {
                     // Find the roots of the equation
-                    var rs = Equations.SolveQuadratic(d1, -d2, -d3 + d2 * d2 / d1);
+                    var dv = d2 >= 0 ? Math.Sqrt(-D) : -Math.Sqrt(-D);
+                    var q = 0.5 * (d2 + dv);
 
-                    var d = rs[0];
-                    var e = rs[1];
+                    var x1 = q / d1;
+                    var x2 = (d2 * d2 / d1 - d3) / q;
+
+                    var d = Math.Min(x1, x2);
+                    var e = Math.Max(x1, x2);
 
                     f0 = new Double4(d * e, d * d * e, d * e * e, 0);
                     f1 = new Double4(-d - e, -d * d - 2 * e * d, -e * e - 2 * d * e, 0);
