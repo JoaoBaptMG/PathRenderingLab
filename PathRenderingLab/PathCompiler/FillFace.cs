@@ -151,8 +151,8 @@ namespace PathRenderingLab.PathCompiler
                                         var c1 = convex.Subcurve(0, t);
                                         var c2 = convex.Subcurve(t, 1);
 
-                                        Console.WriteLine($"{convex.PathRepresentation()}({c1.PathRepresentation()}" +
-                                            $" / {c2.PathRepresentation()}) x {concave.PathRepresentation()}");
+                                        //Console.WriteLine($"{convex.PathRepresentation()}({c1.PathRepresentation()}" +
+                                        //    $" / {c2.PathRepresentation()}) x {concave.PathRepresentation()}");
 
                                         // Update the linked list accordingly
                                         cvnode.Value.Value = c1;
@@ -174,8 +174,8 @@ namespace PathRenderingLab.PathCompiler
                                         var k1 = concave.Subcurve(0, u);
                                         var k2 = concave.Subcurve(u, 1);
 
-                                        Console.WriteLine($"{convex.PathRepresentation()} x {concave.PathRepresentation()}" +
-                                            $" ({k1.PathRepresentation()} / {k2.PathRepresentation()})");
+                                        //Console.WriteLine($"{convex.PathRepresentation()} x {concave.PathRepresentation()}" +
+                                        //    $" ({k1.PathRepresentation()} / {k2.PathRepresentation()})");
 
                                         // Update the linked list
                                         ccnode.Value.Value = k1;

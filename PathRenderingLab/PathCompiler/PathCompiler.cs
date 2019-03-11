@@ -44,14 +44,14 @@ namespace PathRenderingLab.PathCompiler
 
         internal static CompiledDrawing CompileCurves(List<Curve> curves, FillRule fillRule)
         {
-            Console.WriteLine("Current curve list:");
+            //Console.WriteLine("Current curve list:");
             {
                 int i = 0;
-                foreach (var curve in curves)
-                    Console.WriteLine($"-- [{i++}] {curve}");
+                foreach (var curve in curves) ;
+                    //Console.WriteLine($"-- [{i++}] {curve}");
             }
-            Console.WriteLine("Path command: ");
-            Console.WriteLine(string.Join(" ", curves.Select(c => c.PathRepresentation())));
+            //Console.WriteLine("Path command: ");
+            //Console.WriteLine(string.Join(" ", curves.Select(c => c.PathRepresentation())));
 
             // Reunite all intersections to subdivide the curves
             var curveRootSets = new List<double>[curves.Count];
@@ -67,7 +67,7 @@ namespace PathRenderingLab.PathCompiler
                         var b = curves[j].At(pair.B);
                         if (!DoubleUtils.RoughlyEquals(a, b))
                         {
-                            Console.WriteLine(string.Join(" ", Curve.Intersections(curves[i], curves[j]).Select(c => $"({c.A} {c.B})")));
+                            //Console.WriteLine(string.Join(" ", Curve.Intersections(curves[i], curves[j]).Select(c => $"({c.A} {c.B})")));
                             throw new Exception("Problem here...");
                         }
 
@@ -96,8 +96,8 @@ namespace PathRenderingLab.PathCompiler
                     {
                         if (c.IsDegenerate) continue;
                         dcel.AddCurve(c);
-                        //Console.WriteLine(dcel);
-                        //Console.ReadLine();
+                        ////Console.WriteLine(dcel);
+                        ////Console.ReadLine();
                     }
 
                     v = l;
@@ -106,11 +106,11 @@ namespace PathRenderingLab.PathCompiler
 
             // Now, we remove wedges and assign the fill numbers
             dcel.RemoveWedges();
-            //Console.WriteLine(dcel);
-            //Console.ReadLine();
+            ////Console.WriteLine(dcel);
+            ////Console.ReadLine();
             dcel.AssignFillNumbers();
-            //Console.WriteLine(dcel);
-            //Console.ReadLine();
+            ////Console.WriteLine(dcel);
+            ////Console.ReadLine();
 
             // Pick the appropriate predicate for the fill rule
             Func<DCEL.Face, bool> facePredicate;
@@ -119,8 +119,8 @@ namespace PathRenderingLab.PathCompiler
 
             // Simplify the faces
             dcel.SimplifyFaces(facePredicate);
-            Console.WriteLine(dcel);
-            //Console.ReadLine();
+            //Console.WriteLine(dcel);
+            ////Console.ReadLine();
 
             // Generate the filled faces
             var fills = dcel.Faces.Where(facePredicate).Select(face =>
