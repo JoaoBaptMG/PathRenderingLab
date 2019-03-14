@@ -69,32 +69,33 @@ namespace PathRenderingLab
             return pair.Select(p => new RootPair(Remap1(p.A), Remap2(p.B)));
         }
 
-        public static bool SegmentsIntersect(Double2 p0, Double2 p1, Double2 q0, Double2 q1)
+        // Check if segments are inside interval
+        public static bool InsideSegmentCollinear(Double2 x0, Double2 x1, Double2 y, bool strict = false)
         {
-            // Check if segments are inside interval
-            bool InsideSegmentCollinear(Double2 x0, Double2 x1, Double2 y)
-            {
-                var d = (x1 - x0).Dot(y - x0);
-                return d >= 0 && d <= (x1 - x0).LengthSquared;
-            }
+            var d = (x1 - x0).Dot(y - x0);
+            return strict ? d > 0 && d < (x1 - x0).LengthSquared
+                : d >= 0 && d <= (x1 - x0).LengthSquared;
+        }
 
+        public static bool SegmentsIntersect(Double2 p0, Double2 p1, Double2 q0, Double2 q1, bool strict = false)
+        {
             // The cross products
             double crossq0 = (p1 - p0).Cross(q0 - p0);
             double crossq1 = (p1 - p0).Cross(q1 - p0);
             double crossp0 = (q1 - q0).Cross(p0 - q0);
             double crossp1 = (q1 - q0).Cross(p1 - q0);
 
-            // If two points are equal, we have only containment
+            // If two points are equal, we have only containment (not considered in strict case)
             if (DoubleUtils.RoughlyEquals(p0, p1))
-                return DoubleUtils.RoughlyZero(crossp0) && InsideSegmentCollinear(q0, q1, p0);
+                return !strict && DoubleUtils.RoughlyZero(crossp0) && InsideSegmentCollinear(q0, q1, p0, strict);
             if (DoubleUtils.RoughlyEquals(q0, q1))
-                return DoubleUtils.RoughlyZero(crossq0) && InsideSegmentCollinear(p0, p1, q0);
+                return !strict && DoubleUtils.RoughlyZero(crossq0) && InsideSegmentCollinear(p0, p1, q0, strict);
 
             // Containment
-            if (DoubleUtils.RoughlyZero(crossq0)) return InsideSegmentCollinear(p0, p1, q0);
-            if (DoubleUtils.RoughlyZero(crossq1)) return InsideSegmentCollinear(p0, p1, q1);
-            if (DoubleUtils.RoughlyZero(crossp0)) return InsideSegmentCollinear(q0, q1, p0);
-            if (DoubleUtils.RoughlyZero(crossp1)) return InsideSegmentCollinear(q0, q1, p1);
+            if (DoubleUtils.RoughlyZero(crossq0)) return InsideSegmentCollinear(p0, p1, q0, strict);
+            if (DoubleUtils.RoughlyZero(crossq1)) return InsideSegmentCollinear(p0, p1, q1, strict);
+            if (DoubleUtils.RoughlyZero(crossp0)) return InsideSegmentCollinear(q0, q1, p0, strict);
+            if (DoubleUtils.RoughlyZero(crossp1)) return InsideSegmentCollinear(q0, q1, p1, strict);
 
             // Check if everything is on one side
             if (crossq0 < 0 && crossq1 < 0) return false;
@@ -106,7 +107,7 @@ namespace PathRenderingLab
             return true;
         }
 
-        public static bool PolygonsOverlap(Double2[] poly0, Double2[] poly1)
+        public static bool PolygonsOverlap(Double2[] poly0, Double2[] poly1, bool strict = false)
         {
             // Check for segments intersection
             for (int j = 0; j < poly0.Length; j++)
@@ -118,18 +119,18 @@ namespace PathRenderingLab
                     var p1 = poly0[j == 0 ? poly0.Length - 1 : j - 1];
                     var q1 = poly1[i == 0 ? poly1.Length - 1 : i - 1];
 
-                    if (SegmentsIntersect(p0, p1, q0, q1)) return true;
+                    if (SegmentsIntersect(p0, p1, q0, q1, strict)) return true;
                 }
 
             // Check for overlapping of the first point
-            if (PolygonContainsPoint(poly0, poly1[0]) || PolygonContainsPoint(poly1, poly0[0]))
+            if (PolygonContainsPoint(poly0, poly1[0], strict) || PolygonContainsPoint(poly1, poly0[0], strict))
                 return true;
 
             // Otherwise...
             return false;
         }
 
-        public static bool PolygonSegmentIntersect(Double2[] poly, Double2 a, Double2 b)
+        public static bool PolygonSegmentIntersect(Double2[] poly, Double2 a, Double2 b, bool strict = false)
         {
             // Check for segments intersection
             for (int i = 0; i < poly.Length; i++)
@@ -137,18 +138,18 @@ namespace PathRenderingLab
                 var p0 = poly[i];
                 var p1 = poly[i == 0 ? poly.Length - 1 : i - 1];
 
-                if (SegmentsIntersect(p0, p1, a, b)) return true;
+                if (SegmentsIntersect(p0, p1, a, b, strict)) return true;
             }
 
             // Check for overlapping of the segment point
-            if (PolygonContainsPoint(poly, a) || PolygonContainsPoint(poly, b))
+            if (PolygonContainsPoint(poly, a, strict) || PolygonContainsPoint(poly, b, strict))
                 return true;
 
             // Otherwise...
             return false;
         }
 
-        public static bool PolygonContainsPoint(Double2[] poly, Double2 p)
+        public static bool PolygonContainsPoint(Double2[] poly, Double2 p, bool strict = false)
         {
             bool contains = false;
 
@@ -156,6 +157,10 @@ namespace PathRenderingLab
             {
                 var p0 = poly[i];
                 var p1 = poly[i == 0 ? poly.Length - 1 : i - 1];
+
+                // For strictness, if the line is "inside" the polygon, we have a problem
+                if (strict && DoubleUtils.RoughlyZero((p1 - p0).Cross(p - p0)) &&
+                    InsideSegmentCollinear(p0, p1, p, true)) return false;
 
                 if (p0.X < p.X && p1.X < p.X) continue;
                 if (p0.X < p.X) p0 = p1 + (p.X - p1.X) / (p0.X - p1.X) * (p0 - p1);
@@ -326,6 +331,18 @@ namespace PathRenderingLab
             // Reverse the point orientation
             hull.Reverse();
             return hull.ToArray();
+        }
+
+        public static void EnsureCounterclockwise(Double2[] poly)
+        {
+            // Calculate the polygon's winding
+            double winding = 0;
+
+            for (int i = 0; i < poly.Length; i++)
+                winding += poly[i].Cross(poly[(i + 1) % poly.Length]);
+
+            // Reverse the polygon if the winding is clockwise
+            if (winding < 0) Array.Reverse(poly);
         }
     }
 }
