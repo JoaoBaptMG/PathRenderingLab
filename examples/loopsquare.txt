@@ -1,2 +1,0 @@
-M-2,8 2,8 2,12-2,12Z M0,0 C24,24-24,24Z
-fill: olivedrab; fill-rule: evenodd; stroke: black; stroke-width: 1; stroke-linejoin: miter;

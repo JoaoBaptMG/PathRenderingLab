@@ -1,2 +1,0 @@
-M0,0 A4,2 0 0 1 4,2 A2,2 0 0 1 2,4 A1,1 0 0 1 1,3 A1,1 0 0 0 0,4 A2,4 0 0 1 0,0Z
-fill: blue; stroke: black; stroke-width: 0.1; stroke-linejoin: arcs;

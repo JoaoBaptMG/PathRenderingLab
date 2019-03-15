@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.0">
+  <path transform="scale(32,-32)" d="M0,0 Q1.2,1.5 1,2 2,1.5 2,0 3,0 3,-1 L2.5,-0.3 -0.5,-0.3 -1,-1 Q-1,0 0,0Z" style="fill: pink; stroke: black; stroke-width: 0.08; stroke-linejoin: arcs; "/>
+</svg>

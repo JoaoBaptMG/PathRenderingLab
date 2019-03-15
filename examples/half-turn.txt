@@ -1,2 +1,0 @@
-M1,0 Q0,0 0,1 0,0 -1,0 0,0 0,-1 0,0 1,0Z
-fill: orange; stroke: black; stroke-width: 0.05; stroke-linejoin: round; stroke-miterlimit: 3;
