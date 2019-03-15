@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using static PathRenderingLab.DoubleUtils;
 
 namespace PathRenderingLab
 {
@@ -58,8 +59,7 @@ namespace PathRenderingLab
 
     public static class GeometricUtils
     {
-        public static bool Inside01(double t) => DoubleUtils.RoughComparer.Compare(t, 0) >= 0 &&
-            DoubleUtils.RoughComparer.Compare(t, 1) <= 0;
+        public static bool Inside01(double t) => t >= 0 && t <= 1;
 
         public static IEnumerable<RootPair> Remap(this IEnumerable<RootPair> pair, double t1, double t2, double u1, double u2)
         {
@@ -86,16 +86,16 @@ namespace PathRenderingLab
             double crossp1 = (q1 - q0).Cross(p1 - q0);
 
             // If two points are equal, we have only containment (not considered in strict case)
-            if (DoubleUtils.RoughlyEquals(p0, p1))
-                return !strict && DoubleUtils.RoughlyZero(crossp0) && InsideSegmentCollinear(q0, q1, p0, strict);
-            if (DoubleUtils.RoughlyEquals(q0, q1))
-                return !strict && DoubleUtils.RoughlyZero(crossq0) && InsideSegmentCollinear(p0, p1, q0, strict);
+            if (RoughlyEquals(p0, p1))
+                return !strict && RoughlyZero(crossp0) && InsideSegmentCollinear(q0, q1, p0, strict);
+            if (RoughlyEquals(q0, q1))
+                return !strict && RoughlyZero(crossq0) && InsideSegmentCollinear(p0, p1, q0, strict);
 
             // Containment
-            if (DoubleUtils.RoughlyZero(crossq0)) return InsideSegmentCollinear(p0, p1, q0, strict);
-            if (DoubleUtils.RoughlyZero(crossq1)) return InsideSegmentCollinear(p0, p1, q1, strict);
-            if (DoubleUtils.RoughlyZero(crossp0)) return InsideSegmentCollinear(q0, q1, p0, strict);
-            if (DoubleUtils.RoughlyZero(crossp1)) return InsideSegmentCollinear(q0, q1, p1, strict);
+            if (RoughlyZero(crossq0)) return InsideSegmentCollinear(p0, p1, q0, strict);
+            if (RoughlyZero(crossq1)) return InsideSegmentCollinear(p0, p1, q1, strict);
+            if (RoughlyZero(crossp0)) return InsideSegmentCollinear(q0, q1, p0, strict);
+            if (RoughlyZero(crossp1)) return InsideSegmentCollinear(q0, q1, p1, strict);
 
             // Check if everything is on one side
             if (crossq0 < 0 && crossq1 < 0) return false;
@@ -159,7 +159,7 @@ namespace PathRenderingLab
                 var p1 = poly[i == 0 ? poly.Length - 1 : i - 1];
 
                 // For strictness, if the line is "inside" the polygon, we have a problem
-                if (strict && DoubleUtils.RoughlyZero((p1 - p0).Cross(p - p0)) &&
+                if (strict && RoughlyZero((p1 - p0).Cross(p - p0)) &&
                     InsideSegmentCollinear(p0, p1, p, true)) return false;
 
                 if (p0.X < p.X && p1.X < p.X) continue;
@@ -184,7 +184,7 @@ namespace PathRenderingLab
                 var ik = (istart + 1) % len;
                 var ip = (istart + len - 1) % len;
 
-                if (!DoubleUtils.RoughlyZero((polygon[ik] - polygon[istart]).Cross(polygon[ip] - polygon[istart]))) break;
+                if (!RoughlyZero((polygon[ik] - polygon[istart]).Cross(polygon[ip] - polygon[istart]))) break;
             }
 
             // If there are no polygons non-collinear polygons, just return a line
@@ -209,7 +209,7 @@ namespace PathRenderingLab
 
                 // Only add the point if it doesn't form a parallel line with the next point on the line
                 for (int i = (istart + 1) % len; i != istart; i = (i + 1) % len)
-                    if (!DoubleUtils.RoughlyZero((polygon[(i + 1) % len] - polygon[i]).Cross(LastAddedPoint() - polygon[i])))
+                    if (!RoughlyZero((polygon[(i + 1) % len] - polygon[i]).Cross(LastAddedPoint() - polygon[i])))
                         points.Add(polygon[i]);
 
                 // Return the new formed polygon
@@ -333,7 +333,7 @@ namespace PathRenderingLab
             return hull.ToArray();
         }
 
-        public static void EnsureCounterclockwise(Double2[] poly)
+        public static Double2[] EnsureCounterclockwise(Double2[] poly)
         {
             // Calculate the polygon's winding
             double winding = 0;
@@ -342,7 +342,8 @@ namespace PathRenderingLab
                 winding += poly[i].Cross(poly[(i + 1) % poly.Length]);
 
             // Reverse the polygon if the winding is clockwise
-            if (winding < 0) Array.Reverse(poly);
+            if (winding < 0) poly.Reverse().ToArray();
+            return poly;
         }
     }
 }
