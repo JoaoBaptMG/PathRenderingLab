@@ -63,7 +63,7 @@ namespace PathRenderingLab.PathCompiler
                 // 1) The curves must have a common endpoint
                 if (!DoubleUtils.RoughlyEquals(ca.At(1), cb.At(0))) return false;
 
-                // 2) The tangents on that endpoind must be similar
+                // 2) The tangents on that endpoint must be similar
                 if (ca.ExitTangent.Dot(cb.EntryTangent) >= -0.99) return false;
 
                 // 3) Both must not have the same convexity
@@ -103,84 +103,63 @@ namespace PathRenderingLab.PathCompiler
             {
                 subdivide = false;
 
-                for (var onode = convexCurves.First; onode != null; onode = onode.Next)
-                {
-                    // Skip degenerate curves
-                    if (onode.Value.Value.IsDegenerate) continue;
+                TestListSubdivision(convexCurves, concaveCurves);
+                TestListSubdivision(convexCurves, convexCurves);
 
-                    for (var inode = concaveCurves.First; inode != null; inode = inode.Next)
+                void TestListSubdivision(LinkedList<LinkedListNode<Curve>> list1, LinkedList<LinkedListNode<Curve>> list2)
+                {
+                    for (var onode = list1.First; onode != null; onode = onode.Next)
                     {
                         // Skip degenerate curves
-                        if (inode.Value.Value.IsDegenerate) continue;
+                        if (onode.Value.Value.IsDegenerate) continue;
 
-                        // A function for subdividing the curves
-                        void SubdivideCurve(LinkedListNode<LinkedListNode<Curve>> node, params double[] ts)
+                        for (var inode = list2.First; inode != null; inode = inode.Next)
                         {
-                            Array.Sort(ts);
-                            var curve = node.Value.Value;
-                            var tl = ts.Length;
+                            // Skip equal curves
+                            if (inode.Value.Value == onode.Value.Value) continue;
 
-                            // For each subdivision, spawn a new node
-                            node.List.AddAfter(node, node.Value.List.AddAfter(node.Value, curve.Subcurve(ts[tl - 1], 1)));
-                            for (int i = tl - 2; i >= 0; i--)
-                                node.List.AddAfter(node, node.Value.List.AddAfter(node.Value, curve.Subcurve(ts[i], ts[i + 1])));
-                            node.Value.Value = curve.Subcurve(0, ts[0]);
-                        }
+                            // Skip degenerate curves
+                            if (inode.Value.Value.IsDegenerate) continue;
 
-                        while (true)
-                        {
-                            // Get the curve intersection info for the pair
-                            var intersectionInfo = GetIntersectionInfoFromCurves(onode.Value.Value, inode.Value.Value);
-
-                            // If there is no intersection, bail out
-                            if (intersectionInfo == null) break;
-
-                            // Get the case switches for it
-                            var interiorPoints1 = intersectionInfo.InteriorPoints1;
-                            var interiorPoints2 = intersectionInfo.InteriorPoints2;
-                            var l1 = interiorPoints1.Length > 0;          // Polygon 1 has points from polygon 2 in its interior
-                            var l2 = interiorPoints2.Length > 0;          // Polygon 2 has points from polygon 1 in its interior
-                            var k1 = intersectionInfo.CurveIntersects1;   // Curve 1 intersects polygon 2
-                            var k2 = intersectionInfo.CurveIntersects2;   // Curve 2 intersects polygon 1
-
-                            if ((!l1 && !l2 && !k1 && !k2) || (l1 && l2) || (k1 && k2))
+                            // A function for subdividing the curves
+                            void SubdivideCurveInHalf(LinkedListNode<LinkedListNode<Curve>> node)
                             {
-                                subdivide = true;
-                                SubdivideCurve(onode, 0.5);
-                                SubdivideCurve(inode, 0.5);
+                                var curve = node.Value.Value;
+                                node.List.AddAfter(node, node.Value.List.AddAfter(node.Value, curve.Subcurve(0.5, 1)));
+                                node.Value.Value = curve.Subcurve(0, 0.5);
                             }
-                            else if (l1 && !k1)
-                            {
-                                var ts = interiorPoints1.Select(onode.Value.Value.NearestPointTo)
-                                    .Where(t => t > 0 && t < 1).ToArray();
-                                if (ts.Length == 0) break;
 
-                                subdivide = true;
-                                SubdivideCurve(onode, ts);
-                            }
-                            else if (l2 && !k2)
+                            while (true)
                             {
-                                var ts = interiorPoints2.Select(inode.Value.Value.NearestPointTo)
-                                    .Where(t => t > 0 && t < 1).ToArray();
-                                if (ts.Length == 0) break;
+                                // Get the curve intersection info for the pair
+                                var intersectionInfo = GetIntersectionInfoFromCurves(onode.Value.Value, inode.Value.Value);
 
+                                // If there is no intersection, bail out
+                                if (intersectionInfo == null) break;
                                 subdivide = true;
-                                SubdivideCurve(inode, ts);
-                            }
-                            else if (k1)
-                            {
-                                subdivide = true;
-                                SubdivideCurve(inode, 0.5);
-                            }
-                            else if (k2)
-                            {
-                                subdivide = true;
-                                SubdivideCurve(onode, 0.5);
-                            }
-                            else Debug.Assert(false, "This should not happen!");
 
-                            // If we generate degenerate curves, bail out too
-                            if (onode.Value.Value.IsDegenerate || inode.Value.Value.IsDegenerate) break;
+                                // Get the case switches for it
+                                var interiorPoints1 = intersectionInfo.InteriorPoints1;
+                                var interiorPoints2 = intersectionInfo.InteriorPoints2;
+                                var l1 = interiorPoints1.Length > 0;          // Polygon 1 has points from polygon 2 in its interior
+                                var l2 = interiorPoints2.Length > 0;          // Polygon 2 has points from polygon 1 in its interior
+                                var k1 = intersectionInfo.CurveIntersects1;   // Curve 1 intersects polygon 2
+                                var k2 = intersectionInfo.CurveIntersects2;   // Curve 2 intersects polygon 1
+
+                                if ((!l1 && !l2 && !k1 && !k2) || (l1 && l2) || (k1 && k2))
+                                {
+                                    SubdivideCurveInHalf(onode);
+                                    SubdivideCurveInHalf(inode);
+                                }
+                                else if (l1 && !k1) SubdivideCurveInHalf(onode);
+                                else if (l2 && !k2) SubdivideCurveInHalf(inode);
+                                else if (k1) SubdivideCurveInHalf(inode);
+                                else if (k2) SubdivideCurveInHalf(onode);
+                                else Debug.Assert(false, "This should not happen!");
+
+                                // If we generate degenerate curves, bail out too
+                                if (onode.Value.Value.IsDegenerate || inode.Value.Value.IsDegenerate) break;
+                            }
                         }
                     }
                 }

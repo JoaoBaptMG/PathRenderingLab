@@ -97,6 +97,8 @@ namespace PathRenderingLab.PathCompiler
         /// <returns>The subcurve returned from remapping the interval [l,r] to [0,1]</returns>
         public Curve Subcurve(double l, double r)
         {
+            if (l == 0 && r == 1) return this;
+
             switch (Type)
             {
                 case CurveType.Line: return Line_Subcurve(l, r);
@@ -143,6 +145,8 @@ namespace PathRenderingLab.PathCompiler
             }
         }
 
+        DoubleRectangle? cachedBoundingBox;
+
         /// <summary>
         /// The curve's bounding box
         /// </summary>
@@ -150,14 +154,19 @@ namespace PathRenderingLab.PathCompiler
         {
             get
             {
-                switch (Type)
+                if (!cachedBoundingBox.HasValue)
                 {
-                    case CurveType.Line: return Line_BoundingBox;
-                    case CurveType.QuadraticBezier: return QuadraticBezier_BoundingBox;
-                    case CurveType.CubicBezier: return CubicBezier_BoundingBox;
-                    case CurveType.EllipticArc: return EllipticArc_BoundingBox;
-                    default: throw new InvalidOperationException("Unrecognized type.");
+                    switch (Type)
+                    {
+                        case CurveType.Line: cachedBoundingBox = Line_BoundingBox; break;
+                        case CurveType.QuadraticBezier: cachedBoundingBox = QuadraticBezier_BoundingBox; break;
+                        case CurveType.CubicBezier: cachedBoundingBox = CubicBezier_BoundingBox; break;
+                        case CurveType.EllipticArc: cachedBoundingBox = EllipticArc_BoundingBox; break;
+                        default: throw new InvalidOperationException("Unrecognized type.");
+                    }
                 }
+
+                return cachedBoundingBox.Value;
             }
         }
 
@@ -258,6 +267,25 @@ namespace PathRenderingLab.PathCompiler
                 case CurveType.QuadraticBezier: return QuadraticBezier_NearestPointTo(p);
                 case CurveType.CubicBezier: return CubicBezier_NearestPointTo(p);
                 case CurveType.EllipticArc: return EllipticArc_NearestPointTo(p);
+                default: throw new InvalidOperationException("Unrecognized type.");
+            }
+        }
+
+        public Curve SubcurveCorrectEndpoints(KeyValuePair<double, Double2> l, KeyValuePair<double, Double2> r)
+        {
+            if (l.Key == 0 && r.Key == 1) return this;
+            return Subcurve(l.Key, r.Key).CorrectEndpoints(l.Value, r.Value);
+        }
+
+        public Curve CorrectEndpoints(Double2 p0, Double2 p1)
+        {
+            switch (Type)
+            {
+                case CurveType.Line: return Line(p0, p1);
+                case CurveType.QuadraticBezier: return QuadraticBezier(p0, B, p1);
+                case CurveType.CubicBezier: return CubicBezier(p0, B, C, p1);
+                case CurveType.EllipticArc:
+                    return EllipticArc(p0, Radii, ComplexRot.Angle, Math.Abs(DeltaAngle) > DoubleUtils.Pi, DeltaAngle >= 0, p1);
                 default: throw new InvalidOperationException("Unrecognized type.");
             }
         }

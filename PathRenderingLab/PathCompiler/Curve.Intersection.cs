@@ -193,71 +193,74 @@ namespace PathRenderingLab.PathCompiler
         public static IEnumerable<RootPair> GeneralCurveIntersections(Curve c1, Curve c2,
             double t1l = 0f, double t1r = 1f, double t2l = 0f, double t2r = 1f, int depth = 0)
         {
-            bool small1 = FinelyZero(c1.BoundingBox.Width) && FinelyZero(c1.BoundingBox.Height);
-            bool small2 = FinelyZero(c2.BoundingBox.Width) && FinelyZero(c2.BoundingBox.Height);
+            var bb1 = c1.Subcurve(t1l, t1r).BoundingBox;
+            var bb2 = c2.Subcurve(t2l, t2r).BoundingBox;
+
+            bool small1 = FinelyZero(bb1.Width) && FinelyZero(bb1.Height);
+            bool small2 = FinelyZero(bb2.Width) && FinelyZero(bb2.Height);
 
             // break at a specified depth
             if (small1 && small2)
             {
-                if (t1l == 0f && t2l == 0f && FinelyEquals(c1.At(0f), c2.At(0f)))
+                if (t1l == 0f && t2l == 0f && FinelyEquals(c1.At(0), c2.At(0)))
                     return new[] { new RootPair(0f, 0f) };
 
-                if (t1l == 0f && t2r == 1f && FinelyEquals(c1.At(0f), c2.At(1f)))
+                if (t1l == 0f && t2r == 1f && FinelyEquals(c1.At(0), c2.At(1)))
                     return new[] { new RootPair(0f, 1f) };
 
-                if (t1r == 1f && t2l == 0f && FinelyEquals(c1.At(1f), c2.At(0f)))
+                if (t1r == 1f && t2l == 0f && FinelyEquals(c1.At(1), c2.At(0)))
                     return new[] { new RootPair(1f, 0f) };
 
-                if (t1r == 1f && t2r == 1f && FinelyEquals(c1.At(1f), c2.At(1f)))
+                if (t1r == 1f && t2r == 1f && FinelyEquals(c1.At(1), c2.At(1)))
                     return new[] { new RootPair(1f, 1f) };
 
                 return new[] { new RootPair((t1l + t1r) / 2, (t2l + t2r) / 2) };
             }
 
-            return GeneralCurveIntersectionsInternal(c1, c2, t1l, t1r, t2l, t2r, depth, small1, small2);
+            return GeneralCurveIntersectionsInternal(c1, c2, t1l, t1r, t2l, t2r, depth, small1, small2, bb1, bb2);
         }
 
-        static IEnumerable<RootPair> GeneralCurveIntersectionsInternal(Curve c1, Curve c2,
-            double t1l, double t1r, double t2l, double t2r, int depth, bool small1, bool small2)
+        static IEnumerable<RootPair> GeneralCurveIntersectionsInternal(Curve c1, Curve c2, double t1l, double t1r,
+            double t2l, double t2r, int depth, bool small1, bool small2, DoubleRectangle bb1, DoubleRectangle bb2)
         {
             double t1m = (t1l + t1r) / 2;
             double t2m = (t2l + t2r) / 2;
 
             // Find both intersection curve pairs
-            var c1l = c1.Subcurve(0f, 0.5f);
-            var c1r = c1.Subcurve(0.5f, 1f);
-            var c2l = c2.Subcurve(0f, 0.5f);
-            var c2r = c2.Subcurve(0.5f, 1f);
+            var bb1l = c1.Subcurve(t1l, t1m).BoundingBox;
+            var bb1r = c1.Subcurve(t1m, t1r).BoundingBox;
+            var bb2l = c2.Subcurve(t2r, t2m).BoundingBox;
+            var bb2r = c2.Subcurve(t2m, t2r).BoundingBox;
 
             if (small1)
             {
-                if (c1.BoundingBox.Intersects(c2l.BoundingBox))
-                    foreach (var r in GeneralCurveIntersections(c1, c2l, t1l, t1r, t2l, t2m, depth + 1)) yield return r;
+                if (bb1.Intersects(bb2l))
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2l, t2m, depth + 1)) yield return r;
 
-                if (c1.BoundingBox.Intersects(c2r.BoundingBox))
-                    foreach (var r in GeneralCurveIntersections(c1, c2r, t1l, t1r, t2m, t2r, depth + 1)) yield return r;
+                if (bb1.Intersects(bb2r))
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2m, t2r, depth + 1)) yield return r;
             }
             else if (small2)
             {
-                if (c1l.BoundingBox.Intersects(c2.BoundingBox))
-                    foreach (var r in GeneralCurveIntersections(c1l, c2, t1l, t1m, t2l, t2r, depth + 1)) yield return r;
+                if (bb1l.Intersects(bb2))
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2r, depth + 1)) yield return r;
 
-                if (c1r.BoundingBox.Intersects(c2.BoundingBox))
-                    foreach (var r in GeneralCurveIntersections(c1r, c2, t1m, t1r, t2l, t2r, depth + 1)) yield return r;
+                if (bb1r.Intersects(bb2))
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2r, depth + 1)) yield return r;
             }
             else
             {
-                if (c1l.BoundingBox.Intersects(c2l.BoundingBox))
-                    foreach (var r in GeneralCurveIntersections(c1l, c2l, t1l, t1m, t2l, t2m, depth + 1)) yield return r;
+                if (bb1l.Intersects(bb2l))
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2m, depth + 1)) yield return r;
 
-                if (c1l.BoundingBox.Intersects(c2r.BoundingBox))
-                    foreach (var r in GeneralCurveIntersections(c1l, c2r, t1l, t1m, t2m, t2r, depth + 1)) yield return r;
+                if (bb1l.Intersects(bb2r))
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2m, t2r, depth + 1)) yield return r;
 
-                if (c1r.BoundingBox.Intersects(c2l.BoundingBox))
-                    foreach (var r in GeneralCurveIntersections(c1r, c2l, t1m, t1r, t2l, t2m, depth + 1)) yield return r;
+                if (bb1r.Intersects(bb2l))
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2m, depth + 1)) yield return r;
 
-                if (c1r.BoundingBox.Intersects(c2r.BoundingBox))
-                    foreach (var r in GeneralCurveIntersections(c1r, c2r, t1m, t1r, t2m, t2r, depth + 1)) yield return r;
+                if (bb1r.Intersects(bb2r))
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2m, t2r, depth + 1)) yield return r;
             }
         }
 

@@ -129,7 +129,8 @@ namespace PathRenderingLab
                     var p1 = poly0[j == 0 ? poly0.Length - 1 : j - 1];
                     var q1 = poly1[i == 0 ? poly1.Length - 1 : i - 1];
 
-                    if (SegmentsIntersect(p0, p1, q0, q1, strict)) return true;
+                    if (SegmentsIntersect(p0, p1, q0, q1, strict))
+                        return true;
                 }
 
             // Check for overlapping of the first point
@@ -170,7 +171,7 @@ namespace PathRenderingLab
 
                 // For strictness, if the line is "inside" the polygon, we have a problem
                 if (strict && RoughlyZero((p1 - p0).Cross(p - p0)) &&
-                    InsideSegmentCollinear(p0, p1, p, true)) return false;
+                    InsideSegmentCollinear(p0, p1, p)) return false;
 
                 if (p0.X < p.X && p1.X < p.X) continue;
                 if (p0.X < p.X) p0 = p1 + (p.X - p1.X) / (p0.X - p1.X) * (p0 - p1);

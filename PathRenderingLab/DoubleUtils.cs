@@ -5,7 +5,7 @@ namespace PathRenderingLab
 {
     public static class DoubleUtils
     {
-        public const double Epsilon = 1d / 65536;
+        public const double Epsilon = 1d / 32768;
         public const double Epsilon2 = Epsilon * Epsilon;
 
         public static bool RoughlyZero(double a) => a > -Epsilon && a < Epsilon;

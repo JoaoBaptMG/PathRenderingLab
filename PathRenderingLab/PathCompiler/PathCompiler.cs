@@ -8,9 +8,8 @@ namespace PathRenderingLab.PathCompiler
     public static class PathCompilerMethods
     {
         // Values necessary to "align" the curves in the right places
-        public const double TruncateVal = 1024;
-        public static double Truncate(double v) => Math.Round(v * TruncateVal) / TruncateVal;
-        public static Double2 Truncate(Double2 v) => new Double2(Truncate(v.X), Truncate(v.Y));
+        public static double Truncate(double v) => v.Truncate();
+        public static Double2 Truncate(Double2 v) => v.Truncate();
 
         public static int FindOrAddPoint(List<Double2> vertices, Double2 vertex)
         {
@@ -51,66 +50,66 @@ namespace PathRenderingLab.PathCompiler
         internal static CompiledDrawing CompileCurves(List<Curve> curves, FillRule fillRule)
         {
             // Reunite all intersections to subdivide the curves
-            var curveRootSets = new List<double>[curves.Count];
+            var curveRootSets = new SortedDictionary<double,Double2>[curves.Count];
             for (int i = 0; i < curveRootSets.Length; i++)
-                curveRootSets[i] = new List<double>() { 1 };
+                curveRootSets[i] = new SortedDictionary<double, Double2>() { [0] = curves[i].At(0), [1] = curves[i].At(1) };
 
             // Get all intersections
             for (int i = 0; i < curves.Count; i++)
                 for (int j = i + 1; j < curves.Count; j++)
                     foreach (var pair in Curve.Intersections(curves[i], curves[j]))
                     {
+                        if (!GeometricUtils.Inside01(pair.A) || !GeometricUtils.Inside01(pair.B)) continue;
+
                         var a = curves[i].At(pair.A);
                         var b = curves[j].At(pair.B);
-                        if (!DoubleUtils.RoughlyEquals(a, b))
+
+                        if (!DoubleUtils.RoughlyEquals(a / 2, b / 2))
                         {
                             //Console.WriteLine(string.Join(" ", Curve.Intersections(curves[i], curves[j]).Select(c => $"({c.A} {c.B})")));
                             Debug.Assert(false, "Problem here...");
                         }
 
-                        curveRootSets[i].Add(pair.A);
-                        curveRootSets[j].Add(pair.B);
+                        curveRootSets[i][pair.A] = curveRootSets[j][pair.B] = (a + b) / 2;
                     }
-
-            // Sort and eliminate all weird results
-            foreach (var set in curveRootSets)
-            {
-                set.RemoveAll(r => DoubleUtils.RoughlyZero(r) || !GeometricUtils.Inside01(r));
-                set.Sort();
-            }
 
             // Finally, we can start building the DCEL
             var dcel = new DCEL.DCEL();
 
             for (int i = 0; i < curves.Count; i++)
             {
-                double v = 0f;
-                foreach (var l in curveRootSets[i])
+                KeyValuePair<double,Double2> prevPair = new KeyValuePair<double, Double2>(double.NaN, new Double2());
+                foreach (var curPair in curveRootSets[i])
                 {
-                    var curve = curves[i].Subcurve(v, l);
-
-                    foreach (var c in curve.Simplify())
+                    if (!double.IsNaN(prevPair.Key))
                     {
-                        if (c.IsDegenerate) continue;
-                        dcel.AddCurve(c);
-                        //Console.WriteLine(dcel);
-                        //Console.ReadLine();
+                        Curve curve;
+                        if (prevPair.Key == 0 && curPair.Key == 1) curve = curves[i];
+                        else curve = curves[i].SubcurveCorrectEndpoints(prevPair, curPair);
+
+                        foreach (var c in curve.Simplify())
+                        {
+                            //if (c.IsDegenerate) continue;
+                            dcel.AddCurve(c);
+                            //Console.WriteLine(dcel);
+                            //Console.ReadLine();
+                        }
                     }
 
-                    v = l;
+                    prevPair = curPair;
                 }
             }
 
-            //Console.WriteLine(dcel);
-            //Console.ReadLine();
+            Console.WriteLine(dcel);
+            Console.ReadLine();
 
             // Now, we remove wedges and assign the fill numbers
             dcel.RemoveWedges();
-            //Console.WriteLine(dcel);
-            //Console.ReadLine();
+            Console.WriteLine(dcel);
+            Console.ReadLine();
             dcel.AssignFillNumbers();
-            //Console.WriteLine(dcel);
-            //Console.ReadLine();
+            Console.WriteLine(dcel);
+            Console.ReadLine();
 
             // Pick the appropriate predicate for the fill rule
             Func<DCEL.Face, bool> facePredicate;
