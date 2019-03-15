@@ -59,6 +59,8 @@ namespace PathRenderingLab
             return hash1 ^ (hash2 << 3) ^ (hash2 >> 29) ^ (hash3 << 9) ^ (hash3 >> 23);
         }
 
+        public Double3 Truncate() => new Double3(X.Truncate(), Y.Truncate(), Z.Truncate());
+
         public static explicit operator Vector3(Double3 v) => new Vector3((float)v.X, (float)v.Y, (float)v.Z);
     }
 }

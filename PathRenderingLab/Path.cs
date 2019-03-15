@@ -150,7 +150,7 @@ namespace PathRenderingLab
         public IEnumerable<CurveData> SplitCurves() => SplitCurves(PathCommands);
         public IEnumerable<Curve> Curves() => Curves(PathCommands);
 
-        public DoubleMatrix Normalize(double halfSize = 2048)
+        public DoubleMatrix NormalizeAndTruncate(double halfSize = 2048)
         {
             // Calculate the bounding box of the path
             var points = Curves().SelectMany(c => c.EnclosingPolygon).ToArray();
@@ -189,19 +189,19 @@ namespace PathRenderingLab
                 {
                     case PathCommandType.MoveTo:
                     case PathCommandType.LineTo:
-                        PathCommands[i].Target = (PathCommands[i].Target - center) * d; break;
+                        PathCommands[i].Target = (PathCommands[i].Target * d - center * d).Truncate(); break;
                     case PathCommandType.QuadraticCurveTo:
-                        PathCommands[i].Target = (PathCommands[i].Target - center) * d;
-                        PathCommands[i].Control = (PathCommands[i].Control - center) * d;
+                        PathCommands[i].Target = (PathCommands[i].Target * d - center * d).Truncate();
+                        PathCommands[i].Control = (PathCommands[i].Control * d - center * d).Truncate();
                         break;
                     case PathCommandType.CubicCurveTo:
-                        PathCommands[i].Target = (PathCommands[i].Target - center) * d;
-                        PathCommands[i].Control = (PathCommands[i].Control - center) * d;
-                        PathCommands[i].Control2 = (PathCommands[i].Control2 - center) * d;
+                        PathCommands[i].Target = (PathCommands[i].Target * d - center * d).Truncate();
+                        PathCommands[i].Control = (PathCommands[i].Control * d - center * d).Truncate();
+                        PathCommands[i].Control2 = (PathCommands[i].Control2 * d - center * d).Truncate();
                         break;
                     case PathCommandType.ArcTo:
-                        PathCommands[i].Target = (PathCommands[i].Target - center) * d;
-                        PathCommands[i].Control *= d;
+                        PathCommands[i].Target = (PathCommands[i].Target * d - center * d).Truncate();
+                        PathCommands[i].Control = (PathCommands[i].Control * d).Truncate();
                         break;
                     default: break;
                 }

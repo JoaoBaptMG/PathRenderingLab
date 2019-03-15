@@ -108,12 +108,12 @@ namespace PathRenderingLab
                 var path = svgPath.Path;
                 var ps = svgPath.PathStyle;
 
+                // Normalize the path
+                var normalMatrix = path.NormalizeAndTruncate();
+                var matrix = (Matrix)(svgPath.Transform.ToMatrix() * normalMatrix);
+
                 Console.WriteLine($"Parsed path {++pathId}: {svgPath.Path}");
                 Console.WriteLine();
-
-                // Normalize the path
-                var normalMatrix = path.Normalize();
-                var matrix = (Matrix)(svgPath.Transform.ToMatrix() * normalMatrix);
 
                 if (ps.FillColor.HasValue)
                 {
@@ -192,7 +192,7 @@ namespace PathRenderingLab
             }
 
             for (int i = 0; i < numPaths; i++)
-                WriteStats($"path {i}",
+                WriteStats($"path {i+1}",
                     triangleIndicesStartingIds[i + 1] - triangleIndicesStartingIds[i],
                     curveVerticesStartingIds[i + 1] - curveVerticesStartingIds[i],
                     doubleCurveVerticesStartingIds[i + 1] - doubleCurveVerticesStartingIds[i], totalTimes[i]);

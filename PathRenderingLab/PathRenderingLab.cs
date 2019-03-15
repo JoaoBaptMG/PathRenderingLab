@@ -379,7 +379,7 @@ namespace PathRenderingLab
                     $"({numIndices / 3} filled, {numCurveVertices / 3} curves and {numDoubleCurveVertices / 3} double curves)");
 
             for (int i = 0; i < NumDrawings; i++)
-                AppendDrawing($"drawing {i}",
+                AppendDrawing($"drawing {i+1}",
                     DrawingIndicesStartingIds[i + 1] - DrawingIndicesStartingIds[i],
                     DrawingCurveVerticesStartingIds[i + 1] - DrawingCurveVerticesStartingIds[i],
                     DrawingDoubleCurveVerticesStartingIds[i + 1] - DrawingDoubleCurveVerticesStartingIds[i]);

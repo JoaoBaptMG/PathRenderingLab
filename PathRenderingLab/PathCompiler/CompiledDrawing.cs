@@ -53,6 +53,9 @@ namespace PathRenderingLab.PathCompiler
             return fill;
         }
 
+        private static string TriangleStat(CurveTriangle tri) => $"M {tri.A.Position} {tri.B.Position} {tri.C.Position} Z";
+        private static string TriangleStat(DoubleCurveTriangle tri) => $"M {tri.A.Position} {tri.B.Position} {tri.C.Position} Z";
+
         private static Double2[] FillPolygon(Curve[] contour)
         {
             // "Guess" a capacity for the list, add the first point

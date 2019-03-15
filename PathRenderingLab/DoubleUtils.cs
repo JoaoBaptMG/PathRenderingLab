@@ -5,7 +5,7 @@ namespace PathRenderingLab
 {
     public static class DoubleUtils
     {
-        public const double Epsilon = 1d / 16384;
+        public const double Epsilon = 1d / 65536;
         public const double Epsilon2 = Epsilon * Epsilon;
 
         public static bool RoughlyZero(double a) => a > -Epsilon && a < Epsilon;
@@ -61,6 +61,8 @@ namespace PathRenderingLab
             list.Clear();
             list.AddRange(temp);
         }
+
+        public static double Truncate(this double x) => Epsilon * Math.Round(x / Epsilon);
 
         public static double? TryParse(string str)
             => double.TryParse(str, out var result) ? result : new double?();

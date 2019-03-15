@@ -1,10 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using static PathRenderingLab.SwapUtils;
 
 namespace PathRenderingLab.PathCompiler
 {
+    class CurveIntersectionInfo
+    {
+        public Double2[] InteriorPoints1, InteriorPoints2;
+        public bool CurveIntersects1, CurveIntersects2;
+
+        public CurveIntersectionInfo()
+        {
+            CurveIntersects1 = false;
+            CurveIntersects2 = false;
+        }
+    }
+
     /// <summary>
     /// Represents a face to be filled with a specific fill mode.
     /// It has an outer contor (counterclockwise) and inner contours (clockwise).
@@ -52,7 +64,7 @@ namespace PathRenderingLab.PathCompiler
                 if (!DoubleUtils.RoughlyEquals(ca.At(1), cb.At(0))) return false;
 
                 // 2) The tangents on that endpoind must be similar
-                if (ca.ExitTangent.Dot(cb.EntryTangent) >= -0.95) return false;
+                if (ca.ExitTangent.Dot(cb.EntryTangent) >= -0.99) return false;
 
                 // 3) Both must not have the same convexity
                 return ca.IsConvex != cb.IsConvex;
@@ -101,93 +113,74 @@ namespace PathRenderingLab.PathCompiler
                         // Skip degenerate curves
                         if (inode.Value.Value.IsDegenerate) continue;
 
-                        while (true)
+                        // A function for subdividing the curves
+                        void SubdivideCurve(LinkedListNode<LinkedListNode<Curve>> node, params double[] ts)
                         {
-                            // Try to subdivide the curve combinations that are locally clockwise
-                            if (CombinedWindings(onode.Value.Value, inode.Value.Value) >= 0)
-                                if (TrySubdivide(ref onode, ref inode)) continue;
-                            else if (TrySubdivide(ref inode, ref onode)) continue;
-                            break;
+                            Array.Sort(ts);
+                            var curve = node.Value.Value;
+                            var tl = ts.Length;
+
+                            // For each subdivision, spawn a new node
+                            node.List.AddAfter(node, node.Value.List.AddAfter(node.Value, curve.Subcurve(ts[tl - 1], 1)));
+                            for (int i = tl - 2; i >= 0; i--)
+                                node.List.AddAfter(node, node.Value.List.AddAfter(node.Value, curve.Subcurve(ts[i], ts[i + 1])));
+                            node.Value.Value = curve.Subcurve(0, ts[0]);
                         }
 
-                        // The function to try to subdivide the two curves
-                        bool TrySubdivide(ref LinkedListNode<LinkedListNode<Curve>> cvnode,
-                            ref LinkedListNode<LinkedListNode<Curve>> ccnode)
+                        while (true)
                         {
-                            // The curves and their enclosing polygons
-                            var convex = cvnode.Value.Value;
-                            var cvPoly = convex.EnclosingPolygon;
-                            var cvstr = Triangulator.YMonotone.PolygonRepresentation(cvPoly);
+                            // Get the curve intersection info for the pair
+                            var intersectionInfo = GetIntersectionInfoFromCurves(onode.Value.Value, inode.Value.Value);
 
-                            var concave = ccnode.Value.Value;
-                            var ccPoly = concave.EnclosingPolygon;
-                            var ccstr = Triangulator.YMonotone.PolygonRepresentation(ccPoly);
+                            // If there is no intersection, bail out
+                            if (intersectionInfo == null) break;
 
-                            // Do not try to check eligible curves in subdivision
-                            if (AreCurvesFusable(convex, concave)) return false;
+                            // Get the case switches for it
+                            var interiorPoints1 = intersectionInfo.InteriorPoints1;
+                            var interiorPoints2 = intersectionInfo.InteriorPoints2;
+                            var l1 = interiorPoints1.Length > 0;          // Polygon 1 has points from polygon 2 in its interior
+                            var l2 = interiorPoints2.Length > 0;          // Polygon 2 has points from polygon 1 in its interior
+                            var k1 = intersectionInfo.CurveIntersects1;   // Curve 1 intersects polygon 2
+                            var k2 = intersectionInfo.CurveIntersects2;   // Curve 2 intersects polygon 1
 
-                            // Check each of the concave polygon's vertices for overlap
-                            foreach (var v in ccPoly.Reverse())
+                            if ((!l1 && !l2 && !k1 && !k2) || (l1 && l2) || (k1 && k2))
                             {
-                                // Get the segment that joins the point to the nearest point on the curve
-                                double wk = concave.NearestPointTo(v);
-                                var w = concave.At(wk);
-
-                                // If the segment intersects the polygon, do the subdivision
-                                if (GeometricUtils.PolygonSegmentIntersect(cvPoly, v, w))
-                                {
-                                    double t = convex.NearestPointTo(v);
-                                    var p = convex.At(t);
-
-                                    // The only way for the nearest point to be one of the convex curve's endpoints
-                                    // is if it is equal to one of the concave curve's endpoints too, skip this
-                                    if (DoubleUtils.RoughlyZero(t) || DoubleUtils.RoughlyEquals(t, 1)) continue;
-
-                                    // If the nearest point is below the convex curve, subdivide the convex curve
-                                    if ((p - v).Cross(convex.Derivative.At(t)) >= 0)
-                                    {
-                                        subdivide = true;
-
-                                        var c1 = convex.Subcurve(0, t);
-                                        var c2 = convex.Subcurve(t, 1);
-
-                                        //Console.WriteLine($"{convex.PathRepresentation()}({c1.PathRepresentation()}" +
-                                        //    $" / {c2.PathRepresentation()}) x {concave.PathRepresentation()}");
-
-                                        // Update the linked list accordingly
-                                        cvnode.Value.Value = c1;
-                                        cvnode.List.AddAfter(cvnode, cvnode.Value.List.AddAfter(cvnode.Value, c2));
-
-                                        // Retry this iteration with the newly-divided curve
-                                        return true;
-                                    }
-                                    else // Subdivide the concave curve
-                                    {
-                                        double u = concave.NearestPointTo(p);
-
-                                        // If it is possible for the nearest point on the convex curve to one of the
-                                        // endpoints, the subdivision will be ill-formed. Skip
-                                        if (DoubleUtils.RoughlyZero(u) || DoubleUtils.RoughlyEquals(u, 1)) continue;
-
-                                        subdivide = true;
-
-                                        var k1 = concave.Subcurve(0, u);
-                                        var k2 = concave.Subcurve(u, 1);
-
-                                        //Console.WriteLine($"{convex.PathRepresentation()} x {concave.PathRepresentation()}" +
-                                        //    $" ({k1.PathRepresentation()} / {k2.PathRepresentation()})");
-
-                                        // Update the linked list
-                                        ccnode.Value.Value = k1;
-                                        ccnode.List.AddAfter(ccnode, ccnode.Value.List.AddAfter(ccnode.Value, k2));
-
-                                        // Retry this iteration with the newly-divided curve
-                                        return true;
-                                    }
-                                }
+                                subdivide = true;
+                                SubdivideCurve(onode, 0.5);
+                                SubdivideCurve(inode, 0.5);
                             }
+                            else if (l1 && !k1)
+                            {
+                                var ts = interiorPoints1.Select(onode.Value.Value.NearestPointTo)
+                                    .Where(t => t > 0 && t < 1).ToArray();
+                                if (ts.Length == 0) break;
 
-                            return false;
+                                subdivide = true;
+                                SubdivideCurve(onode, ts);
+                            }
+                            else if (l2 && !k2)
+                            {
+                                var ts = interiorPoints2.Select(inode.Value.Value.NearestPointTo)
+                                    .Where(t => t > 0 && t < 1).ToArray();
+                                if (ts.Length == 0) break;
+
+                                subdivide = true;
+                                SubdivideCurve(inode, ts);
+                            }
+                            else if (k1)
+                            {
+                                subdivide = true;
+                                SubdivideCurve(inode, 0.5);
+                            }
+                            else if (k2)
+                            {
+                                subdivide = true;
+                                SubdivideCurve(onode, 0.5);
+                            }
+                            else Debug.Assert(false, "This should not happen!");
+
+                            // If we generate degenerate curves, bail out too
+                            if (onode.Value.Value.IsDegenerate || inode.Value.Value.IsDegenerate) break;
                         }
                     }
                 }
@@ -314,11 +307,55 @@ namespace PathRenderingLab.PathCompiler
                 }
             }
 
-            // When all subdivisions are done, we can return the result
-            return new FillFace(contourLists.Select(list => list.ToArray()).ToArray());
+            // When all subdivisions are done, we can return the result, filtering out the degenerate curves
+            return new FillFace(contourLists.Select(list => list.Where(c => !c.IsDegenerate).ToArray()).ToArray());
         }
 
         static double CombinedWindings(Curve convex, Curve concave)
             => convex.Winding + convex.At(1).Cross(concave.At(0)) + concave.Winding + concave.At(1).Cross(convex.At(0));
+
+        static CurveIntersectionInfo GetIntersectionInfoFromCurves(Curve c1, Curve c2)
+        {
+            // Utility function to test for intersection from convex polygon
+            bool StrictlyInsideConvexPolygon(Double2[] poly, Double2 pt)
+            {
+                var length = poly.Length;
+                for (int i = 0; i < length; i++)
+                {
+                    var ik = (i + 1) % length;
+                    if ((poly[ik] - poly[i]).Cross(pt - poly[i]) <= 0)
+                        return false;
+                }
+                return true;
+            }
+
+            // Utility function to test for intersection with curve
+            bool CurveIntersects(Double2[] poly, Curve curve)
+            {
+                var length = poly.Length;
+                for (int i = 0; i < length; i++)
+                {
+                    var ik = (i + 1) % length;
+                    if (Curve.Intersections(curve, Curve.Line(poly[i], poly[ik])).Any())
+                        return true;
+                }
+                return false;
+            }
+
+            // Get the curves' enclosing polygons
+            var p1 = GeometricUtils.EnsureCounterclockwise(c1.EnclosingPolygon);
+            var p2 = GeometricUtils.EnsureCounterclockwise(c2.EnclosingPolygon);
+
+            // If there is no intersection, no info
+            if (!GeometricUtils.PolygonsOverlap(p1, p2, true)) return null;
+
+            return new CurveIntersectionInfo
+            {
+                InteriorPoints1 = p2.Where(p => StrictlyInsideConvexPolygon(p1, p)).ToArray(),
+                InteriorPoints2 = p1.Where(p => StrictlyInsideConvexPolygon(p2, p)).ToArray(),
+                CurveIntersects1 = CurveIntersects(p2, c1),
+                CurveIntersects2 = CurveIntersects(p1, c2)
+            };
+        }
     }
 }

@@ -34,6 +34,16 @@ namespace PathRenderingLab
 
         public bool Intersects(DoubleRectangle o) => !(X > o.X + o.Width || o.X > X + Width || Y > o.Y + o.Height || o.Y > Y + Height);
 
+        public DoubleRectangle Truncate()
+        {
+            var x1 = X.Truncate();
+            var y1 = Y.Truncate();
+            var x2 = (X + Width).Truncate();
+            var y2 = (Y + Height).Truncate();
+
+            return new DoubleRectangle(x1, y1, x2 - x1, y2 - y1);
+        }
+
         public override string ToString() => $"{X} {Y} {Width} {Height}";
     }
 

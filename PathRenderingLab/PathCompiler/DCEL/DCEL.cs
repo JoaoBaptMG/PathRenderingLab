@@ -43,11 +43,6 @@ namespace PathRenderingLab.PathCompiler.DCEL
             this.inexact = inexact;
         }
 
-        // Values necessary to "align" the curves in the right places
-        const double TruncateVal = 4096;
-        static double Truncate(double v) => Math.Round(v * TruncateVal) / TruncateVal;
-        static Double2 Truncate(Double2 v) => new Double2(Truncate(v.X), Truncate(v.Y));
-
         /// <summary>
         /// Adds a vertex to the DCEL
         /// </summary>
@@ -55,7 +50,7 @@ namespace PathRenderingLab.PathCompiler.DCEL
         /// <returns>The vertex added</returns>
         public Vertex AddVertex(Double2 v)
         {
-            if (inexact) v = Truncate(v);
+            if (inexact) v = PathCompilerMethods.Truncate(v);
             var vertex = new Vertex(v);
             vertices.Add(vertex);
             return vertex;
@@ -69,7 +64,7 @@ namespace PathRenderingLab.PathCompiler.DCEL
         /// <returns></returns>
         public bool FindVertex(Double2 v, out Vertex vertex)
         {
-            if (inexact) v = Truncate(v);
+            if (inexact) v = PathCompilerMethods.Truncate(v);
             vertex = vertices.FirstOrDefault(vt => vt.Position == v);
             return vertex != null;
         }
