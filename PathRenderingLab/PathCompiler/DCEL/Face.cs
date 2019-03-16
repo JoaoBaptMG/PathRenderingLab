@@ -63,7 +63,7 @@ namespace PathRenderingLab.PathCompiler.DCEL
 
                 foreach (var edge in Contours)
                 {
-                    list.Add(PathCommand.MoveTo(edge.E1.Position));
+                    list.Add(PathCommand.MoveTo(edge.Curve.At(0)));
                     list.AddRange(edge.CyclicalSequence.Select(e => e.PathCommandFrom()));
                     list.Add(PathCommand.ClosePath());
                 }
