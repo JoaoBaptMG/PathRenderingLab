@@ -50,7 +50,9 @@ You want to help? You are absolutely welcome! You can signal issues using the Is
 
 ## License
 
-The entirety of this project (without the _Bitlush.AvlTree_ folder) is under the MIT license, copyright 2018--2019 Jo�o Baptista de Paula e Silva.
+The entirety of this project (without the _Bitlush.AvlTree_ folder) is under the MIT license, copyright 2018--2019 João Baptista de Paula e Silva.
+
+With the exception of some SVG files on the example folder (namely, _sonic.svg_, _tails.svg_ and _knuckles.svg_, which I guess configure fair use for the sake of testing this project), all the other SVG files are free to use and in public domain.
 
 ## References
 
