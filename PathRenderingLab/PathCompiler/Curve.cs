@@ -284,8 +284,7 @@ namespace PathRenderingLab.PathCompiler
                 case CurveType.Line: return Line(p0, p1);
                 case CurveType.QuadraticBezier: return QuadraticBezier(p0, B, p1);
                 case CurveType.CubicBezier: return CubicBezier(p0, B, C, p1);
-                case CurveType.EllipticArc:
-                    return EllipticArc(p0, Radii, ComplexRot.Angle, Math.Abs(DeltaAngle) > DoubleUtils.Pi, DeltaAngle >= 0, p1);
+                case CurveType.EllipticArc: return this;
                 default: throw new InvalidOperationException("Unrecognized type.");
             }
         }

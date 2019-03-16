@@ -21,103 +21,112 @@ namespace PathRenderingLab.PathCompiler
                     default: throw new InvalidOperationException("Unknown c2's type.");
                 }
             }
-            else if (c2.Type == CurveType.Line)
-                return Intersections(c2, c1).Select(p => p.Flip());
-            else
+            else if (c1.Type == CurveType.QuadraticBezier)
             {
-                // Check for circles
-                bool IsCircle(Curve c) => c.Type == CurveType.EllipticArc && RoughlyEquals(c.Radii.X, c.Radii.Y);
-                if (IsCircle(c1) && IsCircle(c2)) return CircleCircleIntersections(c1, c2);
-                return GeneralCurveIntersections(c1, c2);
+                switch (c2.Type)
+                {
+                    case CurveType.Line: return LineQuadraticIntersections(c2, c1).Select(p => p.Flip());
+                    case CurveType.QuadraticBezier: return GeneralCurveIntersections(c1, c2);
+                    case CurveType.CubicBezier: return GeneralCurveIntersections(c1, c2);
+                    case CurveType.EllipticArc: return QuadraticArcIntersections(c1, c2);
+                    default: throw new InvalidOperationException("Unknown c2's type.");
+                }
             }
+            else if (c1.Type == CurveType.CubicBezier)
+            {
+                switch (c2.Type)
+                {
+                    case CurveType.Line: return LineCubicIntersections(c2, c1).Select(p => p.Flip());
+                    case CurveType.QuadraticBezier: return GeneralCurveIntersections(c1, c2);
+                    case CurveType.CubicBezier: return GeneralCurveIntersections(c1, c2);
+                    case CurveType.EllipticArc: return CubicArcIntersections(c1, c2);
+                    default: throw new InvalidOperationException("Unknown c2's type.");
+                }
+            }
+            else if (c1.Type == CurveType.EllipticArc)
+            {
+                switch (c2.Type)
+                {
+                    case CurveType.Line: return LineArcIntersections(c2, c1).Select(p => p.Flip());
+                    case CurveType.QuadraticBezier: return QuadraticArcIntersections(c2, c1).Select(p => p.Flip());
+                    case CurveType.CubicBezier: return CubicArcIntersections(c2, c1).Select(p => p.Flip());
+                    case CurveType.EllipticArc:
+                        if (RoughlyEquals(c1.Radii.X, c1.Radii.Y) && RoughlyEquals(c2.Radii.X, c2.Radii.Y))
+                            return CircleCircleIntersections(c1, c2);
+                        return GeneralCurveIntersections(c1, c2);
+                    default: throw new InvalidOperationException("Unknown c2's type.");
+                }
+            }
+            else throw new InvalidOperationException("Unknown c1's type.");
         }
 
         public static IEnumerable<RootPair> LineLineIntersections(Curve l1, Curve l2)
         {
-            // Check common endpoints first
-            bool a1a2 = RoughlyEquals(l1.A, l2.A);
-            bool a1b2 = RoughlyEquals(l1.A, l2.B);
-            bool b1a2 = RoughlyEquals(l1.B, l2.A);
-            bool b1b2 = RoughlyEquals(l1.B, l2.B);
+            // Check if both lines subdivide
+            var p = l1.A;
+            var q = l2.A;
+            var r = l1.B - l1.A;
+            var s = l2.B - l2.A;
 
-            // Equal lines:
-            if (a1a2 && b1b2) return new[] { new RootPair(0f, 0f), new RootPair(1f, 1f) };
-            // Inverse lines
-            else if (a1b2 && b1a2) return new[] { new RootPair(0f, 1f), new RootPair(1f, 0f) };
-            // Common endpoints
-            else if (a1a2) return new[] { new RootPair(0f, 0f) };
-            else if (a1b2) return new[] { new RootPair(0f, 1f) };
-            else if (b1a2) return new[] { new RootPair(1f, 0f) };
-            else if (b1b2) return new[] { new RootPair(1f, 1f) };
-            // All other cases
+            var rr = r.Normalized;
+            var ss = s.Normalized;
+
+            // Intersection measure
+            var k = r.Cross(s);
+            var kk = rr.Cross(ss);
+
+            // If they have the same direction
+            if (RoughlyZeroSquared(kk))
+            {
+                var rs = rr.Dot(ss) > 0 ? (rr + ss).Normalized : (rr - ss).Normalized;
+
+                // Check if they are collinear
+                if (RoughlyZeroSquared((q - p).Cross(rs)))
+                {
+                    var tab0 = (q - p).Dot(r) / r.LengthSquared;
+                    var tab1 = tab0 + s.Dot(r) / r.LengthSquared;
+
+                    var tba0 = (p - q).Dot(s) / s.LengthSquared;
+                    var tba1 = tba0 + r.Dot(s) / s.LengthSquared;
+
+                    // If there is no intersection
+                    if (1 <= Math.Min(tab0, tab1) || 0 >= Math.Max(tab0, tab1)) return Enumerable.Empty<RootPair>();
+                    // Assemble the lines accordingly (tedious cases...)
+                    else
+                    {
+                        if (0 <= tab0 && tab0 <= 1) // l1.A -- l2.A -- l1.B, with l2.B elsewhere
+                        {
+                            if (tab1 > 1) // l2.B to the right of l1
+                                return new[] { new RootPair(tab0, 0f), new RootPair(1f, tba1) };
+                            else if (tab1 < 0) // l2.B to the left of l1
+                                return new[] { new RootPair(tab0, 0f), new RootPair(0f, tba0) };
+                            else // l2 inside l1
+                                return new[] { new RootPair(tab0, 0f), new RootPair(tab1, 1f) };
+                        }
+                        else if (0 <= tab1 && tab1 <= 1) // l1.A -- l2.B -- l1.B, with l2.A elsewhere
+                        {
+                            if (tab0 < 0) // l2.A to the left of l1
+                                return new[] { new RootPair(0f, tba0), new RootPair(tab1, 1f) };
+                            else // l2.A to the right of l1
+                                return new[] { new RootPair(1f, tba1), new RootPair(tab1, 1f) };
+                        }
+                        else // l1 inside l2
+                            return new[] { new RootPair(0f, tba0), new RootPair(1f, tba1) };
+                    }
+                }
+                else return new RootPair[0];
+            }
+            // If they don't, calculate t and u
             else
             {
-                // Check if both lines subdivide
-                var p = l1.A;
-                var q = l2.A;
-                var r = l1.B - l1.A;
-                var s = l2.B - l2.A;
+                var t = (q - p).Cross(s) / k;
+                var u = (q - p).Cross(r) / k;
 
-                var rr = r.Normalized;
-                var ss = s.Normalized;
-
-                // Intersection measure
-                var k = r.Cross(s);
-                var kk = rr.Cross(ss);
-
-                // If they have the same direction
-                if (RoughlyZero(kk))
-                {
-                    var rs = rr.Dot(ss) > 0 ? (rr + ss).Normalized : (rr - ss).Normalized;
-
-                    // Check if they are collinear
-                    if (RoughlyZero((q - p).Cross(rs)))
-                    {
-                        var tab0 = (q - p).Dot(r) / r.LengthSquared;
-                        var tab1 = tab0 + s.Dot(r) / r.LengthSquared;
-
-                        var tba0 = (p - q).Dot(s) / s.LengthSquared;
-                        var tba1 = tba0 + r.Dot(s) / s.LengthSquared;
-
-                        // If there is no intersection
-                        if (1 <= Math.Min(tab0, tab1) || 0 >= Math.Max(tab0, tab1)) return Enumerable.Empty<RootPair>();
-                        // Assemble the lines accordingly (tedious cases...)
-                        else
-                        {
-                            if (0 <= tab0 && tab0 <= 1) // l1.A -- l2.A -- l1.B, with l2.B elsewhere
-                            {
-                                if (tab1 > 1) // l2.B to the right of l1
-                                    return new[] { new RootPair(tab0, 0f), new RootPair(1f, tba1) };
-                                else if (tab1 < 0) // l2.B to the left of l1
-                                    return new[] { new RootPair(tab0, 0f), new RootPair(0f, tba0) };
-                                else // l2 inside l1
-                                    return new[] { new RootPair(tab0, 0f), new RootPair(tab1, 1f) };
-                            }
-                            else if (0 <= tab1 && tab1 <= 1) // l1.A -- l2.B -- l1.B, with l2.A elsewhere
-                            {
-                                if (tab0 < 0) // l2.A to the left of l1
-                                    return new[] { new RootPair(0f, tba0), new RootPair(tab1, 1f) };
-                                else // l2.A to the right of l1
-                                    return new[] { new RootPair(1f, tba1), new RootPair(tab1, 1f) };
-                            }
-                            else // l1 inside l2
-                                return new[] { new RootPair(0f, tba0), new RootPair(1f, tba1) };
-                        }
-                    }
-                    else return Enumerable.Empty<RootPair>();
-                }
-                // If they don't, calculate t and u
-                else
-                {
-                    var t = (q - p).Cross(s) / k;
-                    var u = (q - p).Cross(r) / k;
-
-                    // If both lie at the interval [0, 1], then:
-                    if (t >= 0 && t <= 1 && u >= 0 && u <= 1)
-                        return new[] { new RootPair(t, u) };
-                    // Else, no intersection
-                    else return Enumerable.Empty<RootPair>();
-                }
+                // If both lie at the interval [0, 1], then:
+                if (t >= 0 && t <= 1 && u >= 0 && u <= 1)
+                    return new[] { new RootPair(t, u) };
+                // Else, no intersection
+                else return new RootPair[0];
             }
         }
 
@@ -193,78 +202,76 @@ namespace PathRenderingLab.PathCompiler
         public static IEnumerable<RootPair> GeneralCurveIntersections(Curve c1, Curve c2,
             double t1l = 0f, double t1r = 1f, double t2l = 0f, double t2r = 1f, int depth = 0)
         {
-            var bb1 = c1.Subcurve(t1l, t1r).BoundingBox;
-            var bb2 = c2.Subcurve(t2l, t2r).BoundingBox;
+            // Check first for extrema
 
-            bool small1 = FinelyZero(bb1.Width) && FinelyZero(bb1.Height);
-            bool small2 = FinelyZero(bb2.Width) && FinelyZero(bb2.Height);
+            if (RoughlyEquals(c1.At(t1l), c2.At(t2l)))
+                yield return new RootPair(t1l, t2l);
+            if (RoughlyEquals(c1.At(t1l), c2.At(t2r)))
+                yield return new RootPair(t1l, t2r);
+            if (RoughlyEquals(c1.At(t1r), c2.At(t2l)))
+                yield return new RootPair(t1r, t2l);
+            if (RoughlyEquals(c1.At(t1r), c2.At(t2r)))
+                yield return new RootPair(t1r, t2r);
 
-            // break at a specified depth
-            if (small1 && small2)
-            {
-                if (t1l == 0f && t2l == 0f && FinelyEquals(c1.At(0), c2.At(0)))
-                    return new[] { new RootPair(0f, 0f) };
+            var c1s = c1.Subcurve(t1l, t1r);
+            var c2s = c2.Subcurve(t2l, t2r);
 
-                if (t1l == 0f && t2r == 1f && FinelyEquals(c1.At(0), c2.At(1)))
-                    return new[] { new RootPair(0f, 1f) };
+            // Flags to whether the curves are degenerate
+            bool deg1 = c1s.IsDegenerate;
+            bool deg2 = c2s.IsDegenerate;
 
-                if (t1r == 1f && t2l == 0f && FinelyEquals(c1.At(1), c2.At(0)))
-                    return new[] { new RootPair(1f, 0f) };
+            // The midpoints
+            var t1m = (t1l + t1r) / 2;
+            var t2m = (t2l + t2r) / 2;
 
-                if (t1r == 1f && t2r == 1f && FinelyEquals(c1.At(1), c2.At(1)))
-                    return new[] { new RootPair(1f, 1f) };
-
-                return new[] { new RootPair((t1l + t1r) / 2, (t2l + t2r) / 2) };
-            }
-
-            return GeneralCurveIntersectionsInternal(c1, c2, t1l, t1r, t2l, t2r, depth, small1, small2, bb1, bb2);
-        }
-
-        static IEnumerable<RootPair> GeneralCurveIntersectionsInternal(Curve c1, Curve c2, double t1l, double t1r,
-            double t2l, double t2r, int depth, bool small1, bool small2, DoubleRectangle bb1, DoubleRectangle bb2)
-        {
-            double t1m = (t1l + t1r) / 2;
-            double t2m = (t2l + t2r) / 2;
-
-            // Find both intersection curve pairs
-            var bb1l = c1.Subcurve(t1l, t1m).BoundingBox;
-            var bb1r = c1.Subcurve(t1m, t1r).BoundingBox;
-            var bb2l = c2.Subcurve(t2r, t2m).BoundingBox;
-            var bb2r = c2.Subcurve(t2m, t2r).BoundingBox;
-
-            if (small1)
-            {
-                if (bb1.Intersects(bb2l))
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2l, t2m, depth + 1)) yield return r;
-
-                if (bb1.Intersects(bb2r))
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2m, t2r, depth + 1)) yield return r;
-            }
-            else if (small2)
-            {
-                if (bb1l.Intersects(bb2))
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2r, depth + 1)) yield return r;
-
-                if (bb1r.Intersects(bb2))
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2r, depth + 1)) yield return r;
-            }
+            // If both are, time to bail out
+            if (deg1 && deg2)
+                yield return new RootPair(t1m, t2m);
+            // Else, we will check the enclosing polygons
             else
             {
-                if (bb1l.Intersects(bb2l))
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2m, depth + 1)) yield return r;
+                var p1 = c1s.EnclosingPolygon;
+                var p2 = c2s.EnclosingPolygon;
 
-                if (bb1l.Intersects(bb2r))
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2m, t2r, depth + 1)) yield return r;
+                if (deg2)
+                {
+                    var p1l = c1.Subcurve(t1l, t1m).EnclosingPolygon;
+                    var p1r = c1.Subcurve(t1m, t1r).EnclosingPolygon;
 
-                if (bb1r.Intersects(bb2l))
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2m, depth + 1)) yield return r;
+                    if (PolygonsOverlap(p1l, p2, true))
+                        foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2r, depth + 1)) yield return r;
+                    if (PolygonsOverlap(p1r, p2, true))
+                        foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2r, depth + 1)) yield return r;
+                }
+                else if (deg1)
+                {
+                    var p2l = c2.Subcurve(t2l, t2m).EnclosingPolygon;
+                    var p2r = c2.Subcurve(t2m, t2r).EnclosingPolygon;
 
-                if (bb1r.Intersects(bb2r))
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2m, t2r, depth + 1)) yield return r;
+                    if (PolygonsOverlap(p1, p2l, true))
+                        foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2l, t2m, depth + 1)) yield return r;
+                    if (PolygonsOverlap(p1, p2r, true))
+                        foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2m, t2r, depth + 1)) yield return r;
+                }
+                else
+                {
+                    var p1l = c1.Subcurve(t1l, t1m).EnclosingPolygon;
+                    var p1r = c1.Subcurve(t1m, t1r).EnclosingPolygon;
+
+                    var p2l = c2.Subcurve(t2l, t2m).EnclosingPolygon;
+                    var p2r = c2.Subcurve(t2m, t2r).EnclosingPolygon;
+
+                    if (PolygonsOverlap(p1l, p2l, true))
+                        foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2m, depth + 1)) yield return r;
+                    if (PolygonsOverlap(p1l, p2r, true))
+                        foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2m, t2r, depth + 1)) yield return r;
+                    if (PolygonsOverlap(p1r, p2l, true))
+                        foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2m, depth + 1)) yield return r;
+                    if (PolygonsOverlap(p1r, p2r, true))
+                        foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2m, t2r, depth + 1)) yield return r;
+                }
             }
         }
-
-        public const double SubdivEpsilon = 1d / 512;
 
         public static IEnumerable<RootPair> CircleCircleIntersections(Curve c1, Curve c2)
         {
@@ -286,6 +293,143 @@ namespace PathRenderingLab.PathCompiler
 
                 // Return the intersection
                 yield return new RootPair(t1, t2);
+            }
+        }
+
+        public static IEnumerable<RootPair> QuadraticArcIntersections(Curve q, Curve arc)
+        {
+            // Scaled dot product
+            var rx = arc.Radii.X;
+            var ry = arc.Radii.Y;
+            double ScaledDot(Double2 m, Double2 n) => m.X * n.X / rx / rx + m.Y * n.Y / ry / ry;
+
+            // Transform the cubic Bézier
+            var center = arc.Center;
+            var vrot = arc.ComplexRot.NegateY;
+            Double2 Untransform(Double2 x) => (x - center).RotScale(vrot);
+
+            var a = Untransform(q.A);
+            var b = Untransform(q.B);
+            var c = Untransform(q.C);
+
+            // Mount the coefficients
+            var c2 = a - 2 * b + c;
+            var c1 = 2 * (b - a);
+            var c0 = a;
+
+            // Mount the polynomial
+            var k = new[]
+            {
+                ScaledDot(c2, c2),
+                2 * ScaledDot(c2, c1),
+                ScaledDot(c1, c1) + 2 * ScaledDot(c2, c0),
+                2 * ScaledDot(c1, c0),
+                ScaledDot(c0, c0) - 1
+            };
+
+            // And solve it
+            var roots = Equations.SolvePolynomial(k).Where(Inside01);
+
+            // Mount root pairs with it
+            var rootPairs = roots.Select(t => new RootPair(t, arc.AngleToParameter(Untransform(q.At(t)).Angle)));
+
+            // Return the sane ones
+            return rootPairs.Where(p => Inside01(p.B));
+        }
+
+        public static IEnumerable<RootPair> CubicArcIntersections(Curve c, Curve arc)
+        {
+            // Scaled dot product
+            var rx = arc.Radii.X;
+            var ry = arc.Radii.Y;
+            double ScaledDot(Double2 m, Double2 n) => m.X * n.X / rx / rx + m.Y * n.Y / ry / ry;
+
+            // Transform the cubic Bézier
+            var center = arc.Center;
+            var vrot = arc.ComplexRot.NegateY;
+            Double2 Untransform(Double2 x) => (x - center).RotScale(vrot);
+
+            var ak = Untransform(c.A);
+            var bk = Untransform(c.B);
+            var ck = Untransform(c.C);
+            var dk = Untransform(c.D);
+
+            // Mount the coefficients
+            var c3 = -ak + 3 * bk - 3 * ck + dk;
+            var c2 = 3 * ak - 6 * bk + 3 * ck;
+            var c1 = -3 * ak + 3 * bk;
+            var c0 = ak;
+
+            // Mount the polynomial
+            var k = new[]
+            {
+                ScaledDot(c3, c3),
+                2 * ScaledDot(c3, c2),
+                ScaledDot(c2, c2) + 2 * ScaledDot(c3, c1),
+                2 * ScaledDot(c3, c0) + 2 * ScaledDot(c2, c1),
+                ScaledDot(c1, c1) + 2 * ScaledDot(c2, c0),
+                2 * ScaledDot(c1, c0),
+                ScaledDot(c0, c0) - 1
+            };
+
+            // And solve it
+            var roots = Equations.SolvePolynomial(k).Where(Inside01);
+
+            // Mount root pairs with it
+            var rootPairs = roots.Select(t => new RootPair(t, arc.AngleToParameter(Untransform(c.At(t)).Angle)));
+
+            // Return the sane ones
+            return rootPairs.Where(p => Inside01(p.B));
+        }
+
+        public static void RemoveSimilarRoots(SortedDictionary<double, Double2> rootSet)
+        {
+            // Identify similar clusters on the rootSet
+            var clusters = new List<SortedDictionary<double, Double2>>();
+            var curCluster = new SortedDictionary<double, Double2>();
+
+            var prevPair = new KeyValuePair<double, Double2>(double.NaN, new Double2());
+            foreach (var kvp in rootSet)
+            {
+                if (!double.IsNaN(prevPair.Key))
+                    // Compare the keys
+                    if (RoughComparer.Compare(prevPair.Key, kvp.Key) != 0)
+                    {
+                        clusters.Add(curCluster);
+                        curCluster = new SortedDictionary<double, Double2>();
+                    }
+
+                curCluster.Add(kvp.Key, kvp.Value);
+                prevPair = kvp;
+            }
+
+            // Add the last cluster
+            clusters.Add(curCluster);
+
+            // Now, clear the set and, for each cluster, add a single root
+            rootSet.Clear();
+
+            foreach (var cluster in clusters)
+            {
+                // If the cluster has 0 or 1, add the 0 or 1
+                if (cluster.ContainsKey(0)) rootSet[0] = cluster[0];
+                else if (cluster.ContainsKey(1)) rootSet[1] = cluster[1];
+
+                // Else, pick the average
+                else
+                {
+                    int n = cluster.Count;
+                    var value = new Double2(0, 0);
+                    double key = 0;
+
+                    foreach (var kvp in cluster)
+                    {
+                        key += kvp.Key;
+                        value += kvp.Value;
+                    }
+
+                    rootSet[key / n] = value / n;
+                }
             }
         }
     }

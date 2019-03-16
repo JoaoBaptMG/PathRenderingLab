@@ -50,7 +50,7 @@ namespace PathRenderingLab.PathCompiler
         internal static CompiledDrawing CompileCurves(List<Curve> curves, FillRule fillRule)
         {
             // Reunite all intersections to subdivide the curves
-            var curveRootSets = new SortedDictionary<double,Double2>[curves.Count];
+            var curveRootSets = new SortedDictionary<double, Double2>[curves.Count];
             for (int i = 0; i < curveRootSets.Length; i++)
                 curveRootSets[i] = new SortedDictionary<double, Double2>() { [0] = curves[i].At(0), [1] = curves[i].At(1) };
 
@@ -64,7 +64,7 @@ namespace PathRenderingLab.PathCompiler
                         var a = curves[i].At(pair.A);
                         var b = curves[j].At(pair.B);
 
-                        if (!DoubleUtils.RoughlyEquals(a / 2, b / 2))
+                        if (!DoubleUtils.RoughlyEquals(a / 16, b / 16))
                         {
                             //Console.WriteLine(string.Join(" ", Curve.Intersections(curves[i], curves[j]).Select(c => $"({c.A} {c.B})")));
                             Debug.Assert(false, "Problem here...");
@@ -72,6 +72,9 @@ namespace PathRenderingLab.PathCompiler
 
                         curveRootSets[i][pair.A] = curveRootSets[j][pair.B] = (a + b) / 2;
                     }
+
+            for (int i = 0; i < curves.Count; i++)
+                Curve.RemoveSimilarRoots(curveRootSets[i]);
 
             // Finally, we can start building the DCEL
             var dcel = new DCEL.DCEL();
@@ -85,7 +88,7 @@ namespace PathRenderingLab.PathCompiler
                     {
                         Curve curve;
                         if (prevPair.Key == 0 && curPair.Key == 1) curve = curves[i];
-                        else curve = curves[i].SubcurveCorrectEndpoints(prevPair, curPair);
+                        else curve = curves[i].Subcurve(prevPair.Key, curPair.Key);
 
                         foreach (var c in curve.Simplify())
                         {
@@ -100,16 +103,16 @@ namespace PathRenderingLab.PathCompiler
                 }
             }
 
-            Console.WriteLine(dcel);
-            Console.ReadLine();
+            //Console.WriteLine(dcel);
+            //Console.ReadLine();
 
             // Now, we remove wedges and assign the fill numbers
             dcel.RemoveWedges();
-            Console.WriteLine(dcel);
-            Console.ReadLine();
+            //Console.WriteLine(dcel);
+            //Console.ReadLine();
             dcel.AssignFillNumbers();
-            Console.WriteLine(dcel);
-            Console.ReadLine();
+            //Console.WriteLine(dcel);
+            //Console.ReadLine();
 
             // Pick the appropriate predicate for the fill rule
             Func<DCEL.Face, bool> facePredicate;
