@@ -126,7 +126,7 @@ namespace PathRenderingLab
 
                 if (ps.StrokeColor.HasValue)
                 {
-                    AddDrawing(MeasureTime(()=> PathCompilerMethods.CompileStroke(path, ps.StrokeWidth / normalMatrix.A,
+                    AddDrawing(MeasureTime(() => PathCompilerMethods.CompileStroke(path, ps.StrokeWidth / normalMatrix.A,
                         ps.StrokeLineCap, ps.StrokeLineJoin, ps.MiterLimit), out var time));
                     colors.Add(ps.StrokeColor.Value);
                     transforms.Add(matrix);
