@@ -9,10 +9,12 @@ namespace PathRenderingLab
         public const double Epsilon2 = Epsilon * Epsilon;
 
         public static bool RoughlyZero(double a) => a > -Epsilon && a < Epsilon;
-        public static bool RoughlyZero(Double2 a) => a.LengthSquared < Epsilon2;
+        public static bool RoughlyZeroSquared(double a) => a > -Epsilon2 && a < Epsilon2;
+        public static bool RoughlyZero(Double2 a) => RoughlyZeroSquared(a.LengthSquared);
 
         public static bool RoughlyEquals(double a, double b) => a - b < Epsilon && b - a < Epsilon;
-        public static bool RoughlyEquals(Double2 a, Double2 b) => (a - b).LengthSquared < Epsilon2;
+        public static bool RoughlyEqualsSquared(double a, double b) => a - b < Epsilon2 && b - a < Epsilon2;
+        public static bool RoughlyEquals(Double2 a, Double2 b) => RoughlyZeroSquared((a - b).LengthSquared);
 
         public class RoughComparerInst : Comparer<double>
         {
@@ -20,6 +22,13 @@ namespace PathRenderingLab
         }
 
         public static readonly RoughComparerInst RoughComparer = new RoughComparerInst();
+
+        public class RoughComparerSquaredInst : Comparer<double>
+        {
+            public override int Compare(double x, double y) => RoughlyEqualsSquared(x, y) ? 0 : x.CompareTo(y);
+        }
+
+        public static readonly RoughComparerSquaredInst RoughComparerSquared = new RoughComparerSquaredInst();
 
         public const double Pi = Math.PI;
         public const double TwoPi = 2 * Pi;
@@ -66,5 +75,6 @@ namespace PathRenderingLab
 
         public static double? TryParse(string str)
             => double.TryParse(str, out var result) ? result : new double?();
+
     }
 }

@@ -102,10 +102,10 @@ namespace PathRenderingLab
                 return !strict && RoughlyZero(crossq0) && InsideSegmentCollinear(p0, p1, q0, strict);
 
             // Containment
-            if (RoughlyZero(crossq0)) return InsideSegmentCollinear(p0, p1, q0, strict);
-            if (RoughlyZero(crossq1)) return InsideSegmentCollinear(p0, p1, q1, strict);
-            if (RoughlyZero(crossp0)) return InsideSegmentCollinear(q0, q1, p0, strict);
-            if (RoughlyZero(crossp1)) return InsideSegmentCollinear(q0, q1, p1, strict);
+            if (RoughlyZeroSquared(crossq0)) return InsideSegmentCollinear(p0, p1, q0, strict);
+            if (RoughlyZeroSquared(crossq1)) return InsideSegmentCollinear(p0, p1, q1, strict);
+            if (RoughlyZeroSquared(crossp0)) return InsideSegmentCollinear(q0, q1, p0, strict);
+            if (RoughlyZeroSquared(crossp1)) return InsideSegmentCollinear(q0, q1, p1, strict);
 
             // Check if everything is on one side
             if (crossq0 < 0 && crossq1 < 0) return false;
@@ -133,8 +133,8 @@ namespace PathRenderingLab
                         return true;
                 }
 
-            // Check for overlapping of the first point
-            if (PolygonContainsPoint(poly0, poly1[0], strict) || PolygonContainsPoint(poly1, poly0[0], strict))
+            // Check for overlapping of any of the points
+            if (poly0.Any(p => PolygonContainsPoint(poly1, p, strict)) || poly1.Any(p => PolygonContainsPoint(poly0, p, strict)))
                 return true;
 
             // Otherwise...
@@ -170,7 +170,7 @@ namespace PathRenderingLab
                 var p1 = poly[i == 0 ? poly.Length - 1 : i - 1];
 
                 // For strictness, if the line is "inside" the polygon, we have a problem
-                if (strict && RoughlyZero((p1 - p0).Cross(p - p0)) &&
+                if (strict && RoughlyZeroSquared((p1 - p0).Cross(p - p0)) &&
                     InsideSegmentCollinear(p0, p1, p)) return false;
 
                 if (p0.X < p.X && p1.X < p.X) continue;
@@ -220,45 +220,12 @@ namespace PathRenderingLab
 
                 // Only add the point if it doesn't form a parallel line with the next point on the line
                 for (int i = (istart + 1) % len; i != istart; i = (i + 1) % len)
-                    if (!RoughlyZero((polygon[(i + 1) % len] - polygon[i]).Cross(LastAddedPoint() - polygon[i])))
+                    if (!RoughlyZeroSquared((polygon[(i + 1) % len] - polygon[i]).Cross(LastAddedPoint() - polygon[i])))
                         points.Add(polygon[i]);
 
                 // Return the new formed polygon
                 return points.ToArray();
             }
-        }
-
-        public static IEnumerable<Double2[]> RemovePolygonWedges(Double2[] polygon, bool truncateDCEL = true)
-        {
-            // Quickly discard degenerate polygons
-            if (polygon.Length < 3) return Enumerable.Empty<Double2[]>();
-
-            // We will use a DCEL to do it
-            var dcel = new PathCompiler.DCEL.DCEL(truncateDCEL);
-
-            // Note the polygon winding
-            double winding = 0;
-
-            for (int i = 0; i < polygon.Length; i++)
-            {
-                var ik = (i + 1) % polygon.Length;
-                dcel.AddCurve(PathCompiler.Curve.Line(polygon[i], polygon[ik]));
-                winding += polygon[i].Cross(polygon[ik]);
-            }
-
-            // Now, remove the wedges
-            dcel.RemoveWedges();
-
-            // Now, ensure the windings are coherent with the original face's winding
-            Double2[] ConstructPolygon(PathCompiler.DCEL.Face face)
-            {
-                var array = face.Edges.Select(p => p.Curve.A).ToArray();
-                if (winding < 0) Array.Reverse(array);
-                return array;
-            }
-
-            // And collect the faces
-            return dcel.Faces.Where(f => !f.IsOuterFace).Select(ConstructPolygon);
         }
 
         public static Double2[] CircleIntersection(Double2 c1, double r1, Double2 c2, double r2)
