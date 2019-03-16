@@ -180,7 +180,7 @@ namespace PathRenderingLab
             var hy = (maxy - miny) / 2;
 
             // Chose the maximum value of it
-            var d = halfSize / Math.Min(hx, hy);
+            var d = halfSize / Math.Max(hx, hy);
 
             // And transform the points
             for (int i = 0; i < PathCommands.Length; i++)
