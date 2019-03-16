@@ -43,6 +43,12 @@ Before, you needed a specially-crafted _path specification file_ to run an examp
 ![img21](imgs/pathrendering21.png)
 ![img22](imgs/pathrendering22.png)
 ![img23](imgs/pathrendering23.png)
+![img24](imgs/pathrendering24.png)
+![img25](imgs/pathrendering25.png)
+![img26](imgs/pathrendering26.png)
+![img27](imgs/pathrendering27.png)
+![img28](imgs/pathrendering28.png)
+![img29](imgs/pathrendering29.png)
 
 ## How can I help?
 
