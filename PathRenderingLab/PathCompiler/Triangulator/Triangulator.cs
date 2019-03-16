@@ -79,8 +79,11 @@ namespace PathRenderingLab.PathCompiler.Triangulator
                         else curve = curves[i].SubcurveCorrectEndpoints(prevPair, curPair);
 
                         foreach (var c in curve.Simplify())
+                        {
+                            if (c.IsDegenerate) continue;
                             dcel.AddCurve(c);
                         }
+                    }
 
                     prevPair = curPair;
                 }
