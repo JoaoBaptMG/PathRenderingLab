@@ -89,7 +89,6 @@ namespace PathRenderingLab.PathCompiler
 
         private static Curve OffsetSimpleCurve(Curve c, double halfWidth)
         {
-            Double2 Extrusion(Double2 a, Double2 b) => (a + b).Normalized / Math.Sqrt(0.5 + 0.5 * a.Dot(b));
 
             // Depends on the type of the curve
             switch (c.Type)
@@ -101,39 +100,58 @@ namespace PathRenderingLab.PathCompiler
                     }
                 case CurveType.QuadraticBezier:
                     {
-                        // Calculate the offsets
-                        var offset0 = (c.B - c.A).CCWPerpendicular.Normalized;
-                        var offset1 = (c.C - c.B).CCWPerpendicular.Normalized;
-
-                        // Calculate the endpoints
-                        var pa = c.A + halfWidth * offset0;
-                        var pc = c.C + halfWidth * offset1;
-
-                        // Calculate the point needed for the middle point offset
-                        var pb = c.B + halfWidth * Extrusion(offset0, offset1);
-
-                        return Curve.QuadraticBezier(pa, pb, pc);
+                        var ps = ExtrudePolyline(new[] { c.A, c.B, c.C }, halfWidth);
+                        return Curve.QuadraticBezier(ps[0], ps[1], ps[2]);
                     }
                 case CurveType.CubicBezier:
                     {
-                        // Calculate the offsets
-                        var offset0 = (c.B - c.A).CCWPerpendicular.Normalized;
-                        var offset1 = (c.C - c.B).CCWPerpendicular.Normalized;
-                        var offset2 = (c.D - c.C).CCWPerpendicular.Normalized;
-
-                        // Calculate the endpoints
-                        var pa = c.A + halfWidth * offset0;
-                        var pd = c.D + halfWidth * offset2;
-
-                        // Calculate the points needed for the middle point offsets
-                        var pb = c.B + halfWidth * Extrusion(offset0, offset1);
-                        var pc = c.C + halfWidth * Extrusion(offset1, offset2);
-
-                        return Curve.CubicBezier(pa, pb, pc, pd);
+                        // Equal cases
+                        if (RoughlyEquals(c.A, c.B))
+                        {
+                            var ps = ExtrudePolyline(new[] { (c.A + c.B) / 2, c.C, c.D }, halfWidth);
+                            return Curve.CubicBezier(ps[0], ps[0], ps[1], ps[2]);
+                        }
+                        else if (RoughlyEquals(c.B, c.C))
+                        {
+                            var ps = ExtrudePolyline(new[] { c.A, (c.B + c.C) / 2, c.D }, halfWidth);
+                            return Curve.CubicBezier(ps[0], ps[1], ps[1], ps[2]);
+                        }
+                        else if (RoughlyEquals(c.C, c.D))
+                        {
+                            var ps = ExtrudePolyline(new[] { c.A, c.B, (c.C + c.D) / 2 }, halfWidth);
+                            return Curve.CubicBezier(ps[0], ps[1], ps[2], ps[2]);
+                        }
+                        else
+                        {
+                            var ps = ExtrudePolyline(new[] { c.A, c.B, c.C, c.D }, halfWidth);
+                            return Curve.CubicBezier(ps[0], ps[1], ps[2], ps[3]);
+                        }
                     }
                 case CurveType.EllipticArc: return OffsetEllipticArc(c, halfWidth);
                 default: throw new InvalidOperationException("Unrecognized type");
             }
+        }
+
+        private static Double2[] ExtrudePolyline(Double2[] points, double halfWidth)
+        {
+            // Extrude the polygonal line formed by points. It is assumed that the points are different
+            Double2 Extrusion(Double2 a, Double2 b) => (a + b).Normalized / Math.Sqrt(0.5 + 0.5 * a.Dot(b));
+
+            var result = new Double2[points.Length];
+            int pl = points.Length;
+
+            result[0] = points[0] + halfWidth * (points[1] - points[0]).CCWPerpendicular.Normalized;
+            result[pl - 1] = points[pl - 1] + halfWidth * (points[pl - 1] - points[pl - 2]).CCWPerpendicular.Normalized;
+
+            for (int i = 1; i < pl-1; i++)
+            {
+                var offset0 = (points[i] - points[i - 1]).CCWPerpendicular.Normalized;
+                var offset1 = (points[i + 1] - points[i]).CCWPerpendicular.Normalized;
+
+                result[i] = points[i] + halfWidth * Extrusion(offset0, offset1);
+            }
+
+            return result;
         }
 
         private static Curve OffsetEllipticArc(Curve c, double halfWidth)
