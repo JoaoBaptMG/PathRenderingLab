@@ -74,9 +74,8 @@ namespace PathRenderingLab.PathCompiler
                     // If they describe a positive winding on the plane, add only its endpoint
                     var endp0 = contour[i].At(0);
                     var endp1 = contour[i + 1].At(1);
-                    var pth = (endp0 + endp1) / 2;
-                    if (contour[i].WindingRelativeTo(pth) + contour[i + 1].WindingRelativeTo(pth) > 0)
-                        list.Add(endp1);
+
+                    if (CombinedWindings(contour[i], contour[i+1]) > 0) list.Add(endp1);
                     else
                     {
                         // Else, compute the convex hull and add the correct point sequence
@@ -92,6 +91,9 @@ namespace PathRenderingLab.PathCompiler
                         // And run through it
                         for (int i0 = ik; i0 != (ik + 1) % hl; i0 = (i0 + hl - 1) % hl)
                             list.Add(hull[i0]);
+
+                        // Add the last point
+                        list.Add(hull[(ik + 1) % hl]);
                     }
                     i++;
                 }
@@ -108,6 +110,7 @@ namespace PathRenderingLab.PathCompiler
             list.ExtractIndices(indices.ToArray());
             return list.ToArray();
         }
+
         static double CombinedWindings(Curve c1, Curve c2)
             => c1.Winding + c1.At(1).Cross(c2.At(0)) + c2.Winding + c2.At(1).Cross(c1.At(0));
 
