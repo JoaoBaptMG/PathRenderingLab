@@ -30,10 +30,13 @@ namespace PathRenderingLab.SvgContents
             base.Parse(properties);
 
             // Parse the path data
-            Path = new Path(properties.GetOrDefault("d", ""));
+            Path = ParsePath(properties);
 
             // And the path length
             PathLength = DoubleUtils.TryParse(properties.GetOrDefault("pathLength")) ?? double.NaN;
         }
+
+        protected virtual Path ParsePath(Dictionary<string, string> properties)
+            => new Path(properties.GetOrDefault("d", ""));
     }
 }

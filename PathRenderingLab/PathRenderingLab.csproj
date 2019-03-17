@@ -96,6 +96,12 @@
     <Compile Include="StringUtils.cs" />
     <Compile Include="PathCompiler\StrokeUtils.cs" />
     <Compile Include="SuperSampler.cs" />
+    <Compile Include="SvgContents\BasicShapes\SvgEllipse.cs" />
+    <Compile Include="SvgContents\BasicShapes\SvgCircle.cs" />
+    <Compile Include="SvgContents\BasicShapes\SvgPolygon.cs" />
+    <Compile Include="SvgContents\BasicShapes\SvgPolyline.cs" />
+    <Compile Include="SvgContents\BasicShapes\SvgLine.cs" />
+    <Compile Include="SvgContents\BasicShapes\SvgRect.cs" />
     <Compile Include="SvgContents\PathStyle.cs" />
     <Compile Include="SvgContents\Svg.cs" />
     <Compile Include="SvgContents\SvgGroup.cs" />

@@ -41,6 +41,9 @@ namespace PathRenderingLab
             Control2 = new Double2(xAngle, (largeArc ? 1f : 0f) + (sweep ? 2f : 0f))
         };
 
+        public static PathCommand ArcToClose(Double2 radii, double xAngle, bool largeArc, bool sweep)
+            => ArcTo(radii, xAngle, largeArc, sweep, new Double2(double.NaN, double.NaN));
+
         public override string ToString()
         {
             switch (Type)
@@ -76,7 +79,9 @@ namespace PathRenderingLab
     {
         public PathCommand[] PathCommands;
 
-        public Path() { }
+        public Path() : this(new PathCommand[0]) { }
+
+        public Path(PathCommand[] pathCommands) { PathCommands = pathCommands; }
 
         public Path(string pathString)
         {
