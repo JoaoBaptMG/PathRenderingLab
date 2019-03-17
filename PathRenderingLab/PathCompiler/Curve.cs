@@ -191,7 +191,9 @@ namespace PathRenderingLab.PathCompiler
 
         public double WindingRelativeTo(Double2 v) => Winding - v.Cross(At(1) - At(0));
 
-        public bool IsConvex => WindingRelativeTo((At(0) + At(1)) / 2) > 0;
+        public double WindingAtMidpoint => WindingRelativeTo((At(0) + At(1)) / 2);
+
+        public bool IsConvex => WindingAtMidpoint > 0;
 
         /// <summary>
         /// True if the curve is degenerate (that is, if it is represented by a single point)
