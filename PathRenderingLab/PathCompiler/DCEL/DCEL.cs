@@ -73,11 +73,8 @@ namespace PathRenderingLab.PathCompiler.DCEL
         /// Adds a curve to the DCEL.
         /// </summary>
         /// <param name="curve">The curve to be added</param>
-        public void AddCurve(Curve curve, int canonicityChange = 1)
+        public void AddCurve(Curve curve, Double2 vert1, Double2 vert2, int canonicityChange = 1)
         {
-            var vert1 = curve.At(0);
-            var vert2 = curve.At(1);
-
             void PairOfEdges(Vertex v1, Vertex v2, out Edge e1, out Edge e2, bool reverse = false)
             {
                 var rev = curve.Reverse;

@@ -73,8 +73,8 @@ namespace PathRenderingLab.PathCompiler
                         curveRootSets[i][pair.A] = curveRootSets[j][pair.B] = (a + b) / 2;
                     }
 
-            for (int i = 0; i < curves.Count; i++)
-                Curve.RemoveSimilarRoots(curveRootSets[i]);
+            //for (int i = 0; i < curves.Count; i++)
+                //Curve.RemoveSimilarRoots(curveRootSets[i]);
 
             // Finally, we can start building the DCEL
             var dcel = new DCEL.DCEL();
@@ -92,8 +92,8 @@ namespace PathRenderingLab.PathCompiler
 
                         foreach (var c in curve.Simplify())
                         {
-                            if (c.IsDegenerate) continue;
-                            dcel.AddCurve(c);
+                            //if (c.IsDegenerate) continue;
+                            dcel.AddCurve(c, prevPair.Value, curPair.Value);
                             //Console.WriteLine(dcel);
                             //Console.ReadLine();
                         }

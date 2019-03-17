@@ -83,7 +83,7 @@ namespace PathRenderingLab.PathCompiler.Triangulator
                         foreach (var c in curve.Simplify())
                         {
                             if (c.IsDegenerate) continue;
-                            dcel.AddCurve(c);
+                            dcel.AddCurve(c, prevPair.Value, curPair.Value);
                         }
                     }
 
