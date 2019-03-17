@@ -177,6 +177,55 @@ namespace PathRenderingLab.PathCompiler
                         contour.AddAfter(node, c2);
                     }
                 }
+
+                // We are also going to check whether there are eligible curves with really disproportionate windings
+                // because they might cause overflow errors
+                for (var node = contour.First; node != null; node = node.Next)
+                {
+                    // Get the next node
+                    var next = node.Next ?? contour.First;
+
+                    // Only do this for fusable curves
+                    if (!AreCurvesFusable(node.Value, next.Value)) continue;
+
+                    // Get the windings
+                    double winding1 = Math.Abs(node.Value.WindingAtMidpoint);
+                    double winding2 = Math.Abs(next.Value.WindingAtMidpoint);
+
+                    // Subdivide if one curve is much bigger than the other
+                    double t = 2;
+
+                    // Subdivide until the curve comes to a reasonable size
+                    do
+                    {
+                        t /= 2;
+                        winding1 = Math.Abs(node.Value.Subcurve(1 - t, 1).WindingAtMidpoint);
+                    } while (winding1 > 32 * winding2);
+
+                    // Bail out if the curve was subdivided
+                    if (t < 1)
+                    {
+                        node.List.AddBefore(node, node.Value.Subcurve(0, 1 - t));
+                        node.Value = node.Value.Subcurve(1 - t, 1);
+                        continue;
+                    }
+
+                    // Otherwise, try to subdivide the other curve
+                    t = 2;
+
+                    do
+                    {
+                        t /= 2;
+                        winding2 = Math.Abs(next.Value.Subcurve(0, t).WindingAtMidpoint);
+                    } while (winding2 > 32 * winding1);
+
+                    // Subdivide the curve if necessary
+                    if (t < 1)
+                    {
+                        next.List.AddAfter(next, next.Value.Subcurve(t, 1));
+                        next.Value = next.Value.Subcurve(0, t);
+                    }
+                }
             }
 
             // When all subdivisions are done, we can return the result, filtering out the degenerate curves
