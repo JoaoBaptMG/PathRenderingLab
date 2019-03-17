@@ -92,7 +92,7 @@ namespace PathRenderingLab.PathCompiler
 
                         foreach (var c in curve.Simplify())
                         {
-                            //if (c.IsDegenerate) continue;
+                            if (c.IsDegenerate) continue;
                             dcel.AddCurve(c);
                             //Console.WriteLine(dcel);
                             //Console.ReadLine();

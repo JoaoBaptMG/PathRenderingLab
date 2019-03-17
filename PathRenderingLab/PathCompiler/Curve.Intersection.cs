@@ -393,7 +393,7 @@ namespace PathRenderingLab.PathCompiler
             {
                 if (!double.IsNaN(prevPair.Key))
                     // Compare the keys
-                    if (RoughComparer.Compare(prevPair.Key, kvp.Key) != 0)
+                    if (RoughComparerSquared.Compare(prevPair.Key, kvp.Key) != 0)
                     {
                         clusters.Add(curCluster);
                         curCluster = new SortedDictionary<double, Double2>();

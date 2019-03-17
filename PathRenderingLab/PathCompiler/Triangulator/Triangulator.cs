@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Bitlush;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using Bitlush;
 
 namespace PathRenderingLab.PathCompiler.Triangulator
 {
@@ -12,8 +13,9 @@ namespace PathRenderingLab.PathCompiler.Triangulator
 
         public static Triangle[] Triangulate(Double2[][] contours)
         {
-            // There are shapes that have problem with the truncate-DCEL argument on, and there are
-            // ones which have problem with it off, so we ought to try both arguments
+            // Check for ill-formed contours here
+            Debug.Assert(!DetectSelfIntersections(contours), "Contours have self intersecting edges!");
+            bool state = DetectSelfIntersections(contours);
 
             // Firstly, simplify the contours
             var simplifiedContours = contours.SelectMany(c => RemovePolygonWedges(c))
@@ -264,7 +266,7 @@ namespace PathRenderingLab.PathCompiler.Triangulator
                 var eds = new HashSet<Edge>(ReferenceEqualityComparer.Default);
                 int i = 0;
                 foreach (var u in e.CyclicalSequence)
-                { 
+                {
                     if (!eds.Add(u)) throw new Exception("Problematic edge sequence! " + i);
                     i++;
                 }
@@ -395,6 +397,34 @@ namespace PathRenderingLab.PathCompiler.Triangulator
         {
             var str = string.Join(", ", polygon.Select(p => $"({p.X}, {p.Y})"));
             return $"Polygon({str})";
+        }
+
+        internal static bool DetectSelfIntersections(Double2[][] contours)
+        {
+            var totalLines = contours.Sum(c => c.Length);
+            var la = new Double2[totalLines];
+            var lb = new Double2[totalLines];
+
+            int k = 0;
+            foreach (var contour in contours)
+            {
+                for (int i = 0; i < contour.Length; i++)
+                {
+                    la[k + i] = contour[i];
+                    lb[k + i] = contour[(i + 1) % contour.Length];
+                }
+                k += contour.Length;
+            }
+
+            for (int j = 0; j < totalLines; j++)
+                for (int i = j + 1; i < totalLines; i++)
+                {
+                    // Check for intersections at the midpoints
+                    if (GeometricUtils.SegmentsIntersect(la[i], lb[i], la[j], lb[j], true))
+                        return true;
+                }
+
+            return false;
         }
     }
 }

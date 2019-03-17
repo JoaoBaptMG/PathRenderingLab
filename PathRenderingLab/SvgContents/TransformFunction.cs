@@ -86,7 +86,7 @@ namespace PathRenderingLab.SvgContents
                 case TransformFunctionType.Skew: return $"skew({A.ToDegrees()}, {B.ToDegrees()})";
                 case TransformFunctionType.SkewX: return $"skewX({A.ToDegrees()})";
                 case TransformFunctionType.SkewY: return $"skewY({B.ToDegrees()})";
-                default: throw new InvalidOperationException("Unrecognized transform function type!");
+                default: return "<<invalid>>";
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using static PathRenderingLab.DoubleUtils;
 
@@ -86,9 +87,9 @@ namespace PathRenderingLab.PathCompiler
         }
 
         private Double2 CubicBezier_EntryTangent =>
-            RoughlyEquals(B, A) ? CubicBezier_Derivative.QuadraticBezier_ExitTangent : (B - A).Normalized;
+            RoughlyEquals(B, A) ? CubicBezier_Derivative.QuadraticBezier_EntryTangent : (B - A).Normalized;
         private Double2 CubicBezier_ExitTangent =>
-            RoughlyEquals(C, D) ? CubicBezier_Derivative.QuadraticBezier_ExitTangent : (D - C).Normalized;
+            RoughlyEquals(C, D) ? -CubicBezier_Derivative.QuadraticBezier_ExitTangent : (D - C).Normalized;
 
         private string CubicBezier_ToString() => $"C({A.X} {A.Y})-({B.X} {B.Y})-({C.X} {C.Y})-({D.X} {D.Y})";
 
@@ -267,11 +268,20 @@ namespace PathRenderingLab.PathCompiler
                 if (D > -double.Epsilon)
                 {
                     // Find the roots of the equation
+                    double x1, x2;
+
                     var dv = d2 >= 0 ? Math.Sqrt(D / 3) : -Math.Sqrt(D / 3);
                     var q = 0.5 * (d2 + dv);
 
-                    var x1 = q / d1;
-                    var x2 = (d3 / 3) / q;
+                    // Special case if q == 0
+                    if (q != 0)
+                    {
+                        x1 = q / d1;
+                        x2 = (d3 / 3) / q;
+                    }
+                    else x1 = x2 = 0;
+
+                    Debug.Assert(!double.IsNaN(x1) && !double.IsNaN(x2), "NaN detected!");
 
                     var l = Math.Min(x1, x2);
                     var m = Math.Max(x1, x2);

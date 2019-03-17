@@ -67,7 +67,9 @@ namespace PathRenderingLab.PathCompiler
                 if (ca.ExitTangent.Dot(cb.EntryTangent) >= -0.99) return false;
 
                 // 3) Both must not have the same convexity
-                return ca.IsConvex != cb.IsConvex;
+                if (ca.IsConvex == cb.IsConvex) return false;
+
+                return true;
             }
 
             // If any combination is eligible, return true
@@ -101,11 +103,8 @@ namespace PathRenderingLab.PathCompiler
                     // Skip degenerate curves
                     if (node1.Value.Value.IsDegenerate) continue;
 
-                    for (var node2 = curves.First; node2 != null; node2 = node2.Next)
+                    for (var node2 = node1.Next; node2 != null; node2 = node2.Next)
                     {
-                        // Skip equal curves
-                        if (node2.Value.Value == node1.Value.Value) continue;
-
                         // Skip degenerate curves
                         if (node2.Value.Value.IsDegenerate) continue;
 
@@ -183,9 +182,6 @@ namespace PathRenderingLab.PathCompiler
             // When all subdivisions are done, we can return the result, filtering out the degenerate curves
             return new FillFace(contourLists.Select(list => list.Where(c => !c.IsDegenerate).ToArray()).ToArray());
         }
-
-        static double CombinedWindings(Curve convex, Curve concave)
-            => convex.Winding + convex.At(1).Cross(concave.At(0)) + concave.Winding + concave.At(1).Cross(convex.At(0));
 
         static CurveIntersectionInfo GetIntersectionInfoFromCurves(Curve c1, Curve c2)
         {

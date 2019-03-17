@@ -9,7 +9,11 @@ namespace PathRenderingLab
     {
         public Vector3 Position;
         public Vector4 CurveCoord1, CurveCoord2;
-        public static readonly VertexDeclaration VertexDeclaration;
+
+        public static readonly VertexDeclaration VertexDeclaration = new VertexDeclaration(
+            new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
+            new VertexElement(12, VertexElementFormat.Vector4, VertexElementUsage.TextureCoordinate, 0),
+            new VertexElement(28, VertexElementFormat.Vector4, VertexElementUsage.TextureCoordinate, 1));
 
         VertexDeclaration IVertexType.VertexDeclaration => VertexDeclaration;
 
@@ -40,29 +44,9 @@ namespace PathRenderingLab
 
         public override bool Equals(object obj)
         {
-            if (obj == null)
-            {
-                return false;
-            }
-            if (obj.GetType() != GetType())
-            {
-                return false;
-            }
+            if (obj == null) return false;
+            if (obj.GetType() != GetType()) return false;
             return this == ((VertexPositionDoubleCurve)obj);
         }
-
-        static VertexPositionDoubleCurve()
-        {
-            VertexElement[] elements = new VertexElement[]
-            {
-                new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
-                new VertexElement(12, VertexElementFormat.Vector4, VertexElementUsage.TextureCoordinate, 0),
-                new VertexElement(28, VertexElementFormat.Vector4, VertexElementUsage.TextureCoordinate, 1),
-            };
-
-            VertexDeclaration declaration = new VertexDeclaration(elements);
-            VertexDeclaration = declaration;
-        }
-
     }
 }

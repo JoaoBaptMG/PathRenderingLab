@@ -9,7 +9,9 @@ namespace PathRenderingLab
     {
         public Vector3 Position;
         public Vector4 CurveCoord;
-        public static readonly VertexDeclaration VertexDeclaration;
+        public static readonly VertexDeclaration VertexDeclaration = new VertexDeclaration(
+            new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
+            new VertexElement(12, VertexElementFormat.Vector4, VertexElementUsage.TextureCoordinate, 0));
 
         VertexDeclaration IVertexType.VertexDeclaration => VertexDeclaration;
 
@@ -49,18 +51,5 @@ namespace PathRenderingLab
             }
             return this == ((VertexPositionCurve)obj);
         }
-
-        static VertexPositionCurve()
-        {
-            VertexElement[] elements = new VertexElement[]
-            {
-                new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
-                new VertexElement(12, VertexElementFormat.Vector4, VertexElementUsage.TextureCoordinate, 0),
-            };
-
-            VertexDeclaration declaration = new VertexDeclaration(elements);
-            VertexDeclaration = declaration;
-        }
-
     }
 }

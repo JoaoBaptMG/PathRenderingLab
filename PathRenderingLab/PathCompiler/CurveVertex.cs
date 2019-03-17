@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace PathRenderingLab.PathCompiler
 {
@@ -15,6 +16,9 @@ namespace PathRenderingLab.PathCompiler
         {
             Position = pos;
             CurveCoords = curve;
+
+            // Sanity check
+            //Debug.Assert(!double.IsNaN(curve.X) && !double.IsNaN(curve.Y) && !double.IsNaN(curve.Z), "Problematic curve vertex generated!");
         }
 
         public override string ToString() => $"{Position}; {CurveCoords}";

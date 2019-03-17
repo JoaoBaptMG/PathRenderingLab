@@ -325,7 +325,7 @@ namespace PathRenderingLab.PathCompiler
                 case CurveType.QuadraticBezier: return QuadraticBezier_ToString();
                 case CurveType.CubicBezier: return CubicBezier_ToString();
                 case CurveType.EllipticArc: return EllipticArc_ToString();
-                default: throw new InvalidOperationException("Unrecognized type.");
+                default: return "<<invalid>>";
             }
         }
 

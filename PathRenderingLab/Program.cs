@@ -18,22 +18,6 @@ namespace PathRenderingLab
     /// </summary>
     public static class Program
     {
-        public struct PathDetails
-        {
-            public Path Path;
-
-            public Color? FillColor;
-            public Color? StrokeColor;
-            public Color BackgroundColor;
-
-            public FillRule FillRule;
-            public double StrokeWidth;
-            public StrokeLineCap StrokeLineCap;
-            public StrokeLineJoin StrokeLineJoin;
-            public double MiterLimit;
-            public bool InvertY;
-        }
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>

@@ -12,11 +12,8 @@ float4 Color;
 float2 ScreenSize;
 float StrokeHalfWidth;
 
-float ComputeAlphaFromCurveCoord(in float4 t)
+float ComputeAlphaFromCurveCoord(in float4 t, in float4 tx, in float4 ty)
 {
-	float4 tx = ddx(t);
-	float4 ty = ddy(t);
-
 	float f;
 	float2 gradf;
 
@@ -84,8 +81,8 @@ CurveOutput CurveVS(in CurveInput input)
 
 float4 CurvePS(CurveOutput input) : COLOR
 {
-	float alph = ComputeAlphaFromCurveCoord(input.CurveCoord);
-	clip(alph == 0 ? -1 : 1);
+	float alph = ComputeAlphaFromCurveCoord(input.CurveCoord, ddx(input.CurveCoord), ddy(input.CurveCoord));
+	//clip(alph == 0 ? -1 : 1);
 	return alph * Color;
 }
 
@@ -116,11 +113,17 @@ DoubleCurveOutput DoubleCurveVS(in DoubleCurveInput input)
 
 float4 DoubleCurvePS(DoubleCurveOutput input) : COLOR
 {
-	float alph1 = ComputeAlphaFromCurveCoord(input.CurveCoord1);
-	float alph2 = ComputeAlphaFromCurveCoord(input.CurveCoord2);
+	// Check for a disjoint union first
+	float4 cc1 = input.CurveCoord1;
+	bool dj = cc1.w >= 2.0;
+	if (dj) cc1.w -= 4.0;
 
-	clip(alph1 == 0 || alph2 == 0 ? -1 : 1);
-	return alph1 * alph2 * Color;
+	float alph1 = ComputeAlphaFromCurveCoord(cc1, ddx(input.CurveCoord1), ddy(input.CurveCoord1));
+	float alph2 = ComputeAlphaFromCurveCoord(input.CurveCoord2, ddx(input.CurveCoord2), ddy(input.CurveCoord2));
+
+	//clip(alph1 == 0 || alph2 == 0 ? -1 : 1);
+	if (dj) return (alph1 + alph2 - alph1 * alph2) * Color;
+	else return alph1 * alph2 * Color;
 }
 
 technique BasicColorDrawing

@@ -108,18 +108,44 @@ namespace PathRenderingLab.PathCompiler
             list.ExtractIndices(indices.ToArray());
             return list.ToArray();
         }
+        static double CombinedWindings(Curve c1, Curve c2)
+            => c1.Winding + c1.At(1).Cross(c2.At(0)) + c2.Winding + c2.At(1).Cross(c1.At(0));
+
+        private static IEnumerable<DoubleCurveTriangle> FuseCurveTriangles(Curve c1, Curve c2)
+        {
+            // Check whether the two curves form a disjoint union or an intersection
+            bool disjointUnion = CombinedWindings(c1, c2) < 0;
+
+            // Extract the curve vertices
+            var t1 = c1.CurveVertices;
+            var t2 = c2.CurveVertices;
+
+            // Pick their extrapolators
+            var ext1 = CoordExtrapolator(t1);
+            var ext2 = CoordExtrapolator(t2);
+
+            // Now, we are going to pick the convex hull of the polygon
+            var hull = GeometricUtils.ConvexHull(t1.Concat(t2).Select(v => v.Position).ToArray());
+
+            // Finally, calculate the new texture coordinates
+            var vertices = hull.Select(p => new DoubleCurveVertex(p, ext1(p), ext2(p), disjointUnion));
+
+            // And return the triangle
+            return DoubleCurveVertex.MakeTriangleFan(vertices.ToArray());
+        }
 
         // Generate a curve coordinate extrapolator
         private static Func<Double2,Double4> CoordExtrapolator(CurveVertex[] vertices)
         {
             // Check for the length
-            if (vertices.Length == 1)
+            int vl = vertices.Length;
+            if (vl == 1)
             {
                 var v = vertices[0].CurveCoords;
                 return x => v;
             }
             // Extrapolate along the line
-            else if (vertices.Length == 2)
+            else if (vl == 2)
             {
                 var va = vertices[0];
                 var vb = vertices[1];
@@ -134,14 +160,43 @@ namespace PathRenderingLab.PathCompiler
             // Extrapolate along a triangle
             else
             {
-                var a = vertices[0].Position;
-                var dv1 = vertices[1].Position - a;
-                var dv2 = vertices[2].Position - a;
+                // Choose a nonzero-area triangle
+                int i = 0, ik = 1, ik2 = 2;
+                for (; i < vl; i++)
+                {
+                    ik = (i + 1) % vl;
+                    ik2 = (i + 2) % vl;
+
+                    var winding = vertices[i].Position.Cross(vertices[ik].Position)
+                        + vertices[ik].Position.Cross(vertices[ik2].Position)
+                        + vertices[ik2].Position.Cross(vertices[i].Position);
+
+                    if (!DoubleUtils.RoughlyZeroSquared(winding)) break;
+                }
+
+                // If there is no nonzero-area triangle, choose the most distant vertices and pick their extrapolator
+                if (i == vl)
+                {
+                    var imin = 0;
+                    var imax = 0;
+
+                    for (i = 1; i < vl; i++)
+                    {
+                        if (vertices[imin].Position.X > vertices[i].Position.X) imin = i;
+                        if (vertices[imax].Position.X < vertices[i].Position.X) imax = i;
+                    }
+
+                    return CoordExtrapolator(new[] { vertices[imin], vertices[imax] });
+                }
+
+                var a = vertices[i].Position;
+                var dv1 = vertices[ik].Position - a;
+                var dv2 = vertices[ik2].Position - a;
                 var k = dv1.Cross(dv2);
 
-                var ta = vertices[0].CurveCoords;
-                var tb = vertices[1].CurveCoords;
-                var tc = vertices[2].CurveCoords;
+                var ta = vertices[i].CurveCoords;
+                var tb = vertices[ik].CurveCoords;
+                var tc = vertices[ik2].CurveCoords;
 
                 return delegate (Double2 x)
                 {
@@ -150,26 +205,6 @@ namespace PathRenderingLab.PathCompiler
                     return ta + u * (tb - ta) + v * (tc - ta);
                 };
             }
-        }
-
-        private static IEnumerable<DoubleCurveTriangle> FuseCurveTriangles(Curve c1, Curve c2)
-        {
-            // Extract the curve vertices
-            var t1 = c1.CurveVertices;
-            var t2 = c2.CurveVertices;
-
-            // Pick their extrapolators
-            var ext1 = CoordExtrapolator(t1);
-            var ext2 = CoordExtrapolator(t2);
-
-            // Now, we are going to pick the convex hull of the polygon
-            var hull = GeometricUtils.ConvexHull(t1.Concat(t2).Select(v => v.Position).ToArray());
-
-            // Finally, calculate the new texture coordinates
-            var vertices = hull.Select(p => new DoubleCurveVertex(p, ext1(p), ext2(p)));
-
-            // And return the triangle
-            return DoubleCurveVertex.MakeTriangleFan(vertices.ToArray());
         }
 
         // Join many compiled fills
