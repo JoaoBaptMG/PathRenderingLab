@@ -169,6 +169,9 @@ namespace PathRenderingLab
                 var p0 = poly[i];
                 var p1 = poly[i == 0 ? poly.Length - 1 : i - 1];
 
+                // If the two points are equal, skip
+                if (RoughlyEquals(p0, p1)) continue;
+
                 // For strictness, if the line is "inside" the polygon, we have a problem
                 if (strict && RoughlyZeroSquared((p1 - p0).Cross(p - p0)) &&
                     InsideSegmentCollinear(p0, p1, p)) return false;

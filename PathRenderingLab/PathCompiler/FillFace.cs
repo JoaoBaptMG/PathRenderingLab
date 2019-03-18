@@ -241,6 +241,7 @@ namespace PathRenderingLab.PathCompiler
                 for (int i = 0; i < length; i++)
                 {
                     var ik = (i + 1) % length;
+                    if (DoubleUtils.RoughlyEquals(poly[i], poly[ik])) continue;
                     if ((poly[ik] - poly[i]).Cross(pt - poly[i]) <= 0)
                         return false;
                 }
@@ -254,6 +255,7 @@ namespace PathRenderingLab.PathCompiler
                 for (int i = 0; i < length; i++)
                 {
                     var ik = (i + 1) % length;
+                    if (DoubleUtils.RoughlyEquals(poly[i], poly[ik])) continue;
                     if (Curve.Intersections(curve, Curve.Line(poly[i], poly[ik])).Any())
                         return true;
                 }
