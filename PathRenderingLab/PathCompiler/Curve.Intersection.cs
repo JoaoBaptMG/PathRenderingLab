@@ -123,8 +123,7 @@ namespace PathRenderingLab.PathCompiler
                 var u = (q - p).Cross(r) / k;
 
                 // If both lie at the interval [0, 1], then:
-                if (t >= 0 && t <= 1 && u >= 0 && u <= 1)
-                    return new[] { new RootPair(t, u) };
+                if (Inside01(t) && Inside01(u)) return new[] { new RootPair(t, u) };
                 // Else, no intersection
                 else return new RootPair[0];
             }

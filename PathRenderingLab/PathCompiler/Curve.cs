@@ -5,29 +5,6 @@ namespace PathRenderingLab.PathCompiler
 {
     public enum CurveType { Line, QuadraticBezier, CubicBezier, EllipticArc }
 
-    public struct OuterAngles : IComparable<OuterAngles>
-    {
-        public double Angle, DAngle, DDAngle;
-
-        public OuterAngles(double angle, double dAngle, double ddAngle)
-        {
-            Angle = angle;
-            DAngle = dAngle;
-            DDAngle = ddAngle;
-        }
-
-        public int CompareTo(OuterAngles other)
-        {
-            var comparer = DoubleUtils.RoughComparer;
-            var cmp = comparer.Compare(Angle, other.Angle);
-            if (cmp == 0) cmp = comparer.Compare(DAngle, other.DAngle);
-            if (cmp == 0) cmp = comparer.Compare(DDAngle, other.DDAngle);
-            return cmp;
-        }
-
-        public override string ToString() => $"{Angle.ToDegrees()}:{DAngle}:{DDAngle}";
-    }
-
     /// <summary>
     /// A variant struct describing an SVG curve, which can be a line, a quadratic or cubic Bézier curve, or an elliptic arc
     /// </summary>

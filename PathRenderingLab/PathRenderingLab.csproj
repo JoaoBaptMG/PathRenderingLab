@@ -68,6 +68,7 @@
     <None Include="PathCompiler\DCEL Backup\Face.cs" />
     <None Include="PathCompiler\DCEL Backup\Vertex.cs" />
     <Compile Include="Double3.cs" />
+    <Compile Include="PathCompiler\OuterAngles.cs" />
     <Compile Include="ReferenceEqualityComparer.cs" />
     <Compile Include="PathCompiler\FillFace.cs" />
     <Compile Include="PathCompiler\Curve.CubicBezier.cs" />
