@@ -190,6 +190,9 @@ namespace PathRenderingLab
             // Quickly discard degenerate polygons
             if (polygon.Length < 3) return polygon;
 
+            // Check if they follow the same direction
+            bool SameDirection(Double2 u, Double2 v) => RoughlyZeroSquared(u.Cross(v)) && u.Dot(v) >= 0;
+
             // Find a non-collinear polygon first
             int istart;
             int len = polygon.Length;
@@ -198,7 +201,7 @@ namespace PathRenderingLab
                 var ik = (istart + 1) % len;
                 var ip = (istart + len - 1) % len;
 
-                if (!RoughlyZero((polygon[ik] - polygon[istart]).Cross(polygon[ip] - polygon[istart]))) break;
+                if (!SameDirection(polygon[ik] - polygon[istart], polygon[ip] - polygon[istart])) break;
             }
 
             // If there are no polygons non-collinear polygons, just return a line
@@ -223,7 +226,7 @@ namespace PathRenderingLab
 
                 // Only add the point if it doesn't form a parallel line with the next point on the line
                 for (int i = (istart + 1) % len; i != istart; i = (i + 1) % len)
-                    if (!RoughlyZeroSquared((polygon[(i + 1) % len] - polygon[i]).Cross(LastAddedPoint() - polygon[i])))
+                    if (!SameDirection(polygon[(i + 1) % len] - polygon[i], LastAddedPoint() - polygon[i]))
                         points.Add(polygon[i]);
 
                 // Return the new formed polygon

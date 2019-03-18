@@ -18,8 +18,7 @@ namespace PathRenderingLab.PathCompiler.Triangulator
             bool state = DetectSelfIntersections(contours);
 
             // Firstly, simplify the contours
-            var simplifiedContours = contours.SelectMany(c => RemovePolygonWedges(c))
-                .Select(GeometricUtils.SimplifyPolygon).ToArray();
+            var simplifiedContours = contours.Select(GeometricUtils.SimplifyPolygon).ToArray();
 
             // Discard trivial contours right now
             if (simplifiedContours.Length == 0) return new Triangle[0];
@@ -29,81 +28,6 @@ namespace PathRenderingLab.PathCompiler.Triangulator
 
             // Now, triangulate each one of them
             return polygons.SelectMany(TriangulateMonotone).Where(t => !t.IsDegenerate).ToArray();
-        }
-
-        public static IEnumerable<Double2[]> RemovePolygonWedges(Double2[] polygon)
-        {
-            // Quickly discard degenerate polygons
-            if (polygon.Length < 3) return Enumerable.Empty<Double2[]>();
-
-            var curves = new Curve[polygon.Length];
-            double winding = 0;
-
-            for (int i = 0; i < polygon.Length; i++)
-            {
-                curves[i] = Curve.Line(polygon[i], polygon[(i + 1) % polygon.Length]);
-                winding += polygon[i].Cross(polygon[(i + 1) % polygon.Length]);
-            }
-
-            // Reunite all intersections to subdivide the curves
-            var curveRootSets = new SortedDictionary<double, Double2>[curves.Length];
-            for (int i = 0; i < curveRootSets.Length; i++)
-                curveRootSets[i] = new SortedDictionary<double, Double2>() { [0] = curves[i].At(0), [1] = curves[i].At(1) };
-
-            // Get all intersections
-            for (int i = 0; i < curves.Length; i++)
-                for (int j = i + 1; j < curves.Length; j++)
-                    foreach (var pair in Curve.Intersections(curves[i], curves[j]))
-                    {
-                        if (!GeometricUtils.Inside01(pair.A) || !GeometricUtils.Inside01(pair.B)) continue;
-
-                        var a = curves[i].At(pair.A);
-                        var b = curves[j].At(pair.B);
-
-                        curveRootSets[i][pair.A] = curveRootSets[j][pair.B] = (a + b) / 2;
-                    }
-
-            for (int i = 0; i < curves.Length; i++)
-                Curve.RemoveSimilarRoots(curveRootSets[i]);
-
-            // Build the DCEL
-            var dcel = new DCEL.DCEL();
-
-            for (int i = 0; i < curves.Length; i++)
-            {
-                KeyValuePair<double, Double2> prevPair = new KeyValuePair<double, Double2>(double.NaN, new Double2());
-                foreach (var curPair in curveRootSets[i])
-                {
-                    if (!double.IsNaN(prevPair.Key))
-                    {
-                        Curve curve;
-                        if (prevPair.Key == 0 && curPair.Key == 1) curve = curves[i];
-                        else curve = curves[i].SubcurveCorrectEndpoints(prevPair, curPair);
-
-                        foreach (var c in curve.Simplify())
-                        {
-                            if (c.IsDegenerate) continue;
-                            dcel.AddCurve(c, prevPair.Value, curPair.Value);
-                        }
-                    }
-
-                    prevPair = curPair;
-                }
-            }
-
-            // Now, remove the wedges
-            dcel.RemoveWedges();
-
-            // Now, ensure the windings are coherent with the original face's winding
-            Double2[] ConstructPolygon(PathCompiler.DCEL.Face face)
-            {
-                var array = face.Edges.Select(p => p.Curve.A).ToArray();
-                if (winding < 0) Array.Reverse(array);
-                return array;
-            }
-
-            // And collect the faces
-            return dcel.Faces.Where(f => !f.IsOuterFace).Select(ConstructPolygon);
         }
 
         public static IEnumerable<Double2[]> PartitionToMonotone(Double2[][] contours)
