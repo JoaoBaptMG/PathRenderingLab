@@ -57,7 +57,7 @@ namespace PathRenderingLab.SvgContents
                 parent?.StrokeLineCap ?? StrokeLineCap.Butt;
             StrokeLineJoin = CSSEnumPicker<StrokeLineJoin>.Get(properties.GetOrDefault("stroke-linejoin")) ??
                 parent?.StrokeLineJoin ?? StrokeLineJoin.Miter;
-            MiterLimit = DoubleUtils.TryParse(properties.GetOrDefault("stroke-miterlimit")) ?? parent?.StrokeWidth ?? 4;
+            MiterLimit = DoubleUtils.TryParse(properties.GetOrDefault("stroke-miterlimit")) ?? parent?.MiterLimit ?? 4;
         }
     }
 }
