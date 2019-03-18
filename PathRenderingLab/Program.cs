@@ -99,7 +99,7 @@ namespace PathRenderingLab
                 Console.WriteLine($"Parsed path {++pathId}: {svgPath.Path}");
                 Console.WriteLine();
 
-                if (ps.FillColor.HasValue)
+                if (ps.FillColor.HasValue && ps.FillColor.Value.A > 0)
                 {
                     AddDrawing(MeasureTime(() => PathCompilerMethods.CompileFill(path, ps.FillRule), out var time));
                     colors.Add(ps.FillColor.Value);
@@ -108,7 +108,7 @@ namespace PathRenderingLab
                     numPaths++;
                 }
 
-                if (ps.StrokeColor.HasValue)
+                if (ps.StrokeColor.HasValue && ps.StrokeColor.Value.A > 0)
                 {
                     AddDrawing(MeasureTime(() => PathCompilerMethods.CompileStroke(path, ps.StrokeWidth / normalMatrix.A,
                         ps.StrokeLineCap, ps.StrokeLineJoin, ps.MiterLimit), out var time));

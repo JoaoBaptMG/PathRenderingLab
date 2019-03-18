@@ -165,7 +165,7 @@ namespace PathRenderingLab
             if (color == null) return null;
             color = color.Trim().ToLowerInvariant();
 
-            if (color == "none") return null;
+            if (color == "none" || color == "transparent") return Color.Transparent;
             else if (AllColors.TryGetValue(color, out var result))
                 return result;
             else
