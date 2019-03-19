@@ -239,48 +239,6 @@ namespace PathRenderingLab.PathCompiler
             else yield return this;
         }
 
-        private double EllipticArc_NearestPointTo(Double2 v)
-        {
-            // First, center and un-rotate the point
-            var p = (v - Center).RotScale(ComplexRot.NegateY);
-            var k = p.X * p.X / (Radii.X * Radii.X) + p.Y * p.Y / (Radii.Y * Radii.Y) - 1;
-
-            // If it is a circle, just calculate its angle
-            double t;
-            if (RoughlyEquals(Radii.X, Radii.Y)) t = p.Angle;
-            // If the point is over the ellipse, calculate its angle the "dumb" form
-            else if (RoughlyZero(k)) t = Math.Atan2(Radii.X * p.Y, Radii.Y * p.X);
-            else
-            {
-                // Make the point on the first quadrant
-                bool nx = p.X < 0, ny = p.Y < 0;
-                if (nx) p.X = -p.X;
-                if (ny) p.Y = -p.Y;
-
-                // Radii difference
-                var rx = Radii.X;
-                var ry = Radii.Y;
-                var rr = ry * ry - rx * rx;
-
-                // Function to test for roots
-                double f(double tx) => 0.5 * rr * Math.Sin(2 * tx) + rx * p.X * Math.Sin(tx) - ry * p.Y * Math.Cos(tx);
-
-                // There will always be a single root on this equation
-                t = Equations.Bisection(f, 0, Pi_2);
-
-                // Now, update the guess for the correct quadrants
-                if (nx && ny) t += Pi;
-                else if (nx) t = Pi - t;
-                else t = -t;
-            }
-
-            // If the guess is inside the interval
-            var tu = AngleToParameter(t);
-            if (!double.IsInfinity(tu)) return tu;
-            // Else, pick the nearest of 0 or 1
-            return EllipticArc_At(0).DistanceSquaredTo(v) < EllipticArc_At(1).DistanceSquaredTo(v) ? 0 : 1;
-        }
-
         private Double2[] EllipticArc_EnclosingPolygonLocalSpace()
         {
             // Get the possible "problematic" derivative points
@@ -313,37 +271,46 @@ namespace PathRenderingLab.PathCompiler
             return pointList;
         }
 
-        private Double2[] EllipticArc_EnclosingPolygon()
+        private Double2[] EllipticArc_EnclosingPolygon
         {
-            var arr = EllipticArc_EnclosingPolygonLocalSpace();
-            for (int i = 0; i < arr.Length; i++)
-                arr[i] = LocalSpaceToGlobal(arr[i]);
-            return arr;
+            get
+            {
+                var arr = EllipticArc_EnclosingPolygonLocalSpace();
+                for (int i = 0; i < arr.Length; i++)
+                    arr[i] = LocalSpaceToGlobal(arr[i]);
+                return arr;
+            }
         }
 
-        private CurveVertex[] EllipticArc_CurveVertices()
+        private double EllipticArc_Curvature(double t)
+            => Math.Sign(DeltaAngle) * Radii.X * Radii.Y / Math.Pow(DeltaAtInternal(t).LengthSquared, 1.5);
+
+        private CurveVertex[] EllipticArc_CurveVertices
         {
-            // Apply the Loop-Blinn method to get the texture coordinates
-            // Available on https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/p1000-loop.pdf
-
-            // This case is not described in the paper, but it is easily derived
-            // The texture coordinates are actually, x/a, 1 - y/b, 1 + y/b in local space
-
-            var sign = IsConvex ? 1 : -1;
-            var localPoints = EllipticArc_EnclosingPolygonLocalSpace();
-            var vertices = new CurveVertex[localPoints.Length];
-
-            for (int i = 0; i < localPoints.Length; i++)
+            get
             {
-                var p = localPoints[i];
-                var kx = p.X / Radii.X;
-                var ky = p.Y / Radii.Y;
+                // Apply the Loop-Blinn method to get the texture coordinates
+                // Available on https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/p1000-loop.pdf
 
-                // Apply the vertex
-                vertices[i] = new CurveVertex(LocalSpaceToGlobal(p), new Double4(kx, 1 - ky, 1 + ky, sign));
+                // This case is not described in the paper, but it is easily derived
+                // The texture coordinates are actually, x/a, 1 - y/b, 1 + y/b in local space
+
+                var sign = IsConvex ? 1 : -1;
+                var localPoints = EllipticArc_EnclosingPolygonLocalSpace();
+                var vertices = new CurveVertex[localPoints.Length];
+
+                for (int i = 0; i < localPoints.Length; i++)
+                {
+                    var p = localPoints[i];
+                    var kx = p.X / Radii.X;
+                    var ky = p.Y / Radii.Y;
+
+                    // Apply the vertex
+                    vertices[i] = new CurveVertex(LocalSpaceToGlobal(p), new Double4(kx, 1 - ky, 1 + ky, sign));
+                }
+
+                return vertices;
             }
-
-            return vertices;
         }
     }
 }

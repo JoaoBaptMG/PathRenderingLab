@@ -15,29 +15,6 @@ namespace PathRenderingLab.PathCompiler
 
         private IEnumerable<Curve> Line_Simplify() { yield return this; }
 
-        /// <summary>
-        /// Transforms v using the transform that maps the line to (0,0)-(1,0)
-        /// </summary>
-        /// <param name="v">The vector to be transformed.</param>
-        /// <returns>The transformed vector</returns>
-        public Double2 ProjectiveTransform(Double2 v)
-        {
-            if (Type != CurveType.Line) throw new InvalidOperationException("Projective methods must be called on lines.");
-            return ProjectiveTransformDirection(v - A);
-        }
-
-        /// <summary>
-        /// Transforms v (as if it were a direction) using the transform that maps the line to (0,0)-(1,0)
-        /// </summary>
-        /// <param name="v">The vector to be transformed.</param>
-        /// <returns>The transformed vector</returns>
-        public Double2 ProjectiveTransformDirection(Double2 v)
-        {
-            if (Type != CurveType.Line) throw new InvalidOperationException("Projective methods must be called on lines.");
-            var ba = B - A;
-            return new Double2(ba.X * v.X + ba.Y * v.Y, -ba.Y * v.X + ba.X * v.Y) / ba.LengthSquared;
-        }
-
         private Curve Line_Subcurve(double l, double r) => Line(A + l * (B - A), A + r * (B - A));
 
         private DoubleRectangle Line_BoundingBox
@@ -61,7 +38,7 @@ namespace PathRenderingLab.PathCompiler
         private Double2 Line_EntryTangent => (B - A).Normalized;
         private Double2 Line_ExitTangent => (B - A).Normalized;
 
-        private double Line_NearestPointTo(Double2 p) => DoubleUtils.Clamp((p - A).Dot(B - A) / (B - A).LengthSquared, 0, 1);
+        private Double2[] Line_EnclosingPolygon => new[] { A, B };
 
         private string Line_ToString() => $"L({A.X} {A.Y})-({B.X} {B.Y})";
     }

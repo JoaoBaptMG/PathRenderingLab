@@ -30,9 +30,33 @@ namespace PathRenderingLab
             Y = y;
             Width = width;
             Height = height;
+
+            if (Width < 0)
+            {
+                X += Width;
+                Width = -Width;
+            }
+
+            if (Height < 0)
+            {
+                Y += Height;
+                Height = -Height;
+            }
         }
 
         public bool Intersects(DoubleRectangle o) => !(X > o.X + o.Width || o.X > X + Width || Y > o.Y + o.Height || o.Y > Y + Height);
+
+        public DoubleRectangle Intersection(DoubleRectangle o)
+        {
+            if (!Intersects(o)) return new DoubleRectangle(double.NaN, double.NaN, double.NaN, double.NaN);
+
+            var x1 = Math.Max(X, o.X);
+            var x2 = Math.Min(X + Width, o.X + o.Width);
+            var y1 = Math.Max(Y, o.Y);
+            var y2 = Math.Min(Y + Height, o.Y + o.Height);
+
+            return new DoubleRectangle(x1, y1, x2 - x1, y2 - y1);
+        }
 
         public DoubleRectangle Truncate()
         {

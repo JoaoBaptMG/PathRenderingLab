@@ -184,174 +184,150 @@ namespace PathRenderingLab.PathCompiler
             else yield return this;
         }
 
-        private double CubicBezier_NearestPointTo(Double2 p)
+        private Double2[] CubicBezier_EnclosingPolygon => new[] { A, B, C, D };
+
+        private CurveVertex[] CubicBezier_CurveVertices
         {
-            // Canonical form (plus the P)
-            var c3 = -A + 3 * B - 3 * C + D;
-            var c2 = 3 * A - 6 * B + 3 * C;
-            var c1 = -3 * A + 3 * B;
-            var c0 = A - p;
-
-            // Derivative's canonical form
-            var d = CubicBezier_Derivative;
-            var d2 = d.A - 2 * d.B + d.C;
-            var d1 = 2 * (d.B - d.A);
-            var d0 = d.A;
-
-            // Build the dot-polynomial
-            var k = new[]
+            get
             {
-                c3.Dot(d2),
-                c3.Dot(d1) + c2.Dot(d2),
-                c3.Dot(d0) + c2.Dot(d1) + c1.Dot(d2),
-                c2.Dot(d0) + c1.Dot(d1) + c0.Dot(d2),
-                c1.Dot(d0) + c0.Dot(d1),
-                c0.Dot(d0)
-            };
+                // Apply the Loop-Blinn method to get the texture coordinates
+                // Available on https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/p1000-loop.pdf
 
-            double minRoot = 0;
-            var roots = Equations.SolvePolynomial(k);
+                // Use the computations in Chapter 4 of the Loop-Blinn paper
+                // The canonical form of the curve
+                var c3 = -A + 3 * B - 3 * C + D;
+                var c2 = 3 * A - 6 * B + 3 * C;
+                var c1 = -3 * A + 3 * B;
 
-            // For each root, test it
-            foreach (var root in roots)
-            {
-                // Discard roots outside the curve
-                if (root < 0 || root > 1) continue;
+                // Again the inflection point polynomials, this time the homogeneous form
+                var d3 = c1.Cross(c2);
+                var d2 = c3.Cross(c1);
+                var d1 = c2.Cross(c3);
 
-                // Assign minimum roots
-                if (CubicBezier_At(minRoot).DistanceSquaredTo(p) > CubicBezier_At(root).DistanceSquaredTo(p))
-                    minRoot = root;
+                // The texture coordinates in canonical form
+                Double4 f0, f1, f2, f3;
+
+                void NegateSigns()
+                {
+                    f0 = f0.NegateX.NegateY;
+                    f1 = f1.NegateX.NegateY;
+                    f2 = f2.NegateX.NegateY;
+                    f3 = f3.NegateX.NegateY;
+                }
+
+                // Check for the "true" cubics first
+                if (d1 != 0)
+                {
+                    // Discriminant
+                    var D = 3 * d2 * d2 - 4 * d3 * d1;
+
+                    // Serpentine or cusp
+                    if (D > -double.Epsilon)
+                    {
+                        // Find the roots of the equation
+                        double x1, x2;
+
+                        var dv = d2 >= 0 ? Math.Sqrt(D / 3) : -Math.Sqrt(D / 3);
+                        var q = 0.5 * (d2 + dv);
+
+                        // Special case if q == 0
+                        if (q != 0)
+                        {
+                            x1 = q / d1;
+                            x2 = (d3 / 3) / q;
+                        }
+                        else x1 = x2 = 0;
+
+                        Debug.Assert(!double.IsNaN(x1) && !double.IsNaN(x2), "NaN detected!");
+
+                        var l = Math.Min(x1, x2);
+                        var m = Math.Max(x1, x2);
+
+                        f0 = new Double4(l * m, l * l * l, m * m * m, 0);
+                        f1 = new Double4(-l - m, -3 * l * l, -3 * m * m, 0);
+                        f2 = new Double4(1, 3 * l, 3 * m, 0);
+                        f3 = new Double4(0, -1, -1, 0);
+
+                        // Guarantee that the signs are correct
+                        if (d1 < 0) NegateSigns();
+                    }
+                    // Loop
+                    else
+                    {
+                        // Find the roots of the equation
+                        var dv = d2 >= 0 ? Math.Sqrt(-D) : -Math.Sqrt(-D);
+                        var q = 0.5 * (d2 + dv);
+
+                        var x1 = q / d1;
+                        var x2 = (d2 * d2 / d1 - d3) / q;
+
+                        var d = Math.Min(x1, x2);
+                        var e = Math.Max(x1, x2);
+
+                        f0 = new Double4(d * e, d * d * e, d * e * e, 0);
+                        f1 = new Double4(-d - e, -d * d - 2 * e * d, -e * e - 2 * d * e, 0);
+                        f2 = new Double4(1, e + 2 * d, d + 2 * e, 0);
+                        f3 = new Double4(0, -1, -1, 0);
+
+                        // Guarantee that the signs are correct
+                        var h1 = d3 * d1 - d2 * d2;
+                        var h2 = d3 * d1 - d2 * d2 + d1 * d2 - d1 * d1;
+                        var h = Math.Abs(h1) > Math.Abs(h2) ? h1 : h2;
+                        var h12 = d3 * d1 - d2 * d2 + d1 * d2 / 2 - d1 * d1 / 4;
+                        if (Math.Abs(h12) > Math.Abs(h)) h = h12;
+
+                        if (d1 * h > 0) NegateSigns();
+                    }
+                }
+                // Other kind of cusp
+                else if (d2 != 0)
+                {
+                    // A single root
+                    var l = d3 / (3 * d2);
+
+                    f0 = new Double4(l, l * l * l, 1, 0);
+                    f1 = new Double4(-1, -3 * l * l, 0, 0);
+                    f2 = new Double4(0, -3 * l, 0, 0);
+                    f3 = new Double4(0, -1, 0, 0);
+                }
+                // Degenerate forms for the cubic - first, a quadratic
+                else if (d3 != 0)
+                {
+                    f0 = new Double4(0, 0, 1, 0);
+                    f1 = new Double4(1, 0, 1, 0);
+                    f2 = new Double4(0, 1, 0, 0);
+                    f3 = new Double4(0, 0, 0, 0);
+                }
+                // A line or a point - no triangles
+                else return new CurveVertex[0];
+
+                // Put the texture coordinates back into "normal" form
+                return new[]
+                {
+                    new CurveVertex(A, f0),
+                    new CurveVertex(B, f0 + f1 / 3),
+                    new CurveVertex(C, f0 + (2 * f1 + f2) / 3),
+                    new CurveVertex(D, f0 + f1 + f2 + f3)
+                };
             }
-
-            // Check the 1 root
-            if (CubicBezier_At(minRoot).DistanceSquaredTo(p) > D.DistanceSquaredTo(p))
-                minRoot = 1;
-
-            return minRoot;
         }
 
-        private CurveVertex[] CubicBezier_CurveVertices()
+        private double CubicBezier_EntryCurvature
         {
-            // Apply the Loop-Blinn method to get the texture coordinates
-            // Available on https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/p1000-loop.pdf
-
-            // Use the computations in Chapter 4 of the Loop-Blinn paper
-            // The canonical form of the curve
-            var c3 = -A + 3 * B - 3 * C + D;
-            var c2 = 3 * A - 6 * B + 3 * C;
-            var c1 = -3 * A + 3 * B;
-            var c0 = A;
-
-            // Again the inflection point polynomials, this time the homogeneous form
-            var d3 = c1.Cross(c2);
-            var d2 = c3.Cross(c1);
-            var d1 = c2.Cross(c3);
-
-            // The texture coordinates in canonical form
-            Double4 f0, f1, f2, f3;
-
-            void NegateSigns()
+            get
             {
-                f0 = f0.NegateX.NegateY;
-                f1 = f1.NegateX.NegateY;
-                f2 = f2.NegateX.NegateY;
-                f3 = f3.NegateX.NegateY;
+                if (DoubleUtils.RoughlyEquals(A, B)) return 0;
+                return 2 * (B - A).Cross(C - B) / Math.Pow((B - A).LengthSquared, 1.5) / 3;
             }
+        }
 
-            // Check for the "true" cubics first
-            if (d1 != 0)
+        private double CubicBezier_ExitCurvature
+        {
+            get
             {
-                // Discriminant
-                var D = 3 * d2 * d2 - 4 * d3 * d1;
-
-                // Serpentine or cusp
-                if (D > -double.Epsilon)
-                {
-                    // Find the roots of the equation
-                    double x1, x2;
-
-                    var dv = d2 >= 0 ? Math.Sqrt(D / 3) : -Math.Sqrt(D / 3);
-                    var q = 0.5 * (d2 + dv);
-
-                    // Special case if q == 0
-                    if (q != 0)
-                    {
-                        x1 = q / d1;
-                        x2 = (d3 / 3) / q;
-                    }
-                    else x1 = x2 = 0;
-
-                    Debug.Assert(!double.IsNaN(x1) && !double.IsNaN(x2), "NaN detected!");
-
-                    var l = Math.Min(x1, x2);
-                    var m = Math.Max(x1, x2);
-
-                    f0 = new Double4(l * m, l * l * l, m * m * m, 0);
-                    f1 = new Double4(-l - m, -3 * l * l, -3 * m * m, 0);
-                    f2 = new Double4(1, 3 * l, 3 * m, 0);
-                    f3 = new Double4(0, -1, -1, 0);
-
-                    // Guarantee that the signs are correct
-                    if (d1 < 0) NegateSigns();
-                }
-                // Loop
-                else
-                {
-                    // Find the roots of the equation
-                    var dv = d2 >= 0 ? Math.Sqrt(-D) : -Math.Sqrt(-D);
-                    var q = 0.5 * (d2 + dv);
-
-                    var x1 = q / d1;
-                    var x2 = (d2 * d2 / d1 - d3) / q;
-
-                    var d = Math.Min(x1, x2);
-                    var e = Math.Max(x1, x2);
-
-                    f0 = new Double4(d * e, d * d * e, d * e * e, 0);
-                    f1 = new Double4(-d - e, -d * d - 2 * e * d, -e * e - 2 * d * e, 0);
-                    f2 = new Double4(1, e + 2 * d, d + 2 * e, 0);
-                    f3 = new Double4(0, -1, -1, 0);
-
-                    // Guarantee that the signs are correct
-                    var h1 = d3 * d1 - d2 * d2;
-                    var h2 = d3 * d1 - d2 * d2 + d1 * d2 - d1 * d1;
-                    var h = Math.Abs(h1) > Math.Abs(h2) ? h1 : h2;
-                    var h12 = d3 * d1 - d2 * d2 + d1 * d2 / 2 - d1 * d1 / 4;
-                    if (Math.Abs(h12) > Math.Abs(h)) h = h12;
-
-                    if (d1 * h > 0) NegateSigns();
-                }
+                if (DoubleUtils.RoughlyEquals(C, D)) return 0;
+                return 2 * (C - D).Cross(C - B) / Math.Pow((D - C).LengthSquared, 1.5) / 3;
             }
-            // Other kind of cusp
-            else if (d2 != 0)
-            {
-                // A single root
-                var l = d3 / (3 * d2);
-
-                f0 = new Double4(l, l * l * l, 1, 0);
-                f1 = new Double4(-1, -3 * l * l, 0, 0);
-                f2 = new Double4(0, -3 * l, 0, 0);
-                f3 = new Double4(0, -1, 0, 0);
-            }
-            // Degenerate forms for the cubic - first, a quadratic
-            else if (d3 != 0)
-            {
-                f0 = new Double4(0, 0, 1, 0);
-                f1 = new Double4(1, 0, 1, 0);
-                f2 = new Double4(0, 1, 0, 0);
-                f3 = new Double4(0, 0, 0, 0);
-            }
-            // A line or a point - no triangles
-            else return new CurveVertex[0];
-
-            // Put the texture coordinates back into "normal" form
-            return new[]
-            {
-                new CurveVertex(A, f0),
-                new CurveVertex(B, f0 + f1 / 3),
-                new CurveVertex(C, f0 + (2 * f1 + f2) / 3),
-                new CurveVertex(D, f0 + f1 + f2 + f3)
-            };
         }
     }
 }

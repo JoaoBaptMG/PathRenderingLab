@@ -66,8 +66,8 @@ namespace PathRenderingLab.PathCompiler
                 IEnumerable<Curve> SimplifyCurve(Curve c)
                 {
                     // Calculate the cosine of the tangents
-                    var tan1 = c.TangentAt(0);
-                    var tan2 = c.TangentAt(1);
+                    var tan1 = c.EntryTangent;
+                    var tan2 = c.ExitTangent;
 
                     // The curve is simple if the normals form an angle lesser than a somewhat tight threshold
                     var simple = Math.Abs(tan1.Dot(tan2)) > 0.8;
@@ -176,7 +176,7 @@ namespace PathRenderingLab.PathCompiler
 
             var v0 = c.EntryTangent;
             var v1 = c.ExitTangent;
-            var vh = c.TangentAt(0.5);
+            var vh = c.Derivative.At(0.5).Normalized;
 
             var xr0 = Offset(x0, v0);
             var xr1 = Offset(x1, v1);

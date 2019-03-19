@@ -112,57 +112,26 @@ namespace PathRenderingLab.PathCompiler
             else yield return this;
         }
 
-        private double QuadraticBezier_NearestPointTo(Double2 p)
+        private Double2[] QuadraticBezier_EnclosingPolygon => new[] { A, B, C };
+
+        private CurveVertex[] QuadraticBezier_CurveVertices
         {
-            // Canonical form (plus the P)
-            var c2 = A - 2 * B + C;
-            var c1 = 2 * (B - A);
-            var c0 = A - p;
-
-            // Derivative's canonical form
-            var d = QuadraticBezier_Derivative;
-            var d1 = d.B - d.A;
-            var d0 = d.A;
-
-            // Build the dot-polynomial
-            var k3 = c2.Dot(d1);
-            var k2 = c2.Dot(d0) + c1.Dot(d1);
-            var k1 = c1.Dot(d0) + c0.Dot(d1);
-            var k0 = c0.Dot(d0);
-
-            double minRoot = 0;
-            var roots = Equations.SolveCubic(k3, k2, k1, k0);
-
-            // For each root, test it
-            foreach (var root in roots)
+            get
             {
-                // Discard roots outside the curve
-                if (root < 0 || root > 1) continue;
-
-                // Assign minimum roots
-                if (QuadraticBezier_At(minRoot).DistanceSquaredTo(p) > QuadraticBezier_At(root).DistanceSquaredTo(p))
-                    minRoot = root;
+                // Apply the Loop-Blinn method to get the texture coordinates
+                // Available on https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/p1000-loop.pdf
+                // The simplest case
+                double sign = IsConvex ? 1 : -1;
+                return new[]
+                {
+                    new CurveVertex(A, new Double4(0.0, 0.0, 1.0, sign)),
+                    new CurveVertex(B, new Double4(0.5, 0.0, 1.0, sign)),
+                    new CurveVertex(C, new Double4(1.0, 1.0, 1.0, sign))
+                };
             }
-
-            // Check the 1 root
-            if (QuadraticBezier_At(minRoot).DistanceSquaredTo(p) > C.DistanceSquaredTo(p))
-                minRoot = 1;
-
-            return minRoot;
         }
 
-        private CurveVertex[] QuadraticBezier_CurveVertices()
-        {
-            // Apply the Loop-Blinn method to get the texture coordinates
-            // Available on https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/p1000-loop.pdf
-            // The simplest case
-            double sign = IsConvex ? 1 : -1;
-            return new[]
-            {
-                new CurveVertex(A, new Double4(0.0, 0.0, 1.0, sign)),
-                new CurveVertex(B, new Double4(0.5, 0.0, 1.0, sign)),
-                new CurveVertex(C, new Double4(1.0, 1.0, 1.0, sign))
-            };
-        }
+        private double QuadraticBezier_EntryCurvature => 0.5 * (B - A).Cross(C - B) / Math.Pow((B - A).LengthSquared, 1.5);
+        private double QuadraticBezier_ExitCurvature => 0.5 * (B - C).Cross(B - A) / Math.Pow((C - B).LengthSquared, 1.5);
     }
 }

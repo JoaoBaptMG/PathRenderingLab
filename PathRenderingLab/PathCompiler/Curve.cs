@@ -238,36 +238,6 @@ namespace PathRenderingLab.PathCompiler
             }
         }
 
-        public double NearestPointTo(Double2 p)
-        {
-            switch (Type)
-            {
-                case CurveType.Line: return Line_NearestPointTo(p);
-                case CurveType.QuadraticBezier: return QuadraticBezier_NearestPointTo(p);
-                case CurveType.CubicBezier: return CubicBezier_NearestPointTo(p);
-                case CurveType.EllipticArc: return EllipticArc_NearestPointTo(p);
-                default: throw new InvalidOperationException("Unrecognized type.");
-            }
-        }
-
-        public Curve SubcurveCorrectEndpoints(KeyValuePair<double, Double2> l, KeyValuePair<double, Double2> r)
-        {
-            if (l.Key == 0 && r.Key == 1) return this;
-            return Subcurve(l.Key, r.Key).CorrectEndpoints(l.Value, r.Value);
-        }
-
-        public Curve CorrectEndpoints(Double2 p0, Double2 p1)
-        {
-            switch (Type)
-            {
-                case CurveType.Line: return Line(p0, p1);
-                case CurveType.QuadraticBezier: return QuadraticBezier(p0, B, p1);
-                case CurveType.CubicBezier: return CubicBezier(p0, B, C, p1);
-                case CurveType.EllipticArc: return this;
-                default: throw new InvalidOperationException("Unrecognized type.");
-            }
-        }
-
         public PathCommand PathCommandFrom()
         {
             switch (Type)
@@ -288,10 +258,62 @@ namespace PathRenderingLab.PathCompiler
                 switch (Type)
                 {
                     case CurveType.Line: return new CurveVertex[0];
-                    case CurveType.QuadraticBezier: return QuadraticBezier_CurveVertices();
-                    case CurveType.CubicBezier: return CubicBezier_CurveVertices();
-                    case CurveType.EllipticArc: return EllipticArc_CurveVertices();
+                    case CurveType.QuadraticBezier: return QuadraticBezier_CurveVertices;
+                    case CurveType.CubicBezier: return CubicBezier_CurveVertices;
+                    case CurveType.EllipticArc: return EllipticArc_CurveVertices;
                     default: throw new InvalidOperationException("Unrecognized type.");
+                }
+            }
+        }
+
+        Double2[] cachedEnclosingPolygon;
+
+        public Double2[] EnclosingPolygon
+        {
+            get
+            {
+                if (cachedEnclosingPolygon == null)
+                {
+                    switch (Type)
+                    {
+                        case CurveType.Line: cachedEnclosingPolygon = Line_EnclosingPolygon; break;
+                        case CurveType.QuadraticBezier: cachedEnclosingPolygon = QuadraticBezier_EnclosingPolygon; break;
+                        case CurveType.CubicBezier: cachedEnclosingPolygon = CubicBezier_EnclosingPolygon; break;
+                        case CurveType.EllipticArc: cachedEnclosingPolygon = EllipticArc_EnclosingPolygon; break;
+                        default: throw new InvalidOperationException("Unrecognized type.");
+                    }
+                }
+
+                return cachedEnclosingPolygon;
+            }
+        }
+
+        public double EntryCurvature
+        {
+            get
+            {
+                switch (Type)
+                {
+                    case CurveType.Line: return 0;
+                    case CurveType.QuadraticBezier: return QuadraticBezier_EntryCurvature;
+                    case CurveType.CubicBezier: return CubicBezier_EntryCurvature;
+                    case CurveType.EllipticArc: return EllipticArc_Curvature(0);
+                    default: throw new InvalidOperationException("Unrecognized type!");
+                }
+            }
+        }
+
+        public double ExitCurvature
+        {
+            get
+            {
+                switch (Type)
+                {
+                    case CurveType.Line: return 0;
+                    case CurveType.QuadraticBezier: return QuadraticBezier_ExitCurvature;
+                    case CurveType.CubicBezier: return CubicBezier_ExitCurvature;
+                    case CurveType.EllipticArc: return EllipticArc_Curvature(1);
+                    default: throw new InvalidOperationException("Unrecognized type!");
                 }
             }
         }
