@@ -80,14 +80,14 @@ namespace PathRenderingLab
         }
 
         // Check if segments are inside interval
-        public static bool InsideSegmentCollinear(Double2 x0, Double2 x1, Double2 y, bool strict = false)
+        public static bool InsideSegmentCollinear(Double2 x0, Double2 x1, Double2 y, bool strict)
         {
             var d = (x1 - x0).Dot(y - x0);
             return strict ? d > 0 && d < (x1 - x0).LengthSquared
                 : d >= 0 && d <= (x1 - x0).LengthSquared;
         }
 
-        public static bool SegmentsIntersect(Double2 p0, Double2 p1, Double2 q0, Double2 q1, bool strict = false)
+        public static bool SegmentsIntersect(Double2 p0, Double2 p1, Double2 q0, Double2 q1, bool strict)
         {
             // The cross products
             double crossq0 = (p1 - p0).Cross(q0 - p0);
@@ -97,15 +97,19 @@ namespace PathRenderingLab
 
             // If two points are equal, we have only containment (not considered in strict case)
             if (RoughlyEquals(p0, p1))
-                return !strict && RoughlyZero(crossp0) && InsideSegmentCollinear(q0, q1, p0, strict);
+                return !strict && RoughlyZeroSquared(crossp0) && InsideSegmentCollinear(q0, q1, p0, strict);
             if (RoughlyEquals(q0, q1))
-                return !strict && RoughlyZero(crossq0) && InsideSegmentCollinear(p0, p1, q0, strict);
+                return !strict && RoughlyZeroSquared(crossq0) && InsideSegmentCollinear(p0, p1, q0, strict);
 
-            // Containment
-            if (RoughlyZeroSquared(crossq0)) return InsideSegmentCollinear(p0, p1, q0, strict);
-            if (RoughlyZeroSquared(crossq1)) return InsideSegmentCollinear(p0, p1, q1, strict);
-            if (RoughlyZeroSquared(crossp0)) return InsideSegmentCollinear(q0, q1, p0, strict);
-            if (RoughlyZeroSquared(crossp1)) return InsideSegmentCollinear(q0, q1, p1, strict);
+            // Point coincidence is considered a false result on strict mode
+            if (strict && (RoughlyEquals(p0, q0) || RoughlyEquals(p0, q1) || RoughlyEquals(q0, p0) || RoughlyEquals(q0, p1)))
+                return false;
+
+            // Containment (not considered on strict mode)
+            if (RoughlyZeroSquared(crossq0)) return !strict && InsideSegmentCollinear(p0, p1, q0, strict);
+            if (RoughlyZeroSquared(crossq1)) return !strict && InsideSegmentCollinear(p0, p1, q1, strict);
+            if (RoughlyZeroSquared(crossp0)) return !strict && InsideSegmentCollinear(q0, q1, p0, strict);
+            if (RoughlyZeroSquared(crossp1)) return !strict && InsideSegmentCollinear(q0, q1, p1, strict);
 
             // Check if everything is on one side
             if (crossq0 < 0 && crossq1 < 0) return false;
@@ -117,8 +121,19 @@ namespace PathRenderingLab
             return true;
         }
 
-        public static bool PolygonsOverlap(Double2[] poly0, Double2[] poly1, bool strict = false)
+        public static bool PolygonsOverlap(Double2[] poly0, Double2[] poly1, bool strict)
         {
+            // Check first for degenerate triangles
+            var s0 = SegmentEquivalent(poly0);
+            var s1 = SegmentEquivalent(poly1);
+
+            if (s0.Length == 2 && s1.Length == 2)
+                return SegmentsIntersect(s0[0], s0[1], s1[0], s1[1], strict);
+            else if (s0.Length == 2)
+                return PolygonSegmentIntersect(poly1, s0[0], s0[1], strict);
+            else if (s1.Length == 2)
+                return PolygonSegmentIntersect(poly0, s1[0], s1[1], strict);
+
             // Check for segments intersection
             for (int j = 0; j < poly0.Length; j++)
                 for (int i = 0; i < poly1.Length; i++)
@@ -141,7 +156,7 @@ namespace PathRenderingLab
             return false;
         }
 
-        public static bool PolygonSegmentIntersect(Double2[] poly, Double2 a, Double2 b, bool strict = false)
+        public static bool PolygonSegmentIntersect(Double2[] poly, Double2 a, Double2 b, bool strict)
         {
             // Check for segments intersection
             for (int i = 0; i < poly.Length; i++)
@@ -160,7 +175,35 @@ namespace PathRenderingLab
             return false;
         }
 
-        public static bool PolygonContainsPoint(Double2[] poly, Double2 p, bool strict = false)
+        public static double PolygonWinding(Double2[] poly)
+        {
+            double winding = 0;
+
+            for (int i = 0; i < poly.Length; i++)
+                winding += poly[i].Cross(poly[(i + 1) % poly.Length]);
+
+            return winding;
+        }
+
+        public static Double2[] SegmentEquivalent(Double2[] poly)
+        {
+            // If the polygon is already a segment or its winding is non-negligible, just return
+            if (poly.Length == 2 || !RoughlyZeroSquared(PolygonWinding(poly))) return poly;
+
+            // Else, build the segment
+            var imin = 0;
+            var imax = 0;
+
+            for (int i = 1; i < poly.Length; i++)
+            {
+                if (poly[imin].X > poly[i].X) imin = i;
+                if (poly[imax].X < poly[i].X) imax = i;
+            }
+
+            return new[] { poly[imin], poly[imax] };
+        }
+
+        public static bool PolygonContainsPoint(Double2[] poly, Double2 p, bool strict)
         {
             bool contains = false;
 
@@ -174,7 +217,7 @@ namespace PathRenderingLab
 
                 // For strictness, if the line is "inside" the polygon, we have a problem
                 if (strict && RoughlyZeroSquared((p1 - p0).Cross(p - p0)) &&
-                    InsideSegmentCollinear(p0, p1, p)) return false;
+                    InsideSegmentCollinear(p0, p1, p, false)) return false;
 
                 if (p0.X < p.X && p1.X < p.X) continue;
                 if (p0.X < p.X) p0 = p1 + (p.X - p1.X) / (p0.X - p1.X) * (p0 - p1);

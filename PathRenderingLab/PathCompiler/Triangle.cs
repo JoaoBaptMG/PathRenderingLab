@@ -33,31 +33,6 @@ namespace PathRenderingLab.PathCompiler
             else return s >= 0 && s + t <= a;
         }
 
-        public bool Overlaps(Triangle other)
-        {
-            // Check containment
-            if (ContainsPoint(other.A)) return true;
-            if (ContainsPoint(other.B)) return true;
-            if (ContainsPoint(other.B)) return true;
-            if (other.ContainsPoint(A)) return true;
-            if (other.ContainsPoint(B)) return true;
-            if (other.ContainsPoint(B)) return true;
-
-            // Check overlap
-            if (GeometricUtils.SegmentsIntersect(A, B, other.A, other.B)) return true;
-            if (GeometricUtils.SegmentsIntersect(A, B, other.B, other.C)) return true;
-            if (GeometricUtils.SegmentsIntersect(A, B, other.C, other.A)) return true;
-            if (GeometricUtils.SegmentsIntersect(B, C, other.A, other.B)) return true;
-            if (GeometricUtils.SegmentsIntersect(B, C, other.B, other.C)) return true;
-            if (GeometricUtils.SegmentsIntersect(B, C, other.C, other.A)) return true;
-            if (GeometricUtils.SegmentsIntersect(C, A, other.A, other.B)) return true;
-            if (GeometricUtils.SegmentsIntersect(C, A, other.B, other.C)) return true;
-            if (GeometricUtils.SegmentsIntersect(C, A, other.C, other.A)) return true;
-
-            // Otherwise...
-            return false;
-        }
-
         public bool IsDegenerate => DoubleUtils.RoughlyZero((B - A).Cross(C - A));
 
         public static IEnumerable<Triangle> MakeTriangleFan(Double2[] vertices)

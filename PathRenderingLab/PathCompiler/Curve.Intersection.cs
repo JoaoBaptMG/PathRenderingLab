@@ -202,7 +202,6 @@ namespace PathRenderingLab.PathCompiler
             double t1l = 0f, double t1r = 1f, double t2l = 0f, double t2r = 1f, int depth = 0)
         {
             // Check first for extrema
-
             if (RoughlyEquals(c1.At(t1l), c2.At(t2l)))
                 yield return new RootPair(t1l, t2l);
             if (RoughlyEquals(c1.At(t1l), c2.At(t2r)))
@@ -232,42 +231,24 @@ namespace PathRenderingLab.PathCompiler
                 var p1 = c1s.EnclosingPolygon;
                 var p2 = c2s.EnclosingPolygon;
 
+                if (!PolygonsOverlap(p1, p2, true)) yield break;
+
                 if (deg2)
                 {
-                    var p1l = c1.Subcurve(t1l, t1m).EnclosingPolygon;
-                    var p1r = c1.Subcurve(t1m, t1r).EnclosingPolygon;
-
-                    if (PolygonsOverlap(p1l, p2, true))
-                        foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2r, depth + 1)) yield return r;
-                    if (PolygonsOverlap(p1r, p2, true))
-                        foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2r, depth + 1)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2r, depth + 1)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2r, depth + 1)) yield return r;
                 }
                 else if (deg1)
                 {
-                    var p2l = c2.Subcurve(t2l, t2m).EnclosingPolygon;
-                    var p2r = c2.Subcurve(t2m, t2r).EnclosingPolygon;
-
-                    if (PolygonsOverlap(p1, p2l, true))
-                        foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2l, t2m, depth + 1)) yield return r;
-                    if (PolygonsOverlap(p1, p2r, true))
-                        foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2m, t2r, depth + 1)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2l, t2m, depth + 1)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2m, t2r, depth + 1)) yield return r;
                 }
                 else
                 {
-                    var p1l = c1.Subcurve(t1l, t1m).EnclosingPolygon;
-                    var p1r = c1.Subcurve(t1m, t1r).EnclosingPolygon;
-
-                    var p2l = c2.Subcurve(t2l, t2m).EnclosingPolygon;
-                    var p2r = c2.Subcurve(t2m, t2r).EnclosingPolygon;
-
-                    if (PolygonsOverlap(p1l, p2l, true))
-                        foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2m, depth + 1)) yield return r;
-                    if (PolygonsOverlap(p1l, p2r, true))
-                        foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2m, t2r, depth + 1)) yield return r;
-                    if (PolygonsOverlap(p1r, p2l, true))
-                        foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2m, depth + 1)) yield return r;
-                    if (PolygonsOverlap(p1r, p2r, true))
-                        foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2m, t2r, depth + 1)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2m, depth + 1)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2m, t2r, depth + 1)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2m, depth + 1)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2m, t2r, depth + 1)) yield return r;
                 }
             }
         }
@@ -392,7 +373,7 @@ namespace PathRenderingLab.PathCompiler
             {
                 if (!double.IsNaN(prevPair.Key))
                     // Compare the keys
-                    if (RoughComparerSquared.Compare(prevPair.Key, kvp.Key) != 0)
+                    if (!RoughlyEquals(prevPair.Value, kvp.Value))
                     {
                         clusters.Add(curCluster);
                         curCluster = new SortedDictionary<double, Double2>();
@@ -427,7 +408,7 @@ namespace PathRenderingLab.PathCompiler
                         value += kvp.Value;
                     }
 
-                    rootSet[key / n] = value / n;
+                    rootSet[key / n] = (value / n).Truncate();
                 }
             }
         }
