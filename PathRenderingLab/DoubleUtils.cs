@@ -76,5 +76,29 @@ namespace PathRenderingLab
         public static double? TryParse(string str)
             => double.TryParse(str, out var result) ? result : new double?();
 
+        public static double NextPowerOfTwo(double x)
+        {
+            // Bail out if zero
+            if (x == 0) return 1;
+
+            // If it's NaN or negative, throw
+            if (x < 0 || double.IsNaN(x)) throw new ArgumentException("NaNs and negative numbers are not allowed!", nameof(x));
+            // If it's infinity, return itself
+            if (double.IsInfinity(x)) return x;
+
+            // Get the double's bits
+            var bits = BitConverter.DoubleToInt64Bits(x);
+
+            // If the exponent is negative, return 1
+            if (bits < (1023L << 52)) return 1;
+
+            // If the mantissa is not clear, augment the exponent
+            if ((bits & 0xFFFFFFFFFFFFF) != 0) bits += 1L << 52;
+
+            // Clear the mantissa and return it
+            bits &= ~0xFFFFFFFFFFFFF;
+
+            return BitConverter.Int64BitsToDouble(bits);
+        }
     }
 }
