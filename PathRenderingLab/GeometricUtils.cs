@@ -58,12 +58,17 @@ namespace PathRenderingLab
             return new DoubleRectangle(x1, y1, x2 - x1, y2 - y1);
         }
 
+        public bool ContainsCompletely(DoubleRectangle o)
+            => X <= o.X && Y <= o.Y && X + Width >= o.X + o.Width && Y + Height >= o.Y + o.Height;
+
+        public bool ContainsPoint(Double2 v) => X <= v.X && Y <= v.Y && X + Width >= v.X && Y + Height >= v.Y;
+
         public DoubleRectangle Truncate()
         {
             var x1 = X.Truncate();
             var y1 = Y.Truncate();
-            var x2 = (X + Width).Truncate();
-            var y2 = (Y + Height).Truncate();
+            var x2 = (X + Width).TruncateCeiling();
+            var y2 = (Y + Height).TruncateCeiling();
 
             return new DoubleRectangle(x1, y1, x2 - x1, y2 - y1);
         }
@@ -94,14 +99,6 @@ namespace PathRenderingLab
     public static class GeometricUtils
     {
         public static bool Inside01(double t) => t >= 0 && t <= 1;
-
-        public static IEnumerable<RootPair> Remap(this IEnumerable<RootPair> pair, double t1, double t2, double u1, double u2)
-        {
-            double Remap1(double t) => t1 + t * (t2 - t1);
-            double Remap2(double u) => u1 + u * (u2 - u1);
-
-            return pair.Select(p => new RootPair(Remap1(p.A), Remap2(p.B)));
-        }
 
         // Check if segments are inside interval
         public static bool InsideSegmentCollinear(Double2 x0, Double2 x1, Double2 y, bool strict)

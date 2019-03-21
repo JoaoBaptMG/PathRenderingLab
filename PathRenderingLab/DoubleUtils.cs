@@ -73,6 +73,8 @@ namespace PathRenderingLab
 
         public static double Truncate(this double x) => Epsilon * Math.Round(x / Epsilon);
 
+        public static double TruncateCeiling(this double x) => Epsilon * Math.Ceiling(x / Epsilon);
+
         public static double? TryParse(string str)
             => double.TryParse(str, out var result) ? result : new double?();
 
