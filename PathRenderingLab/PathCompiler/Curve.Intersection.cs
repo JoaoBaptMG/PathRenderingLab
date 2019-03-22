@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using static PathRenderingLab.DoubleUtils;
 using static PathRenderingLab.GeometricUtils;
@@ -12,7 +13,7 @@ namespace PathRenderingLab.PathCompiler
         {
             if (c1.Type == CurveType.Line && c2.Type == CurveType.Line)
                 return LineLineIntersections(c1, c2);
-            return GeneralCurveIntersections(c1, c2);
+            return GeneralCurveIntersections(c1, c2, 0, 1, 0, 1);
         }
 
         static IEnumerable<RootPair> LineLineIntersections(Curve l1, Curve l2)
@@ -84,27 +85,100 @@ namespace PathRenderingLab.PathCompiler
             }
         }
 
-        static IEnumerable<RootPair> GeneralCurveIntersections(Curve c1, Curve c2)
+        static string RectanglePath(DoubleRectangle r) => $"M {r.X},{r.Y} h{r.Width} v{r.Height} h{-r.Width} Z";
+
+        static IEnumerable<RootPair> GeneralCurveIntersections(Curve c1, Curve c2, double t1l, double t1r, double t2l, double t2r)
         {
-            // First, pick the curves' bounding boxes
-            var bb1 = c1.BoundingBox;
-            var bb2 = c2.BoundingBox;
+            // Treat endpoints, since they are not counted on strict intersection
+            if (c1.At(t1l) == c2.At(t2l)) yield return new RootPair(t1l, t2l);
+            if (c1.At(t1l) == c2.At(t2r)) yield return new RootPair(t1l, t2r);
+            if (c1.At(t1r) == c2.At(t2l)) yield return new RootPair(t1r, t2l);
+            if (c1.At(t1r) == c2.At(t2r)) yield return new RootPair(t1r, t2r);
 
-            // If they do not intersect, the curves also don't
-            if (!bb1.Intersects(bb2)) return new RootPair[0];
+            // Take the subcurves for the current iteration
+            var bb1s = c1.Subcurve(t1l, t1r).BoundingBox;
+            var bb2s = c2.Subcurve(t2l, t2r).BoundingBox;
 
-            // Pick the truncated version and extend its sizes
-            var bb = bb1.Intersection(bb2).Truncate();
-            bb.Width = Epsilon * NextPowerOfTwo(bb.Width / Epsilon);
-            bb.Height = Epsilon * NextPowerOfTwo(bb.Height / Epsilon);
+            // If the bounding boxes don't intersect, neither do the curves
+            if (!bb1s.StrictlyIntersects(bb2s)) yield break;
 
-            // Pass it to the actual recursion
-            return GeneralCurveIntersectionsInternal(c1, c2, searchingArea: bb);
-        }
+            // Pick the midpoints
+            double t1m = (t1l + t1r) / 2;
+            double t2m = (t2l + t2r) / 2;
 
-        static IEnumerable<RootPair> GeneralCurveIntersectionsInternal(Curve c1, Curve c2, DoubleRectangle searchingArea)
-        {
+            // Check the bounding box's measures to check whether we subdivide more the curves or not
+            var r1 = IsRectangleNegligible(bb1s);
+            var r2 = IsRectangleNegligible(bb2s);
 
+            bool IsRectangleNegligible(DoubleRectangle r) => r.X != r.X.Truncate() && r.X + r.Width != (r.X + r.Width).Truncate()
+                && r.X.Truncate() == (r.X + r.Width).Truncate() && r.Y != r.Y.Truncate() && r.Y + r.Height != (r.Y + r.Height).Truncate()
+                && r.Y.Truncate() == (r.Y + r.Height).Truncate();
+
+            // If both are negligible, just return the midpoints
+            if (r1 && r2)
+                yield return new RootPair(t1m, t2m);
+            // Else, pick the right curves based on the decisions
+            else
+            {
+                // Try to cater for the case that the intersection lies exactly on a gridline
+                if (t1r - t1l < Epsilon2 && t2r - t2l < Epsilon2)
+                {
+                    yield return GridCase();
+                    // Break here
+                    yield break;
+                }
+
+                if (r1)
+                {
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2l, t2m)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2m, t2r)) yield return r;
+                }
+                else if (r2)
+                {
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2r)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2r)) yield return r;
+                }
+                else
+                {
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2m)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2m, t2r)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2m)) yield return r;
+                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2m, t2r)) yield return r;
+                }
+            }
+
+            // The edge case when the roots lie on gridlines
+            RootPair GridCase()
+            {
+                var bb = bb1s.Intersection(bb2s);
+
+                bool SearchBoundary(double p1, double p2, out double p)
+                {
+                    if (p1 == p1.Truncate()) { p = p1; return true; }
+                    else if (p2 == p2.Truncate()) { p = p2; return true; }
+                    else if (p1.Truncate() != p2.Truncate()) { p = p2.Truncate(); return true; }
+                    else { p = double.NaN; return false; }
+                }
+
+                // Find in which coordinate is the "offending" root
+                var offx = SearchBoundary(bb.X, bb.X + bb.Width, out var xt);
+                var offy = SearchBoundary(bb.Y, bb.Y + bb.Height, out var yt);
+
+                // The generators for the roots
+                var r1x = c1.IntersectionsWithVerticalLine(xt).Where(t => t >= t1l && t <= t1r);
+                var r1y = c1.IntersectionsWithHorizontalLine(yt).Where(t => t >= t1l && t <= t1r);
+                var r2x = c2.IntersectionsWithVerticalLine(xt).Where(t => t >= t2l && t <= t2r);
+                var r2y = c2.IntersectionsWithHorizontalLine(yt).Where(t => t >= t2l && t <= t2r);
+
+                // If it's exactly on the gridline, concatenate all the roots
+                if (offx && offy) return new RootPair(r1x.Concat(r1y).Average(), r2x.Concat(r2y).Average());
+                // If it's on the X coordinate, search for the roots in this line
+                else if (offx) return new RootPair(r1x.Average(), r2x.Average());
+                // If it's on the Y coordinate, search for the roots in this line
+                else if (offy) return new RootPair(r1y.Average(), r2y.Average());
+                // This case should never occur
+                else throw new Exception("Impossible case reached!");
+            }
         }
     }
 }

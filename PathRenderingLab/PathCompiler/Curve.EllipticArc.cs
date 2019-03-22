@@ -312,5 +312,54 @@ namespace PathRenderingLab.PathCompiler
                 return vertices;
             }
         }
+
+        private double[] EllipticArc_IntersectionsWithVerticalLine(double x)
+        {
+            // Get the compensation vector
+            var cp = new Double2(Radii.X * ComplexRot.X, Radii.Y * ComplexRot.Y);
+
+            // Get the difference
+            var diff = x - Center.X;
+
+            // If the difference is too large, bail out
+            if (Math.Abs(diff) > cp.Length) return new double[0];
+
+            // Else, take the arc-cosine of the value and return
+            var acos = Math.Acos(diff / cp.Length);
+            return new[] { AngleToParameter(acos - cp.Angle), AngleToParameter(-acos - cp.Angle) };
+        }
+
+        private double[] EllipticArc_IntersectionsWithHorizontalLine(double y)
+        {
+            // Get the compensation vector
+            var cp = new Double2(Radii.X * ComplexRot.Y, Radii.Y * ComplexRot.X);
+
+            // Get the difference
+            var diff = y - Center.Y;
+
+            // If the difference is too large, bail out
+            if (Math.Abs(diff) > cp.Length) return new double[0];
+
+            // Else, take the arc-cosine of the value and return
+            var acos = Math.Acos(diff / cp.Length);
+            return new[] { AngleToParameter(acos + cp.Angle), AngleToParameter(-acos + cp.Angle) };
+        }
+
+        private double[] EllipticArc_IntersectionsWithSegment(Double2 v1, Double2 v2)
+        {
+            // Get the compensation vector
+            Double2 dv = v2 - v1;
+            var cp = new Double2(Radii.X * ComplexRot.Cross(dv), Radii.Y * ComplexRot.Dot(dv));
+
+            // Get the difference
+            var diff = (Center - v1).Cross(dv);
+
+            // If the difference is too large, bail out
+            if (Math.Abs(diff) > cp.Length) return new double[0];
+
+            // Else, take the arc-cosine of the value and return
+            var acos = Math.Acos(diff / cp.Length);
+            return new[] { AngleToParameter(acos - cp.Angle), AngleToParameter(-acos - cp.Angle) };
+        }
     }
 }

@@ -14,6 +14,18 @@ namespace PathRenderingLab
             Y = y;
             Width = width;
             Height = height;
+
+            if (Width < 0)
+            {
+                X += Width;
+                Width = -Width;
+            }
+
+            if (Height < 0)
+            {
+                Y += Height;
+                Height = -Height;
+            }
         }
 
         public bool Intersects(FloatRectangle o) => !(X > o.X + o.Width || o.X > X + Width || Y > o.Y + o.Height || o.Y > Y + Height);
@@ -45,6 +57,9 @@ namespace PathRenderingLab
         }
 
         public bool Intersects(DoubleRectangle o) => !(X > o.X + o.Width || o.X > X + Width || Y > o.Y + o.Height || o.Y > Y + Height);
+
+        public bool StrictlyIntersects(DoubleRectangle o) =>
+            !(X >= o.X + o.Width || o.X >= X + Width || Y >= o.Y + o.Height || o.Y >= Y + Height);
 
         public DoubleRectangle Intersection(DoubleRectangle o)
         {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PathRenderingLab.PathCompiler
 {
@@ -251,21 +252,6 @@ namespace PathRenderingLab.PathCompiler
             }
         }
 
-        public CurveVertex[] CurveVertices
-        {
-            get
-            {
-                switch (Type)
-                {
-                    case CurveType.Line: return new CurveVertex[0];
-                    case CurveType.QuadraticBezier: return QuadraticBezier_CurveVertices;
-                    case CurveType.CubicBezier: return CubicBezier_CurveVertices;
-                    case CurveType.EllipticArc: return EllipticArc_CurveVertices;
-                    default: throw new InvalidOperationException("Unrecognized type.");
-                }
-            }
-        }
-
         Double2[] cachedEnclosingPolygon;
 
         public Double2[] EnclosingPolygon
@@ -285,6 +271,21 @@ namespace PathRenderingLab.PathCompiler
                 }
 
                 return cachedEnclosingPolygon;
+            }
+        }
+
+        public CurveVertex[] CurveVertices
+        {
+            get
+            {
+                switch (Type)
+                {
+                    case CurveType.Line: return new CurveVertex[0];
+                    case CurveType.QuadraticBezier: return QuadraticBezier_CurveVertices;
+                    case CurveType.CubicBezier: return CubicBezier_CurveVertices;
+                    case CurveType.EllipticArc: return EllipticArc_CurveVertices;
+                    default: throw new InvalidOperationException("Unrecognized type.");
+                }
             }
         }
 
@@ -315,6 +316,42 @@ namespace PathRenderingLab.PathCompiler
                     case CurveType.EllipticArc: return EllipticArc_Curvature(1);
                     default: throw new InvalidOperationException("Unrecognized type!");
                 }
+            }
+        }
+
+        public double[] IntersectionsWithVerticalLine(double x)
+        {
+            switch (Type)
+            {
+                case CurveType.Line: return Line_IntersectionsWithVerticalLine(x);
+                case CurveType.QuadraticBezier: return QuadraticBezier_IntersectionsWithVerticalLine(x);
+                case CurveType.CubicBezier: return CubicBezier_IntersectionsWithVerticalLine(x);
+                case CurveType.EllipticArc: return EllipticArc_IntersectionsWithVerticalLine(x);
+                default: throw new InvalidOperationException("Unrecognized type!");
+            }
+        }
+
+        public double[] IntersectionsWithHorizontalLine(double y)
+        {
+            switch (Type)
+            {
+                case CurveType.Line: return Line_IntersectionsWithHorizontalLine(y);
+                case CurveType.QuadraticBezier: return QuadraticBezier_IntersectionsWithHorizontalLine(y);
+                case CurveType.CubicBezier: return CubicBezier_IntersectionsWithHorizontalLine(y);
+                case CurveType.EllipticArc: return EllipticArc_IntersectionsWithHorizontalLine(y);
+                default: throw new InvalidOperationException("Unrecognized type!");
+            }
+        }
+
+        public double[] IntersectionsWithSegment(Double2 v1, Double2 v2)
+        {
+            switch (Type)
+            {
+                case CurveType.Line: return Line_IntersectionsWithSegment(v1, v2);
+                case CurveType.QuadraticBezier: return QuadraticBezier_IntersectionsWithSegment(v1, v2);
+                case CurveType.CubicBezier: return CubicBezier_IntersectionsWithSegment(v1, v2);
+                case CurveType.EllipticArc: return EllipticArc_IntersectionsWithSegment(v1, v2);
+                default: throw new InvalidOperationException("Unrecognized type!");
             }
         }
 

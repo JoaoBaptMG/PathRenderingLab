@@ -40,17 +40,14 @@ namespace PathRenderingLab.PathCompiler.DCEL
         {
             int numRoots = IsOuterFace ? 1 : 0;
 
-            bool HalfOpenRoot(RootPair p) => DoubleUtils.RoughComparer.Compare(p.B, 1) < 0;
             foreach (var edge in Edges)
             {
                 // Ignore edges which interface on "blank" contours
                 if (edge.Face == edge.Twin.Face) continue;
 
-                var bbox = edge.Curve.BoundingBox;
-                var lspur = Curve.Line(v, v.WithX(Math.Max(bbox.X + bbox.Width, v.X) + 1f));
-
                 // Ensure we get only one of the endpoints if necessary
-                numRoots = unchecked(numRoots + Curve.Intersections(lspur, edge.Curve).Count(HalfOpenRoot));
+                bool IsValidRoot(double t) => t >= 0 && t < 1 && edge.Curve.At(t).X >= v.X;
+                numRoots = unchecked(numRoots + edge.Curve.IntersectionsWithHorizontalLine(v.Y).Count(IsValidRoot));
             }
             return numRoots % 2 == 1;
         }

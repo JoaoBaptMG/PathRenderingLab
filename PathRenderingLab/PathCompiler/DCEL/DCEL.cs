@@ -17,6 +17,10 @@ namespace PathRenderingLab.PathCompiler.DCEL
     /// </summary>
     public class DCEL
     {
+        public static double TruncateTreshold = DoubleUtils.Epsilon;
+        static double Truncate(double v) => Math.Floor(v / TruncateTreshold) * TruncateTreshold;
+        static Double2 Truncate(Double2 v) => new Double2(Truncate(v.X), Truncate(v.Y));
+
         private List<Vertex> vertices;
         private List<Edge> edges;
         private List<Face> faces;
@@ -50,7 +54,7 @@ namespace PathRenderingLab.PathCompiler.DCEL
         /// <returns>The vertex added</returns>
         public Vertex AddVertex(Double2 v)
         {
-            if (inexact) v = PathCompilerMethods.Truncate(v);
+            if (inexact) v = Truncate(v);
             var vertex = new Vertex(v);
             vertices.Add(vertex);
             return vertex;
@@ -64,7 +68,7 @@ namespace PathRenderingLab.PathCompiler.DCEL
         /// <returns></returns>
         public bool FindVertex(Double2 v, out Vertex vertex)
         {
-            if (inexact) v = PathCompilerMethods.Truncate(v);
+            if (inexact) v = Truncate(v);
             vertex = vertices.FirstOrDefault(vt => vt.Position == v);
             return vertex != null;
         }

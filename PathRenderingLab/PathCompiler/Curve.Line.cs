@@ -40,6 +40,17 @@ namespace PathRenderingLab.PathCompiler
 
         private Double2[] Line_EnclosingPolygon => new[] { A, B };
 
+        private double[] Line_IntersectionsWithVerticalLine(double x) => A.X == B.X ? new double[0] : new[] { (x - A.X) / (B.X - A.X) };
+
+        private double[] Line_IntersectionsWithHorizontalLine(double y) => A.Y == B.Y ? new double[0] : new[] { (y - A.Y) / (B.Y - A.Y) };
+
+        private double[] Line_IntersectionsWithSegment(Double2 v1, Double2 v2)
+        {
+            var k = (v2 - v1).Cross(B - A);
+            if (DoubleUtils.RoughlyZeroSquared(k)) return new double[0];
+            return new[] { (v2 - v1).Cross(v1 - A) / k };
+        }
+
         private string Line_ToString() => $"L({A.X} {A.Y})-({B.X} {B.Y})";
     }
 }

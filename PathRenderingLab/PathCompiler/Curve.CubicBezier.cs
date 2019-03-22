@@ -316,7 +316,7 @@ namespace PathRenderingLab.PathCompiler
         {
             get
             {
-                if (DoubleUtils.RoughlyEquals(A, B)) return 0;
+                if (RoughlyEquals(A, B)) return 0;
                 return 2 * (B - A).Cross(C - B) / Math.Pow((B - A).LengthSquared, 1.5) / 3;
             }
         }
@@ -325,9 +325,19 @@ namespace PathRenderingLab.PathCompiler
         {
             get
             {
-                if (DoubleUtils.RoughlyEquals(C, D)) return 0;
+                if (RoughlyEquals(C, D)) return 0;
                 return 2 * (C - D).Cross(C - B) / Math.Pow((D - C).LengthSquared, 1.5) / 3;
             }
         }
+
+        private double[] CubicBezier_IntersectionsWithVerticalLine(double x)
+            => Equations.SolveCubic(-A.X + 3 * B.X - 3 * C.X + D.X, 3 * (A.X - 2 * B.X + C.X), 3 * (B.X - A.X), A.X - x);
+
+        private double[] CubicBezier_IntersectionsWithHorizontalLine(double y)
+            => Equations.SolveCubic(-A.Y + 3 * B.Y - 3 * C.Y + D.Y, 3 * (A.Y - 2 * B.Y + C.Y), 3 * (B.Y - A.Y), A.Y - y);
+
+        private double[] CubicBezier_IntersectionsWithSegment(Double2 v1, Double2 v2)
+            => Equations.SolveCubic((-A + 3 * B + 3 * C + D).Cross(v2 - v1), 3 * (A - 2 * B + C).Cross(v2 - v1),
+                3 * (B - A).Cross(v2 - v1), (A - v1).Cross(v2 - v1));
     }
 }

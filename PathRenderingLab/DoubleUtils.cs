@@ -71,7 +71,7 @@ namespace PathRenderingLab
             list.AddRange(temp);
         }
 
-        public static double Truncate(this double x) => Epsilon * Math.Round(x / Epsilon);
+        public static double Truncate(this double x) => Epsilon * Math.Floor(x / Epsilon);
 
         public static double TruncateCeiling(this double x) => Epsilon * Math.Ceiling(x / Epsilon);
 

@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using static PathRenderingLab.DoubleUtils;
 
 namespace PathRenderingLab.PathCompiler
 {
-
     public partial class Curve
     {
         public static Curve QuadraticBezier(Double2 a, Double2 b, Double2 c) => new Curve(CurveType.QuadraticBezier, a, b, c);
@@ -133,5 +133,14 @@ namespace PathRenderingLab.PathCompiler
 
         private double QuadraticBezier_EntryCurvature => 0.5 * (B - A).Cross(C - B) / Math.Pow((B - A).LengthSquared, 1.5);
         private double QuadraticBezier_ExitCurvature => 0.5 * (B - C).Cross(B - A) / Math.Pow((C - B).LengthSquared, 1.5);
+
+        private double[] QuadraticBezier_IntersectionsWithVerticalLine(double x)
+            => Equations.SolveQuadratic(A.X - 2 * B.X + C.X, 2 * (B.X - A.X), A.X - x);
+
+        private double[] QuadraticBezier_IntersectionsWithHorizontalLine(double y)
+            => Equations.SolveQuadratic(A.Y - 2 * B.Y + C.Y, 2 * (B.Y - A.Y), A.Y - y);
+
+        private double[] QuadraticBezier_IntersectionsWithSegment(Double2 v1, Double2 v2)
+            => Equations.SolveQuadratic((A - 2 * B + C).Cross(v2 - v1), 2 * (B - A).Cross(v2 - v1), (A - v1).Cross(v2 - v1));
     }
 }

@@ -7,21 +7,6 @@ namespace PathRenderingLab.PathCompiler
 {
     public static class PathCompilerMethods
     {
-        // Values necessary to "align" the curves in the right places
-        public static double Truncate(double v) => (v / 32).Truncate() * 32;
-        public static Double2 Truncate(Double2 v) => (v / 32).Truncate() * 32;
-
-        public static int FindOrAddPoint(List<Double2> vertices, Double2 vertex)
-        {
-            int ind = vertices.FindIndex(x => DoubleUtils.RoughlyEquals(x, vertex));
-            if (ind == -1)
-            {
-                ind = vertices.Count;
-                vertices.Add(vertex);
-            }
-            return ind;
-        }
-
         /// <summary>
         /// Determine the filled simple segments of a path, splitting lines and curves appropriately.
         /// </summary>
@@ -47,6 +32,20 @@ namespace PathRenderingLab.PathCompiler
             return CompileCurves(curves, fillRule);
         }
 
+        [Conditional("DEBUG")]
+        internal static void DebugIntersections()
+        {
+            var c1 = Curve.QuadraticBezier(new Double2(0, 0), new Double2(0, 4), new Double2(4, 4));
+            var c2 = Curve.QuadraticBezier(new Double2(0, 4), new Double2(0, 0), new Double2(4, 0));
+            foreach (var p in Curve.Intersections(c1, c2))
+            {
+                var a = c1.At(p.A);
+                var b = c2.At(p.B);
+
+                Console.WriteLine($"Intersection at t={p.A} ({a}) and t={p.B} ({b})");
+            }
+        }
+
         internal static CompiledDrawing CompileCurves(List<Curve> curves, FillRule fillRule)
         {
             // Reunite all intersections to subdivide the curves
@@ -64,17 +63,8 @@ namespace PathRenderingLab.PathCompiler
                         var a = curves[i].At(pair.A);
                         var b = curves[j].At(pair.B);
 
-                        if (!DoubleUtils.RoughlyEquals(a / 8, b / 8))
-                        {
-                            //Console.WriteLine(string.Join(" ", Curve.Intersections(curves[i], curves[j]).Select(c => $"({c.A} {c.B})")));
-                            Debug.Assert(false, "Problem here...");
-                        }
-
-                        curveRootSets[i][pair.A] = curveRootSets[j][pair.B] = ((a + b) / 2).Truncate();
+                        curveRootSets[i][pair.A] = curveRootSets[j][pair.B] = (a + b) / 2;
                     }
-
-            for (int i = 0; i < curves.Count; i++)
-                Curve.RemoveSimilarRoots(curveRootSets[i]);
 
             // Finally, we can start building the DCEL
             var dcel = new DCEL.DCEL();
@@ -94,8 +84,8 @@ namespace PathRenderingLab.PathCompiler
                         {
                             //if (c.IsDegenerate) continue;
                             dcel.AddCurve(c, prevPair.Value, curPair.Value);
-                            Console.WriteLine(dcel);
-                            Console.ReadLine();
+                            //Console.WriteLine(dcel);
+                            //Console.ReadLine();
                         }
                     }
 
@@ -109,11 +99,11 @@ namespace PathRenderingLab.PathCompiler
             // Now, we remove wedges and assign the fill numbers
 
             dcel.RemoveWedges();
-            Console.WriteLine(dcel);
-            Console.ReadLine();
+            //Console.WriteLine(dcel);
+            //Console.ReadLine();
             dcel.AssignFillNumbers();
-            Console.WriteLine(dcel);
-            Console.ReadLine();
+            //Console.WriteLine(dcel);
+            //Console.ReadLine();
 
             // Pick the appropriate predicate for the fill rule
             Func<DCEL.Face, bool> facePredicate;
@@ -122,8 +112,8 @@ namespace PathRenderingLab.PathCompiler
 
             // Simplify the faces
             dcel.SimplifyFaces(facePredicate);
-            Console.WriteLine(dcel);
-            Console.ReadLine();
+            //Console.WriteLine(dcel);
+            //Console.ReadLine();
 
             // Generate the filled faces
             var fills = dcel.Faces.Where(facePredicate).Select(face =>

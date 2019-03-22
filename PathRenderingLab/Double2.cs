@@ -69,5 +69,7 @@ namespace PathRenderingLab
         public Double2 Truncate() => new Double2(X.Truncate(), Y.Truncate());
 
         public static explicit operator Vector2(Double2 v) => new Vector2((float)v.X, (float)v.Y);
+
+        public string MakeCircleWithRadius(double r = 8) => $"<circle cx=\"{X}\" cy=\"{Y}\" r=\"{r}\"/>";
     }
 }

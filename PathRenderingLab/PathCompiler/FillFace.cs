@@ -256,7 +256,7 @@ namespace PathRenderingLab.PathCompiler
                 {
                     var ik = (i + 1) % length;
                     if (DoubleUtils.RoughlyEquals(poly[i], poly[ik])) continue;
-                    if (Curve.Intersections(curve, Curve.Line(poly[i], poly[ik])).Any())
+                    if (curve.IntersectionsWithSegment(poly[i], poly[ik]).Any(t => t >= 0 && t <= 1))
                         return true;
                 }
                 return false;

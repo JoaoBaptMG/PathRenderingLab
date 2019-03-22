@@ -37,8 +37,7 @@ namespace PathRenderingLab.SvgContents
         /// <param name="inStream">The stream from which the XML file will be pulled</param>
         public Svg(Stream inStream)
         {
-            var document = new XmlDocument();
-            document.XmlResolver = null;
+            var document = new XmlDocument { XmlResolver = null };
             document.Load(inStream);
             Parse(document.ChildElements().Single());
         }
@@ -49,8 +48,7 @@ namespace PathRenderingLab.SvgContents
         /// <param name="filename">The filename from which the XML file will be pulled</param>
         public Svg(string filename)
         {
-            var document = new XmlDocument();
-            document.XmlResolver = null;
+            var document = new XmlDocument { XmlResolver = null };
             document.Load(filename);
             Parse(document.ChildElements().Single());
         }
