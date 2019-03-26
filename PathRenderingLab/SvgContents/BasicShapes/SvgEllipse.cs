@@ -17,12 +17,12 @@ namespace PathRenderingLab.SvgContents.BasicShapes
         protected override Path ParsePath(Dictionary<string, string> properties)
         {
             // Get the attributes of the ellipse
-            var cx = DoubleUtils.TryParse(properties.GetOrDefault("cx")) ?? 0;
-            var cy = DoubleUtils.TryParse(properties.GetOrDefault("cy")) ?? 0;
+            var cx = ParseLengthX(properties.GetOrDefault("cx")) ?? 0;
+            var cy = ParseLengthY(properties.GetOrDefault("cy")) ?? 0;
 
             var radii = new Double2();
-            radii.X = DoubleUtils.TryParse(properties.GetOrDefault("rx")) ?? double.NaN;
-            radii.Y = DoubleUtils.TryParse(properties.GetOrDefault("ry")) ?? double.NaN;
+            radii.X = ParseLengthX(properties.GetOrDefault("rx")) ?? double.NaN;
+            radii.Y = ParseLengthY(properties.GetOrDefault("ry")) ?? double.NaN;
 
             // Check both radii
             if (double.IsNaN(radii.X) && double.IsNaN(radii.Y)) radii.X = radii.Y = 0;

@@ -17,9 +17,9 @@ namespace PathRenderingLab.SvgContents.BasicShapes
         protected override Path ParsePath(Dictionary<string, string> properties)
         {
             // Get the attributes of the circle
-            var cx = DoubleUtils.TryParse(properties.GetOrDefault("cx")) ?? 0;
-            var cy = DoubleUtils.TryParse(properties.GetOrDefault("cy")) ?? 0;
-            var r = DoubleUtils.TryParse(properties.GetOrDefault("r")) ?? 0;
+            var cx = ParseLengthX(properties.GetOrDefault("cx")) ?? 0;
+            var cy = ParseLengthY(properties.GetOrDefault("cy")) ?? 0;
+            var r = ParseLength(properties.GetOrDefault("r")) ?? 0;
 
             // Quit on invalid values
             if (r <= 0) return new Path();

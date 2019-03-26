@@ -17,11 +17,11 @@ namespace PathRenderingLab.SvgContents.BasicShapes
         protected override Path ParsePath(Dictionary<string, string> properties)
         {
             // Get the attributes of the line
-            var x1 = DoubleUtils.TryParse(properties.GetOrDefault("x1")) ?? 0;
-            var y1 = DoubleUtils.TryParse(properties.GetOrDefault("y1")) ?? 0;
+            var x1 = ParseLengthX(properties.GetOrDefault("x1")) ?? 0;
+            var y1 = ParseLengthY(properties.GetOrDefault("y1")) ?? 0;
 
-            var x2 = DoubleUtils.TryParse(properties.GetOrDefault("x2")) ?? 0;
-            var y2 = DoubleUtils.TryParse(properties.GetOrDefault("y2")) ?? 0;
+            var x2 = ParseLengthX(properties.GetOrDefault("x2")) ?? 0;
+            var y2 = ParseLengthY(properties.GetOrDefault("y2")) ?? 0;
 
             // And finally return
             return new Path(new[]

@@ -8,6 +8,8 @@ using PathRenderingLab.Parsers;
 
 namespace PathRenderingLab.SvgContents
 {
+    public enum LengthType { Diagonal, Width, Height };
+
     public class SvgNode
     {
         /// <summary>
@@ -81,5 +83,89 @@ namespace PathRenderingLab.SvgContents
             // Parse the most general arguments: fill, fill-rule, stroke, stroke-width, stroke-linejoin, stroke-linecap
             PathStyle = new PathStyle(properties, Parent?.PathStyle);
         }
+
+        // Utility functions to parse lengths
+        protected SvgSizedGroup InnermostSizedGroup()
+        {
+            for (var parent = Parent; parent != null; parent = parent.Parent)
+                if (parent is SvgSizedGroup) return parent as SvgSizedGroup;
+            return null;
+        }
+
+        protected double? ParseLength(string str, LengthType lengthType = LengthType.Diagonal)
+        {
+            // First, trim the str and guarantee that there are no spaces left
+            var strt = str.Trim();
+            if (strt.Any(char.IsWhiteSpace)) return null;
+
+            // Now, match it according to the float regex
+            var match = ParserBase.FloatRegex.Match(strt);
+
+            // Discard unsuccessful match
+            if (!match.Success) return null;
+
+            // Parse the main value
+            if (!double.TryParse(match.Groups[1].Value, out var value)) return null;
+
+            // Now, parse the unit
+            switch (strt.Substring(match.Index + match.Length).ToLowerInvariant())
+            {
+                case "px": break; // base unit
+                case "in": value *= 96; break; // inch
+                case "cm": value *= 96 / 2.54; break; // centimeters
+                case "mm": value *= 96 / 2.54 / 10; break; // milimeters
+                case "q": value *= 96 / 2.54 / 40; break; // quarter-milimeters
+                case "pc": value *= 16; break; // picas
+                case "pt": value *= 4d / 3; break; // points
+
+                // Percentage
+                case "%":
+                    {
+                        // Get the innermost container element that defines a viewport
+                        var sized = InnermostSizedGroup();
+                        if (sized == null) return null;
+
+                        // According to the length type, parse
+                        switch (lengthType)
+                        {
+                            case LengthType.Diagonal: value *= sized.NormalizedDiagonal; break;
+                            case LengthType.Width: value *= sized.Width; break;
+                            case LengthType.Height: value *= sized.Height; break;
+                            default: throw new ArgumentException("Unknown lengthType!", nameof(lengthType));
+                        }
+
+                        value /= 100;
+                        break;
+                    }
+
+                // Same as above, but with specific things
+                case "vw": lengthType = LengthType.Width; goto case "%";
+                case "vh": lengthType = LengthType.Height; goto case "%";
+
+                case "vmin":
+                    {
+                        var sized = InnermostSizedGroup();
+                        if (sized == null) return null;
+                        lengthType = sized.Width < sized.Height ? LengthType.Width : LengthType.Height;
+                        goto case "%";
+                    }
+
+                case "vmax":
+                    {
+                        var sized = InnermostSizedGroup();
+                        if (sized == null) return null;
+                        lengthType = sized.Width > sized.Height ? LengthType.Width : LengthType.Height;
+                        goto case "%";
+                    }
+
+                default: return null; // invalid unit
+            }
+
+            // Return the value if possible
+            return value;
+        }
+
+        protected double? ParseLengthX(string str) => ParseLength(str, LengthType.Width);
+        protected double? ParseLengthY(string str) => ParseLength(str, LengthType.Height);
     }
 }

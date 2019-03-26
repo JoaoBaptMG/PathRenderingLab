@@ -17,14 +17,14 @@ namespace PathRenderingLab.SvgContents.BasicShapes
         protected override Path ParsePath(Dictionary<string, string> properties)
         {
             // Get the attributes of the rectangle
-            var x = DoubleUtils.TryParse(properties.GetOrDefault("x")) ?? 0;
-            var y = DoubleUtils.TryParse(properties.GetOrDefault("y")) ?? 0;
-            var width = DoubleUtils.TryParse(properties.GetOrDefault("width")) ?? 0;
-            var height = DoubleUtils.TryParse(properties.GetOrDefault("height")) ?? 0;
+            var x = ParseLengthX(properties.GetOrDefault("x")) ?? 0;
+            var y = ParseLengthY(properties.GetOrDefault("y")) ?? 0;
+            var width = ParseLengthX(properties.GetOrDefault("width")) ?? 0;
+            var height = ParseLengthY(properties.GetOrDefault("height")) ?? 0;
 
             var radii = new Double2();
-            radii.X = DoubleUtils.TryParse(properties.GetOrDefault("rx")) ?? double.NaN;
-            radii.Y = DoubleUtils.TryParse(properties.GetOrDefault("ry")) ?? double.NaN;
+            radii.X = ParseLengthX(properties.GetOrDefault("rx")) ?? double.NaN;
+            radii.Y = ParseLengthY(properties.GetOrDefault("ry")) ?? double.NaN;
 
             // Quit on invalid values
             if (width <= 0 || height <= 0) return new Path();

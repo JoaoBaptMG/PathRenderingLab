@@ -109,6 +109,7 @@
     <Compile Include="SvgContents\SvgGroup.cs" />
     <Compile Include="SvgContents\SvgNode.cs" />
     <Compile Include="SvgContents\SvgPath.cs" />
+    <Compile Include="SvgContents\SvgSizedGroup.cs" />
     <Compile Include="SvgContents\SvgUtils.cs" />
     <Compile Include="SvgContents\TransformFunction.cs" />
     <Compile Include="SwapUtils.cs" />

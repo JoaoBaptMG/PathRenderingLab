@@ -15,7 +15,7 @@ namespace PathRenderingLab.SvgContents
         /// </summary>
         public static readonly string Namespace = "http://www.w3.org/2000/svg";
 
-        public SvgGroup Root { get; private set; }
+        public SvgSizedGroup Root { get; private set; }
 
         /// <summary>
         /// An associative list of all the ID'ed SVG nodes
@@ -68,7 +68,7 @@ namespace PathRenderingLab.SvgContents
                 throw new InvalidDataException("The SVG root element must be svg!");
 
             // Now, parse the root element
-            Root = new SvgGroup(node, null, this);
+            Root = new SvgSizedGroup(node, null, this);
         }
     }
 }
