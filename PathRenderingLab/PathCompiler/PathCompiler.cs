@@ -66,6 +66,10 @@ namespace PathRenderingLab.PathCompiler
                         curveRootSets[i][pair.A] = curveRootSets[j][pair.B] = (a + b) / 2;
                     }
 
+            // Clean the intersections
+            foreach (var rootSet in curveRootSets)
+                Curve.RemoveSimilarRoots(rootSet);
+
             // Finally, we can start building the DCEL
             var dcel = new DCEL.DCEL();
 

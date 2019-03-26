@@ -54,7 +54,6 @@ namespace PathRenderingLab.PathCompiler.DCEL
         /// <returns>The vertex added</returns>
         public Vertex AddVertex(Double2 v)
         {
-            if (inexact) v = Truncate(v);
             var vertex = new Vertex(v);
             vertices.Add(vertex);
             return vertex;
@@ -68,8 +67,11 @@ namespace PathRenderingLab.PathCompiler.DCEL
         /// <returns></returns>
         public bool FindVertex(Double2 v, out Vertex vertex)
         {
-            if (inexact) v = Truncate(v);
-            vertex = vertices.FirstOrDefault(vt => vt.Position == v);
+            Func<Vertex, bool> pred;
+            if (inexact)
+                pred = vt => DoubleUtils.RoughlyEquals(vt.Position, v);
+            else pred = vt => vt.Position == v;
+            vertex = vertices.FirstOrDefault(pred);
             return vertex != null;
         }
 

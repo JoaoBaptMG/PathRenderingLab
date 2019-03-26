@@ -110,75 +110,108 @@ namespace PathRenderingLab.PathCompiler
             var r1 = IsRectangleNegligible(bb1s);
             var r2 = IsRectangleNegligible(bb2s);
 
-            bool IsRectangleNegligible(DoubleRectangle r) => r.X != r.X.Truncate() && r.X + r.Width != (r.X + r.Width).Truncate()
-                && r.X.Truncate() == (r.X + r.Width).Truncate() && r.Y != r.Y.Truncate() && r.Y + r.Height != (r.Y + r.Height).Truncate()
-                && r.Y.Truncate() == (r.Y + r.Height).Truncate();
+            bool IsRectangleNegligible(DoubleRectangle r) => r.Width <= Epsilon / 4 && r.Height <= Epsilon / 4;
 
             // If both are negligible, just return the midpoints
-            if (r1 && r2)
-                yield return new RootPair(t1m, t2m);
+            if (r1 && r2) foreach (var r in FindRoot()) yield return r;
             // Else, pick the right curves based on the decisions
+            else if (r1)
+            {
+                foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2l, t2m)) yield return r;
+                foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2m, t2r)) yield return r;
+            }
+            else if (r2)
+            {
+                foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2r)) yield return r;
+                foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2r)) yield return r;
+            }
             else
             {
-                // Try to cater for the case that the intersection lies exactly on a gridline
-                if (t1r - t1l < Epsilon2 && t2r - t2l < Epsilon2)
-                {
-                    yield return GridCase();
-                    // Break here
-                    yield break;
-                }
-
-                if (r1)
-                {
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2l, t2m)) yield return r;
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1r, t2m, t2r)) yield return r;
-                }
-                else if (r2)
-                {
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2r)) yield return r;
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2r)) yield return r;
-                }
-                else
-                {
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2m)) yield return r;
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2m, t2r)) yield return r;
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2m)) yield return r;
-                    foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2m, t2r)) yield return r;
-                }
+                foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2l, t2m)) yield return r;
+                foreach (var r in GeneralCurveIntersections(c1, c2, t1l, t1m, t2m, t2r)) yield return r;
+                foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2l, t2m)) yield return r;
+                foreach (var r in GeneralCurveIntersections(c1, c2, t1m, t1r, t2m, t2r)) yield return r;
             }
 
-            // The edge case when the roots lie on gridlines
-            RootPair GridCase()
+            // Find the roots
+            IEnumerable<RootPair> FindRoot()
             {
                 var bb = bb1s.Intersection(bb2s);
 
-                bool SearchBoundary(double p1, double p2, out double p)
-                {
-                    if (p1 == p1.Truncate()) { p = p1; return true; }
-                    else if (p2 == p2.Truncate()) { p = p2; return true; }
-                    else if (p1.Truncate() != p2.Truncate()) { p = p2.Truncate(); return true; }
-                    else { p = double.NaN; return false; }
-                }
+                if (bb.ContainsPoint(c1.At(t1l)) && bb.ContainsPoint(c2.At(t2l))) yield return new RootPair(t1l, t2l);
+                if (bb.ContainsPoint(c1.At(t1l)) && bb.ContainsPoint(c2.At(t2r))) yield return new RootPair(t1l, t2r);
+                if (bb.ContainsPoint(c1.At(t1r)) && bb.ContainsPoint(c2.At(t2l))) yield return new RootPair(t1r, t2l);
+                if (bb.ContainsPoint(c1.At(t1r)) && bb.ContainsPoint(c2.At(t2r))) yield return new RootPair(t1r, t2r);
 
-                // Find in which coordinate is the "offending" root
-                var offx = SearchBoundary(bb.X, bb.X + bb.Width, out var xt);
-                var offy = SearchBoundary(bb.Y, bb.Y + bb.Height, out var yt);
+                var roots1 = c1.IntersectionsWithVerticalLine(bb.X)
+                    .Concat(c1.IntersectionsWithVerticalLine(bb.X + bb.Width))
+                    .Concat(c1.IntersectionsWithHorizontalLine(bb.Y))
+                    .Concat(c1.IntersectionsWithHorizontalLine(bb.Y + bb.Height))
+                    .Where(t => t >= t1l && t <= t1r);
 
-                // The generators for the roots
-                var r1x = c1.IntersectionsWithVerticalLine(xt).Where(t => t >= t1l && t <= t1r);
-                var r1y = c1.IntersectionsWithHorizontalLine(yt).Where(t => t >= t1l && t <= t1r);
-                var r2x = c2.IntersectionsWithVerticalLine(xt).Where(t => t >= t2l && t <= t2r);
-                var r2y = c2.IntersectionsWithHorizontalLine(yt).Where(t => t >= t2l && t <= t2r);
+                var roots2 = c2.IntersectionsWithVerticalLine(bb.X)
+                    .Concat(c2.IntersectionsWithVerticalLine(bb.X + bb.Width))
+                    .Concat(c2.IntersectionsWithHorizontalLine(bb.Y))
+                    .Concat(c2.IntersectionsWithHorizontalLine(bb.Y + bb.Height))
+                    .Where(t => t >= t2l && t <= t2r);
 
-                // If it's exactly on the gridline, concatenate all the roots
-                if (offx && offy) return new RootPair(r1x.Concat(r1y).Average(), r2x.Concat(r2y).Average());
-                // If it's on the X coordinate, search for the roots in this line
-                else if (offx) return new RootPair(r1x.Average(), r2x.Average());
-                // If it's on the Y coordinate, search for the roots in this line
-                else if (offy) return new RootPair(r1y.Average(), r2y.Average());
-                // This case should never occur
-                else throw new Exception("Impossible case reached!");
+                if (roots1.Any() && roots2.Any())
+                    yield return new RootPair(roots1.Average(), roots2.Average());
             }
         }
+
+        public static void RemoveSimilarRoots(SortedDictionary<double, Double2> rootSet)
+        {
+            // Identify similar clusters on the rootSet
+            var clusters = new List<SortedDictionary<double, Double2>>();
+            var curCluster = new SortedDictionary<double, Double2>();
+
+            var prevPair = new KeyValuePair<double, Double2>(double.NaN, new Double2());
+            foreach (var kvp in rootSet)
+            {
+                if (!double.IsNaN(prevPair.Key))
+                    // Compare the values
+                    if (!RoughlyEquals(prevPair.Value, kvp.Value))
+                    {
+                        clusters.Add(curCluster);
+                        curCluster = new SortedDictionary<double, Double2>();
+                    }
+
+                curCluster.Add(kvp.Key, kvp.Value);
+                prevPair = kvp;
+            }
+
+            // Add the last cluster
+            clusters.Add(curCluster);
+
+            // Now, clear the set and, for each cluster, add a single root
+            rootSet.Clear();
+
+            foreach (var cluster in clusters)
+            {
+                // If the cluster has 0 or 1, add the 0 or 1
+                if (cluster.ContainsKey(0)) rootSet[0] = cluster[0];
+                else if (cluster.ContainsKey(1)) rootSet[1] = cluster[1];
+
+                // Else, pick the average
+                else
+                {
+                    int n = cluster.Count;
+                    var value = new Double2(0, 0);
+                    double key = 0;
+
+                    foreach (var kvp in cluster)
+                    {
+                        key += kvp.Key;
+                        value += kvp.Value;
+                    }
+
+                    rootSet[key / n] = (value / n).Truncate();
+                }
+            }
+        }
+
+        static string RectangleRepresentation(DoubleRectangle r)
+            => $"Polygon(({r.X},{r.Y}),({r.X + r.Width},{r.Y}),({r.X + r.Width},{r.Y + r.Height}),({r.X},{r.Y + r.Height}))";
     }
 }
