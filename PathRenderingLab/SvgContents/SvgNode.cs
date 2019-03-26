@@ -30,12 +30,19 @@ namespace PathRenderingLab.SvgContents
         /// </summary>
         public PathStyle PathStyle { get; private set; }
 
+        protected Svg svg;
+
         // The most general constructor
-        protected SvgNode(XmlNode node, SvgNode parent, string transformAttributeName = "transform")
+        protected SvgNode(XmlNode node, SvgNode parent, Svg svg, string transformAttributeName = "transform")
         {
             // Assign the ID for everyone
             Parent = parent;
-            Id = node.SvgAttribute("id");
+            Id = node.SvgAttribute("id")?.Trim();
+            this.svg = svg;
+
+            // Add id to the svg-dictionary
+            if (!string.IsNullOrWhiteSpace(Id) && !svg.NodesByID.ContainsKey(Id))
+                svg.NodesByID[Id] = this;
 
             // Build the property list
             var properties = new Dictionary<string, string>();

@@ -21,7 +21,7 @@ namespace PathRenderingLab.SvgContents
         public ReadOnlyCollection<SvgNode> Children => children.AsReadOnly();
         public readonly bool Renderable;
 
-        public SvgGroup(XmlNode node, SvgNode parent, bool renderable = true) : base(node, parent)
+        public SvgGroup(XmlNode node, SvgNode parent, Svg svg, bool renderable = true) : base(node, parent, svg)
         {
             children = new List<SvgNode>();
 
@@ -37,20 +37,20 @@ namespace PathRenderingLab.SvgContents
             // Check the name of the node to find the right type of SVG node to create
             // First, treat everything which isn't on the SVG namespace as unknown
             if (child.NamespaceURI != Svg.Namespace)
-                children.Add(new SvgGroup(child, this));
+                children.Add(new SvgGroup(child, this, svg));
             // Now, check the names
             else switch (child.LocalName)
                 {
-                    case "path": children.Add(new SvgPath(child, this)); break;
-                    case "rect": children.Add(new BasicShapes.SvgRect(child, this)); break;
-                    case "circle": children.Add(new BasicShapes.SvgCircle(child, this)); break;
-                    case "ellipse": children.Add(new BasicShapes.SvgEllipse(child, this)); break;
-                    case "line": children.Add(new BasicShapes.SvgLine(child, this)); break;
-                    case "polyline": children.Add(new BasicShapes.SvgPolyline(child, this)); break;
-                    case "polygon": children.Add(new BasicShapes.SvgPolygon(child, this)); break;
-                    case "defs": children.Add(new SvgGroup(child, this, false)); break;
+                    case "path": children.Add(new SvgPath(child, this, svg)); break;
+                    case "rect": children.Add(new BasicShapes.SvgRect(child, this, svg)); break;
+                    case "circle": children.Add(new BasicShapes.SvgCircle(child, this, svg)); break;
+                    case "ellipse": children.Add(new BasicShapes.SvgEllipse(child, this, svg)); break;
+                    case "line": children.Add(new BasicShapes.SvgLine(child, this, svg)); break;
+                    case "polyline": children.Add(new BasicShapes.SvgPolyline(child, this, svg)); break;
+                    case "polygon": children.Add(new BasicShapes.SvgPolygon(child, this, svg)); break;
+                    case "defs": children.Add(new SvgGroup(child, this, svg, false)); break;
                     case "metadata": break; // Skip
-                    default: children.Add(new SvgGroup(child, this)); break;
+                    default: children.Add(new SvgGroup(child, this, svg)); break;
                 }
         }
     }

@@ -18,6 +18,11 @@ namespace PathRenderingLab.SvgContents
         public SvgGroup Root { get; private set; }
 
         /// <summary>
+        /// An associative list of all the ID'ed SVG nodes
+        /// </summary>
+        public Dictionary<string, SvgNode> NodesByID;
+
+        /// <summary>
         /// Constructs an SVG file representation from an XML node
         /// </summary>
         /// <param name="node">The node to be parsed for SVG</param>
@@ -63,7 +68,7 @@ namespace PathRenderingLab.SvgContents
                 throw new InvalidDataException("The SVG root element must be svg!");
 
             // Now, parse the root element
-            Root = new SvgGroup(node, null);
+            Root = new SvgGroup(node, null, this);
         }
     }
 }
