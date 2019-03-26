@@ -187,7 +187,7 @@ namespace PathRenderingLab
             // Chose the maximum value of it
             var d = halfSize / Math.Max(hx, hy);
 
-            var dm = new Double2(DoubleUtils.Epsilon / 2, DoubleUtils.Epsilon / 2);
+            var dm = Double2.Zero;
 
             // And transform the points
             for (int i = 0; i < PathCommands.Length; i++)

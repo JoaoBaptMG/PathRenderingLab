@@ -34,6 +34,7 @@ namespace PathRenderingLab.PathCompiler.Triangulator
         {
             // Sort all vertices using their default comparison
             var vertexSet = new SortedSet<Vertex>();
+            var tempVertices = new List<Vertex>();
 
             // Add the vertices to the list
             foreach (var poly in contours)
@@ -64,6 +65,7 @@ namespace PathRenderingLab.PathCompiler.Triangulator
 
                     // Add the vertex
                     vertexSet.Add(vtx);
+                    tempVertices.Add(vtx);
 
                     last = vtx;
                     if (first == null) first = last;

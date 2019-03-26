@@ -6,7 +6,7 @@ namespace PathRenderingLab.PathCompiler.Triangulator
     /// <summary>
     /// Denotes the type of the vertex, used on the triangulation routine.
     /// </summary>
-    public enum VertexType { Start, End, Split, Merge, RegularLeft, RegularRight };
+    public enum VertexType { End, Start, Split, RegularLeft, RegularRight, Merge };
 
     /// <summary>
     /// A vertex on the polygon. It has a type, and it stores its current, previous and next vectors
@@ -45,7 +45,12 @@ namespace PathRenderingLab.PathCompiler.Triangulator
             else Type = comparisonCN > 0 ? VertexType.RegularLeft : VertexType.RegularRight;
         }
 
-        public int CompareTo(Vertex other) => CanonicalComparer.Default.Compare(Current, other.Current);
+        public int CompareTo(Vertex other)
+        {
+            int cmp = CanonicalComparer.Default.Compare(Current, other.Current);
+            if (cmp == 0) cmp = ((int)Type).CompareTo((int)other.Type);
+            return cmp;
+        }
 
         public override string ToString() => $"{Current}, {Type}";
 
@@ -87,6 +92,6 @@ namespace PathRenderingLab.PathCompiler.Triangulator
 
         public int CompareTo(ChainVertex other) => CanonicalComparer.Default.Compare(Position, other.Position);
 
-        public override string ToString() => $"{Position} {Type}";
+        public override string ToString() => $"{Position}, {Type}";
     }
 }
