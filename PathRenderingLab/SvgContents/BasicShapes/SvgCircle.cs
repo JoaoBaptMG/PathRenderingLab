@@ -9,7 +9,7 @@ namespace PathRenderingLab.SvgContents.BasicShapes
 {
     public class SvgCircle : SvgPath
     {
-        public SvgCircle(XmlNode child, SvgGroup parent, Svg svg) : base(child, parent, svg)
+        public SvgCircle(XmlNode node, SvgGroup parent, Svg svg) : base(node, parent, svg)
         {
 
         }

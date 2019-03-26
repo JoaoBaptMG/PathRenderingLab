@@ -41,15 +41,28 @@ namespace PathRenderingLab.SvgContents
             // Now, check the names
             else switch (child.LocalName)
                 {
+                    // Path
                     case "path": children.Add(new SvgPath(child, this, svg)); break;
+
+                    // Basic shapes
                     case "rect": children.Add(new BasicShapes.SvgRect(child, this, svg)); break;
                     case "circle": children.Add(new BasicShapes.SvgCircle(child, this, svg)); break;
                     case "ellipse": children.Add(new BasicShapes.SvgEllipse(child, this, svg)); break;
                     case "line": children.Add(new BasicShapes.SvgLine(child, this, svg)); break;
                     case "polyline": children.Add(new BasicShapes.SvgPolyline(child, this, svg)); break;
                     case "polygon": children.Add(new BasicShapes.SvgPolygon(child, this, svg)); break;
+
+                    // "Definitions container"
                     case "defs": children.Add(new SvgGroup(child, this, svg, false)); break;
+
+                    // Symbols and SVGs
+                    case "svg": children.Add(new SvgSizedGroup(child, this, svg)); break;
+                    case "symbol": children.Add(new SvgSizedGroup(child, this, svg, false)); break;
+
+                    // Skip metadata
                     case "metadata": break; // Skip
+
+                    // Anything else
                     default: children.Add(new SvgGroup(child, this, svg)); break;
                 }
         }

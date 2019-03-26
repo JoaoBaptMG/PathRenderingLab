@@ -10,7 +10,7 @@ namespace PathRenderingLab.SvgContents.BasicShapes
 {
     public class SvgPolyline : SvgPath
     {
-        public SvgPolyline(XmlNode child, SvgGroup parent, Svg svg) : base(child, parent, svg)
+        public SvgPolyline(XmlNode node, SvgNode parent, Svg svg) : base(node, parent, svg)
         {
 
         }

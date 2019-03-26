@@ -18,7 +18,7 @@ namespace PathRenderingLab.SvgContents
         /// </summary>
         public double PathLength { get; private set; }
 
-        public SvgPath(XmlNode child, SvgGroup parent, Svg svg) : base(child, parent, svg)
+        public SvgPath(XmlNode node, SvgNode parent, Svg svg) : base(node, parent, svg)
         {
 
         }

@@ -9,7 +9,7 @@ namespace PathRenderingLab.SvgContents.BasicShapes
 {
     public class SvgLine : SvgPath
     {
-        public SvgLine(XmlNode child, SvgGroup parent, Svg svg) : base(child, parent, svg)
+        public SvgLine(XmlNode node, SvgNode parent, Svg svg) : base(node, parent, svg)
         {
 
         }

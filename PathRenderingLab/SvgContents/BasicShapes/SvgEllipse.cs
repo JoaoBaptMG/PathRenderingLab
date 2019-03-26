@@ -9,7 +9,7 @@ namespace PathRenderingLab.SvgContents.BasicShapes
 {
     public class SvgEllipse : SvgPath
     {
-        public SvgEllipse(XmlNode child, SvgGroup parent, Svg svg) : base(child, parent, svg)
+        public SvgEllipse(XmlNode node, SvgNode parent, Svg svg) : base(node, parent, svg)
         {
 
         }

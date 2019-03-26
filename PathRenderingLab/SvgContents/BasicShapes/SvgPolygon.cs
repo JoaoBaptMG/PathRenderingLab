@@ -10,7 +10,7 @@ namespace PathRenderingLab.SvgContents.BasicShapes
 {
     public class SvgPolygon : SvgPath
     {
-        public SvgPolygon(XmlNode child, SvgGroup parent, Svg svg) : base(child, parent, svg)
+        public SvgPolygon(XmlNode node, SvgNode parent, Svg svg) : base(node, parent, svg)
         {
 
         }

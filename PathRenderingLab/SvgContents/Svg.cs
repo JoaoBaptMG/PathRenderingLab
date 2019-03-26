@@ -20,7 +20,12 @@ namespace PathRenderingLab.SvgContents
         /// <summary>
         /// An associative list of all the ID'ed SVG nodes
         /// </summary>
-        public Dictionary<string, SvgNode> NodesByID;
+        public Dictionary<string, SvgNode> NodesById;
+
+        /// <summary>
+        /// An associative list of all the ID'ed XML nodes that generate the ID
+        /// </summary>
+        public Dictionary<string, XmlNode> XmlNodesById;
 
         /// <summary>
         /// Constructs an SVG file representation from an XML node
@@ -69,6 +74,9 @@ namespace PathRenderingLab.SvgContents
 
             // Now, parse the root element
             Root = new SvgSizedGroup(node, null, this);
+
+            // Clear the "XML nodes by ID"
+            XmlNodesById.Clear();
         }
     }
 }

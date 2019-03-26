@@ -45,8 +45,11 @@ namespace PathRenderingLab.SvgContents
             this.svg = svg;
 
             // Add id to the svg-dictionary
-            if (!string.IsNullOrWhiteSpace(Id) && !svg.NodesByID.ContainsKey(Id))
-                svg.NodesByID[Id] = this;
+            if (!string.IsNullOrWhiteSpace(Id) && !svg.NodesById.ContainsKey(Id))
+            {
+                svg.NodesById[Id] = this;
+                svg.XmlNodesById[Id] = node;
+            }
 
             // Build the property list
             properties = new Dictionary<string, string>();
