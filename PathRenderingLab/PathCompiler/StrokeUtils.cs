@@ -514,9 +514,7 @@ namespace PathRenderingLab.PathCompiler
             switch (lineCap)
             {
                 case StrokeLineCap.Butt: yield return Curve.Line(p + offset, p - offset); break;
-                case StrokeLineCap.Round:
-                    yield return Curve.Circle(p, halfWidth, offset, -offset, !atEnd);
-                    break;
+                case StrokeLineCap.Round: yield return Curve.Circle(p, halfWidth, offset, -offset, !atEnd); break;
                 case StrokeLineCap.Square:
                     {
                         // Generate a half-square
