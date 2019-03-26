@@ -32,6 +32,8 @@ namespace PathRenderingLab.SvgContents
         /// </summary>
         public PathStyle PathStyle { get; private set; }
 
+        protected Dictionary<string, string> properties;
+
         protected Svg svg;
 
         // The most general constructor
@@ -47,7 +49,7 @@ namespace PathRenderingLab.SvgContents
                 svg.NodesByID[Id] = this;
 
             // Build the property list
-            var properties = new Dictionary<string, string>();
+            properties = new Dictionary<string, string>();
 
             // Go through all attributes
             foreach (XmlAttribute attr in node.Attributes)
@@ -69,6 +71,9 @@ namespace PathRenderingLab.SvgContents
 
             foreach (var kvp in styleProperties)
                 properties[kvp.Key] = kvp.Value;
+
+            // Now, inherit all the properties from the parent - another Unity-like syntax :/
+            properties.InheritFrom(parent.properties);
 
             // Now, parse
             Parse(properties);
