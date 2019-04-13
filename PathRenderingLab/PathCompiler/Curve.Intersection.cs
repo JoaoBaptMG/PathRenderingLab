@@ -110,7 +110,7 @@ namespace PathRenderingLab.PathCompiler
             var r1 = IsRectangleNegligible(bb1s);
             var r2 = IsRectangleNegligible(bb2s);
 
-            bool IsRectangleNegligible(DoubleRectangle r) => r.Width <= Epsilon / 4 && r.Height <= Epsilon / 4;
+            bool IsRectangleNegligible(DoubleRectangle r) => r.Width <= Epsilon / 8 && r.Height <= Epsilon / 8;
 
             // If both are negligible, just return the midpoints
             if (r1 && r2) foreach (var r in FindRoot()) yield return r;

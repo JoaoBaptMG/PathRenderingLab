@@ -60,12 +60,11 @@ namespace PathRenderingLab
 
         public static void RemoveDuplicatedValues(this List<double> list)
         {
-            list.Sort(RoughComparer);
+            list.Sort();
             var temp = new List<double>() { list[0] };
 
             for (int i = 1; i < list.Count; i++)
-                if (RoughComparer.Compare(list[i - 1], list[i]) != 0) temp.Add(list[i]);
-                else temp[temp.Count - 1] = (temp[temp.Count - 1] + list[i]) / 2;
+                if (list[i - 1] != list[i]) temp.Add(list[i]);
 
             list.Clear();
             list.AddRange(temp);

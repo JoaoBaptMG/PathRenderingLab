@@ -21,43 +21,34 @@ namespace PathRenderingLab.PathCompiler.DCEL
         static double Truncate(double v) => Math.Floor(v / TruncateTreshold) * TruncateTreshold;
         static Double2 Truncate(Double2 v) => new Double2(Truncate(v.X), Truncate(v.Y));
 
-        private List<Vertex> vertices;
+        private Dictionary<int, Vertex> vertices;
         private List<Edge> edges;
         private List<Face> faces;
 
-        public ReadOnlyCollection<Vertex> Vertices => vertices.AsReadOnly();
+        public IEnumerable<Vertex> Vertices => vertices.Values;
         public ReadOnlyCollection<Edge> Edges => edges.AsReadOnly();
         public ReadOnlyCollection<Face> Faces => faces.AsReadOnly();
-
-        private readonly bool inexact;
 
         /// <summary>
         /// Initializes the DCEL and constructs everything
         /// </summary>
-        public DCEL(bool inexact = true)
+        public DCEL()
         {
-            vertices = new List<Vertex>();
+            vertices = new Dictionary<int, Vertex>();
             edges = new List<Edge>();
             faces = new List<Face>
             {
                 // Initializes the first face, the outer face
                 new Face(true)
             };
-
-            this.inexact = inexact;
         }
 
         /// <summary>
         /// Adds a vertex to the DCEL
         /// </summary>
-        /// <param name="v">The vertex to be added</param>
+        /// <param name="id">The vertex to be added</param>
         /// <returns>The vertex added</returns>
-        public Vertex AddVertex(Double2 v)
-        {
-            var vertex = new Vertex(v);
-            vertices.Add(vertex);
-            return vertex;
-        }
+        public Vertex AddVertex(int id) => vertices[id] = new Vertex(id);
 
         /// <summary>
         /// Finds if a vertex is on the DCEL
@@ -65,21 +56,13 @@ namespace PathRenderingLab.PathCompiler.DCEL
         /// <param name="v">The position to find</param>
         /// <param name="vertex"></param>
         /// <returns></returns>
-        public bool FindVertex(Double2 v, out Vertex vertex)
-        {
-            Func<Vertex, bool> pred;
-            if (inexact)
-                pred = vt => DoubleUtils.RoughlyEquals(vt.Position, v);
-            else pred = vt => vt.Position == v;
-            vertex = vertices.FirstOrDefault(pred);
-            return vertex != null;
-        }
+        public bool FindVertex(int id, out Vertex vertex) => vertices.TryGetValue(id, out vertex);
 
         /// <summary>
         /// Adds a curve to the DCEL.
         /// </summary>
         /// <param name="curve">The curve to be added</param>
-        public void AddCurve(Curve curve, Double2 vert1, Double2 vert2, int canonicityChange = 1)
+        public void AddCurve(Curve curve, int id1, int id2, int canonicityChange = 1)
         {
             void PairOfEdges(Vertex v1, Vertex v2, out Edge e1, out Edge e2, bool reverse = false)
             {
@@ -92,8 +75,8 @@ namespace PathRenderingLab.PathCompiler.DCEL
             }
 
             // Check if the vertices were added to the cache first
-            bool found1 = FindVertex(vert1, out var vertex1);
-            bool found2 = FindVertex(vert2, out var vertex2);
+            bool found1 = FindVertex(id1, out var vertex1);
+            bool found2 = FindVertex(id2, out var vertex2);
 
             // There are four main cases:
             // 1) The vertices are both new: we find which face they pertain and add them to the contour list
@@ -108,11 +91,11 @@ namespace PathRenderingLab.PathCompiler.DCEL
             // If none are found, add them individually and add a contour to the face
             if (!found1 && !found2)
             {
-                var face = GetFaceFromVertex(vert1);
+                var face = GetFaceFromVertex(curve.At(0));
 
-                vertex1 = AddVertex(vert1);
-                if (vert1 != vert2) // Deal with the equal vertices case
-                    vertex2 = AddVertex(vert2);
+                vertex1 = AddVertex(id1);
+                if (id1 != id2) // Deal with the equal vertices case
+                    vertex2 = AddVertex(id2);
                 else vertex2 = vertex1;
 
                 PairOfEdges(vertex1, vertex2, out var e1, out var e2);
@@ -148,7 +131,7 @@ namespace PathRenderingLab.PathCompiler.DCEL
                     edge.Face = newFace;
 
                     // Extract all the old contours that should pertain to the new face
-                    var contours = face.Contours.ExtractAll(e => newFace.ContainsVertex(e.E1.Position));
+                    var contours = face.Contours.ExtractAll(e => newFace.ContainsVertex(e.Curve.At(0)));
 
                     // Add them to the new face
                     newFace.Contours.AddRange(contours);
@@ -242,7 +225,7 @@ namespace PathRenderingLab.PathCompiler.DCEL
                     AssignFace(newFace, edge);
 
                     // Now, pluck all the old contours that should pertain to the new face
-                    var contours = oldFace.Contours.ExtractAll(e => newFace.ContainsVertex(e.E1.Position));
+                    var contours = oldFace.Contours.ExtractAll(e => newFace.ContainsVertex(e.Curve.At(0)));
 
                     // Add them to the new face
                     newFace.Contours.AddRange(contours);
@@ -261,8 +244,8 @@ namespace PathRenderingLab.PathCompiler.DCEL
             {
                 // Old cached vertex and new vertex, so we can run the first algorithms
                 var oldVertex = found1 ? vertex1 : vertex2;
-                var epo = found1 ? vert1 : vert2;
-                var epn = found1 ? vert2 : vert1;
+                var epo = found1 ? id1 : id2;
+                var epn = found1 ? id2 : id1;
                 var newVertex = AddVertex(epn);
 
                 // Create the new pair of edges and set the right canonicity
@@ -548,8 +531,8 @@ namespace PathRenderingLab.PathCompiler.DCEL
                 output.AppendLine($"Vertices:");
 
                 int i = 0;
-                foreach (var vertex in vertices)
-                    output.AppendLine($"-- [{i++}] ({vertex.Position}) " +
+                foreach (var vertex in vertices.Values)
+                    output.AppendLine($"-- [{i++}] ({vertex.ClusterIndex}) " +
                         $"o=[{string.Join(" ", vertex.OutgoingEdges.Select(e => edges.IndexOf(e.Value)))}] " +
                         $"i=[{string.Join(" ", vertex.OutgoingEdges.Select(e => edges.IndexOf(e.Value.Twin)))}]");
             }

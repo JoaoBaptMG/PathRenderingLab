@@ -5,12 +5,12 @@ namespace PathRenderingLab.PathCompiler.DCEL
     // Stored vertex data: outgoing vertices stored by angle order (counter-clockwise order)
     public class Vertex
     {
-        public Double2 Position;
+        public int ClusterIndex;
         public AvlTree<OuterAngles, Edge> OutgoingEdges;
 
-        public Vertex(Double2 pos)
+        public Vertex(int id)
         {
-            Position = pos;
+            ClusterIndex = id;
             OutgoingEdges = new AvlTree<OuterAngles, Edge>();
         }
 

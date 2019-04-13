@@ -49,6 +49,7 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="CompiledStroke.Backup.cs" />
+    <Compile Include="DisjointSet.cs" />
     <Compile Include="DoubleMatrix.cs" />
     <Compile Include="DoubleRectangle.cs" />
     <Compile Include="FloatRectangle.cs" />

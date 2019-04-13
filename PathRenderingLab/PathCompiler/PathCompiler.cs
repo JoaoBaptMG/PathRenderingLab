@@ -60,23 +60,20 @@ namespace PathRenderingLab.PathCompiler
                     {
                         if (!GeometricUtils.Inside01(pair.A) || !GeometricUtils.Inside01(pair.B)) continue;
 
-                        var a = curves[i].At(pair.A);
-                        var b = curves[j].At(pair.B);
-
-                        curveRootSets[i][pair.A] = curveRootSets[j][pair.B] = (a + b) / 2;
+                        curveRootSets[i][pair.A] = curves[i].At(pair.A);
+                        curveRootSets[j][pair.B] = curves[j].At(pair.B);
                     }
 
-            // Clean the intersections
-            foreach (var rootSet in curveRootSets)
-                Curve.RemoveSimilarRoots(rootSet);
+            // Cluster the intersections
+            var curveRootClusters = DerivePointClustersFromRootSets(curveRootSets);
 
             // Finally, we can start building the DCEL
             var dcel = new DCEL.DCEL();
 
             for (int i = 0; i < curves.Count; i++)
             {
-                KeyValuePair<double,Double2> prevPair = new KeyValuePair<double, Double2>(double.NaN, new Double2());
-                foreach (var curPair in curveRootSets[i])
+                var prevPair = new KeyValuePair<double, int>(double.NaN, 0);
+                foreach (var curPair in curveRootClusters[i])
                 {
                     if (!double.IsNaN(prevPair.Key))
                     {
@@ -86,7 +83,8 @@ namespace PathRenderingLab.PathCompiler
 
                         foreach (var c in curve.Simplify())
                         {
-                            //if (c.IsDegenerate) continue;
+                            // Skip degenerate curves
+                            if (c.IsDegenerate) continue;
                             dcel.AddCurve(c, prevPair.Value, curPair.Value);
                             //Console.WriteLine(dcel);
                             //Console.ReadLine();
@@ -154,6 +152,34 @@ namespace PathRenderingLab.PathCompiler
 
             // And compile
             return CompileCurves(curves, FillRule.Nonzero);
+        }
+
+        // Use disjoint sets to create the clusters
+        private static SortedDictionary<double, int>[] DerivePointClustersFromRootSets(SortedDictionary<double, Double2>[] curveRootSets)
+        {
+            // First, gather all points and create the disjoint sets data structure
+            var allPoints = curveRootSets.SelectMany(set => set.Values).ToArray();
+            var disjointSets = new DisjointSets(allPoints.Length);
+
+            // Now, reunite the clusters
+            for (int i = 0; i < allPoints.Length; i++)
+                for (int j = i + 1; j < allPoints.Length; j++)
+                    if (DoubleUtils.RoughlyEquals(allPoints[i], allPoints[j]))
+                        disjointSets.UnionSets(i, j);
+
+            // Finally, attribute the clusters to the original curves
+            int length = curveRootSets.Length;
+            var clusters = new SortedDictionary<double, int>[length];
+            int k = 0;
+
+            for (int i = 0; i < length; i++)
+            {
+                clusters[i] = new SortedDictionary<double, int>();
+                foreach (var kvp in curveRootSets[i])
+                    clusters[i][kvp.Key] = disjointSets.FindParentOfSets(k++);
+            }
+
+            return clusters;
         }
     }
 }
