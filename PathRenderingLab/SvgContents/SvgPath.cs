@@ -24,10 +24,10 @@ namespace PathRenderingLab.SvgContents
         }
 
         // Override the parse
-        protected override void Parse(Dictionary<string, string> properties)
+        protected override void Parse(XmlNode node, Dictionary<string, string> properties)
         {
             // Parse the common properties
-            base.Parse(properties);
+            base.Parse(node, properties);
 
             // Parse the path data
             Path = ParsePath(properties);

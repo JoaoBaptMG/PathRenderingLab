@@ -15,6 +15,29 @@ namespace PathRenderingLab.SvgContents
         public static IEnumerable<XmlElement> ChildElements(this XmlNode node)
             => node.ChildNodes.Cast<XmlNode>().Where(child => child.NodeType == XmlNodeType.Element).Cast<XmlElement>();
 
+        public static string ParseHref(string str)
+        {
+            if (string.IsNullOrWhiteSpace(str)) return null;
+
+            try
+            {
+                // Build an URI based on that
+                var uri = new Uri(str);
+
+                // Only allow "empty" URIs
+                if (!string.IsNullOrWhiteSpace(uri.PathAndQuery)) return null;
+
+                // Return its fragment
+                return uri.Fragment;
+            }
+            catch (UriFormatException)
+            {
+                // The string cannot be converted to an URI, check if it starts with a hash
+                str = str.Trim();
+                return str[0] == '#' ? str.Substring(1) : null;
+            }
+        }
+
         public static void InheritFrom(this Dictionary<string, string> properties, Dictionary<string, string> parentProperties)
         {
             var propertiesCopy = new Dictionary<string, string>();

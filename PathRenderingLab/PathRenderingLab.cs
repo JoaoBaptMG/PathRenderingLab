@@ -263,7 +263,7 @@ namespace PathRenderingLab
 
             var oldLogZoom = LogZoom;
             LogZoom += 0.8f * logZoomAmount * dt;
-            Position = Position * (float)Math.Exp(LogZoom - oldLogZoom);
+            Position *= (float)Math.Exp(LogZoom - oldLogZoom);
 
             var displacementGamepad = gamepadState.ThumbSticks.Left;
             var displacementKeyboard = new Vector2(

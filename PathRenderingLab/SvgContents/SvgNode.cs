@@ -25,7 +25,7 @@ namespace PathRenderingLab.SvgContents
         /// <summary>
         /// The transform this node is submitted to
         /// </summary>
-        public TransformFunction[] Transform { get; private set; }
+        public TransformFunction[] Transform { get; protected set; }
 
         /// <summary>
         /// The path style applied to its node
@@ -57,6 +57,10 @@ namespace PathRenderingLab.SvgContents
             // Go through all attributes
             foreach (XmlAttribute attr in node.Attributes)
             {
+                // Special case for "xlink:href"
+                if (attr.NamespaceURI == "http://www.w3.org/1999/xlink" && attr.LocalName == "href")
+                    properties["href"] = attr.Value.Trim();
+
                 // Skip if the attribute doesn't belong to the SVG namespace or no namespace
                 if (!string.IsNullOrEmpty(attr.NamespaceURI) && attr.NamespaceURI != Svg.Namespace) continue;
 
@@ -76,13 +80,13 @@ namespace PathRenderingLab.SvgContents
                 properties[kvp.Key] = kvp.Value;
 
             // Now, inherit all the properties from the parent - another Unity-like syntax :/
-            properties.InheritFrom(parent.properties);
+            if (parent != null) properties.InheritFrom(parent.properties);
 
             // Now, parse
-            Parse(properties);
+            Parse(node, properties);
         }
 
-        protected virtual void Parse(Dictionary<string, string> properties)
+        protected virtual void Parse(XmlNode node, Dictionary<string, string> properties)
         {
             // Parse the transform
             Transform = TransformFunction.ParseCollectionFromString(properties.GetOrDefault("transform", "none"));
@@ -102,6 +106,9 @@ namespace PathRenderingLab.SvgContents
 
         protected double? ParseLength(string str, LengthType lengthType = LengthType.Diagonal)
         {
+            // Bail out on empty strings
+            if (string.IsNullOrWhiteSpace(str)) return null;
+
             // First, trim the str and guarantee that there are no spaces left
             var strt = str.Trim();
             if (strt.Any(char.IsWhiteSpace)) return null;
@@ -118,6 +125,7 @@ namespace PathRenderingLab.SvgContents
             // Now, parse the unit
             switch (strt.Substring(match.Index + match.Length).ToLowerInvariant())
             {
+                case "":
                 case "px": break; // base unit
                 case "in": value *= 96; break; // inch
                 case "cm": value *= 96 / 2.54; break; // centimeters

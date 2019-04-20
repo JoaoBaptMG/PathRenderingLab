@@ -24,15 +24,18 @@ namespace PathRenderingLab.SvgContents
         public SvgGroup(XmlNode node, SvgNode parent, Svg svg, bool renderable = true) : base(node, parent, svg)
         {
             children = new List<SvgNode>();
-
             Renderable = renderable;
+            ProcessChildren(node);
+        }
 
+        protected virtual void ProcessChildren(XmlNode node)
+        {
             // Add all the children present
             foreach (var child in node.ChildElements())
                 ProcessChildNode(child);
         }
 
-        private void ProcessChildNode(XmlNode child)
+        protected void ProcessChildNode(XmlNode child, SvgUse overrideNode = null)
         {
             // Check the name of the node to find the right type of SVG node to create
             // First, treat everything which isn't on the SVG namespace as unknown
@@ -56,8 +59,11 @@ namespace PathRenderingLab.SvgContents
                     case "defs": children.Add(new SvgGroup(child, this, svg, false)); break;
 
                     // Symbols and SVGs
-                    case "svg": children.Add(new SvgSizedGroup(child, this, svg)); break;
-                    case "symbol": children.Add(new SvgSizedGroup(child, this, svg, false)); break;
+                    case "svg": children.Add(new SvgSizedGroup(child, this, svg, true, overrideNode)); break;
+                    case "symbol": children.Add(new SvgSizedGroup(child, this, svg, false, overrideNode)); break;
+
+                    // Use (aka inject data into the code)
+                    case "use": children.Add(new SvgUse(child, this, svg)); break;
 
                     // Skip metadata
                     case "metadata": break; // Skip

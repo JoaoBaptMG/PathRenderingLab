@@ -27,16 +27,22 @@ namespace PathRenderingLab.SvgContents
         /// </summary>
         public Dictionary<string, XmlNode> XmlNodesById;
 
+        private Svg()
+        {
+            NodesById = new Dictionary<string, SvgNode>();
+            XmlNodesById = new Dictionary<string, XmlNode>();
+        }
+
         /// <summary>
         /// Constructs an SVG file representation from an XML node
         /// </summary>
         /// <param name="node">The node to be parsed for SVG</param>
-        public Svg(XmlNode node)
+        public Svg(XmlNode node) : this()
         {
             Parse(node);
         }
 
-        public Svg(XmlDocument document)
+        public Svg(XmlDocument document) : this()
         {
             Parse(document.ChildElements().Single());
         }
@@ -45,7 +51,7 @@ namespace PathRenderingLab.SvgContents
         /// Constructs an SVG file representation from a stream
         /// </summary>
         /// <param name="inStream">The stream from which the XML file will be pulled</param>
-        public Svg(Stream inStream)
+        public Svg(Stream inStream) : this()
         {
             var document = new XmlDocument { XmlResolver = null };
             document.Load(inStream);
@@ -56,7 +62,7 @@ namespace PathRenderingLab.SvgContents
         /// Constructs an SVG file representation from a file
         /// </summary>
         /// <param name="filename">The filename from which the XML file will be pulled</param>
-        public Svg(string filename)
+        public Svg(string filename) : this()
         {
             var document = new XmlDocument { XmlResolver = null };
             document.Load(filename);
@@ -75,8 +81,21 @@ namespace PathRenderingLab.SvgContents
             // Now, parse the root element
             Root = new SvgSizedGroup(node, null, this);
 
+            // Post resolve the nodes that request it
+            if (Root is ISvgPostResolve) (Root as ISvgPostResolve).PostResolve();
+            PostResolveGroup(Root);
+
             // Clear the "XML nodes by ID"
             XmlNodesById.Clear();
+        }
+
+        private void PostResolveGroup(SvgGroup group)
+        {
+            foreach (var node in group.Children)
+            {
+                if (node is ISvgPostResolve) (node as ISvgPostResolve).PostResolve();
+                if (node is SvgGroup) PostResolveGroup(node as SvgGroup);
+            }
         }
     }
 }

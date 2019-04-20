@@ -105,12 +105,14 @@
     <Compile Include="SvgContents\BasicShapes\SvgPolyline.cs" />
     <Compile Include="SvgContents\BasicShapes\SvgLine.cs" />
     <Compile Include="SvgContents\BasicShapes\SvgRect.cs" />
+    <Compile Include="SvgContents\ISvgPostResolve.cs" />
     <Compile Include="SvgContents\PathStyle.cs" />
     <Compile Include="SvgContents\Svg.cs" />
     <Compile Include="SvgContents\SvgGroup.cs" />
     <Compile Include="SvgContents\SvgNode.cs" />
     <Compile Include="SvgContents\SvgPath.cs" />
     <Compile Include="SvgContents\SvgSizedGroup.cs" />
+    <Compile Include="SvgContents\SvgUse.cs" />
     <Compile Include="SvgContents\SvgUtils.cs" />
     <Compile Include="SvgContents\TransformFunction.cs" />
     <Compile Include="SwapUtils.cs" />
