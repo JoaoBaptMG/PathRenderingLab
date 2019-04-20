@@ -59,8 +59,8 @@ namespace PathRenderingLab.SvgContents
                 case TransformFunctionType.Matrix: return new DoubleMatrix(A, B, C, D, E, F);
                 case TransformFunctionType.Translate: return DoubleMatrix.Translate(A, B);
                 case TransformFunctionType.Rotate:
-                    if (B == 0 && C == 0) return DoubleMatrix.Rotate(A, new Double2(B, C));
-                    else return DoubleMatrix.Rotate(A);
+                    if (B == 0 && C == 0) return DoubleMatrix.Rotate(A);
+                    else return DoubleMatrix.Rotate(A, new Double2(B, C));
                 case TransformFunctionType.Scale: return DoubleMatrix.Scale(A, B);
                 case TransformFunctionType.Skew:
                 case TransformFunctionType.SkewX:
