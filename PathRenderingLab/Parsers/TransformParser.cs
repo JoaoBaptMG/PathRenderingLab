@@ -127,8 +127,8 @@ namespace PathRenderingLab.Parsers
                             }
                         case TransformFunctionType.Rotate:
                             {
-                                var a = DelimitedParenthesizedSequence(1, 1);
-                                transformFunctions.Add(TransformFunction.Rotate(a[0].ToRadians()));
+                                var a = DelimitedParenthesizedSequence(1, 3);
+                                transformFunctions.Add(TransformFunction.Rotate(a[0], new Double2(a.TryGetOr(1, 0), a.TryGetOr(2, 0))));
                                 break;
                             }
                         case TransformFunctionType.Scale:
