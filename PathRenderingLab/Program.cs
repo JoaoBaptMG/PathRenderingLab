@@ -25,6 +25,12 @@ namespace PathRenderingLab
 
         public static Color Convert(System.Drawing.Color c) => new Color(c.R, c.G, c.B, c.A);
 
+        public static DoubleMatrix ToDoubleMatrix(this System.Drawing.Drawing2D.Matrix matrix)
+        {
+            var m = matrix.Elements;
+            return new DoubleMatrix(m[0], m[1], m[2], m[3], m[4], m[5]);
+        }
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -87,14 +93,13 @@ namespace PathRenderingLab
                 Console.WriteLine($"Parsed path {++pathId}: {path.PathData}");
                 Console.WriteLine();
                 var normalizedPath = path.PathData.NormalizeAndTruncate(out var normalizerMatrix);
-
-                var matrix = path.Transforms.GetMatrix();
+                var matrix = path.Transforms?.GetMatrix().ToDoubleMatrix() ?? DoubleMatrix.Identity;
 
                 if (path.Fill is SvgColourServer clr && clr.Colour.A > 0)
                 {
                     AddDrawing(MeasureTime(() => PathCompilerMethods.CompileFill(normalizedPath, path.FillRule), out var time));
                     colors.Add(Convert(clr.Colour));
-                    transforms.Add((Matrix)(matrix.ToDoubleMatrix() * normalizerMatrix));
+                    transforms.Add((Matrix)(matrix * normalizerMatrix));
                     totalTimes.Add(time);
                     numPaths++;
                 }
@@ -104,7 +109,7 @@ namespace PathRenderingLab
                     AddDrawing(MeasureTime(() => PathCompilerMethods.CompileStroke(normalizedPath, path.StrokeWidth,
                         path.StrokeLineCap, path.StrokeLineJoin, path.StrokeMiterLimit), out var time));
                     colors.Add(Convert(clr2.Colour));
-                    transforms.Add((Matrix)(matrix.ToDoubleMatrix() * normalizerMatrix));
+                    transforms.Add((Matrix)(matrix * normalizerMatrix));
                     totalTimes.Add(time);
                     numPaths++;
                 }
