@@ -170,8 +170,11 @@ namespace PathRenderingLab
 
             void WriteStats(string name, int numIndices, int numCurveVertices, int numDoubleCurveVertices, TimeSpan time)
             {
-                Console.WriteLine($"{name}: {(numIndices + numCurveVertices + numDoubleCurveVertices) / 3} triangles " +
-                    $"({numIndices / 3} filled, {numCurveVertices / 3} curves and {numDoubleCurveVertices / 3} double curves), " +
+                int numTris = numIndices / 3;
+                int numCurveTris = numCurveVertices / 3;
+                int numDoubleCurveTris = numDoubleCurveVertices / 3;
+                Console.WriteLine($"{name}: {numTris + numCurveTris + numDoubleCurveTris} triangles " +
+                    $"({numTris} filled, {numCurveTris} curves and {numDoubleCurveTris} double curves), " +
                     $"parsed in {time.TotalMilliseconds:0.00} ms");
             }
 
