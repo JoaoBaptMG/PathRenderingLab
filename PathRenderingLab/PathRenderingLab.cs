@@ -58,7 +58,8 @@ namespace PathRenderingLab
         public PathRenderingLab()
         {
             var displayMode = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
-            _ = new GraphicsDeviceManager(this)
+
+            new GraphicsDeviceManager(this)
             {
                 PreferredBackBufferWidth = displayMode.Width,
                 PreferredBackBufferHeight = displayMode.Height,

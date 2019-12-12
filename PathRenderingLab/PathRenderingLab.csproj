@@ -56,7 +56,6 @@
     <Compile Include="PathCompiler\CompiledDrawing.cs" />
     <Compile Include="ContentManagerExtensions.cs" />
     <Compile Include="CSSColor.cs" />
-    <Compile Include="CSSEnumPicker.cs" />
     <Compile Include="PathCompiler\DoubleCurveTriangle.cs" />
     <Compile Include="PathCompiler\CurveTriangle.cs" />
     <Compile Include="PathCompiler\DoubleCurveVertex.cs" />

@@ -46,7 +46,7 @@ namespace PathRenderingLab
             var paths = new List<SvgPath>();
             svg.ApplyRecursive(el => (el as SvgPath)?.AddTo(paths));
 
-            int numPaths = 0;
+            int pathId = 0, numPaths = 0;
             var triangleIndices = new List<int>();
             var curveVertices = new List<VertexPositionCurve>();
             var doubleCurveVertices = new List<VertexPositionDoubleCurve>();
@@ -84,52 +84,27 @@ namespace PathRenderingLab
 
             foreach (var path in paths)
             {
-#if false
-                var path = svgPath.Path;
-                var ps = svgPath.PathStyle;
-
-                // Normalize the path
-                var normalMatrix = path.NormalizeAndTruncate();
-                var matrix = (Matrix)(svgPath.Transform.ToMatrix() * normalMatrix);
-
-                Console.WriteLine($"Parsed path {++pathId}: {svgPath.Path}");
+                Console.WriteLine($"Parsed path {++pathId}: {path.PathData}");
                 Console.WriteLine();
+                var normalizedPath = path.PathData.NormalizeAndTruncate(out var normalizerMatrix);
 
-                if (ps.FillColor.HasValue && ps.FillColor.Value.A > 0)
-                {
-                    AddDrawing(MeasureTime(() => PathCompilerMethods.CompileFill(path, ps.FillRule), out var time));
-                    colors.Add(ps.FillColor.Value);
-                    transforms.Add(matrix);
-                    totalTimes.Add(time);
-                    numPaths++;
-                }
-
-                if (ps.StrokeColor.HasValue && ps.StrokeColor.Value.A > 0)
-                {
-                    AddDrawing(MeasureTime(() => PathCompilerMethods.CompileStroke(path, ps.StrokeWidth / normalMatrix.A,
-                        ps.StrokeLineCap, ps.StrokeLineJoin, ps.MiterLimit), out var time));
-                    colors.Add(ps.StrokeColor.Value);
-                    transforms.Add(matrix);
-                    totalTimes.Add(time);
-                    numPaths++;
-                }
-#endif
+                var matrix = path.Transforms.GetMatrix();
 
                 if (path.Fill is SvgColourServer clr && clr.Colour.A > 0)
                 {
-                    AddDrawing(MeasureTime(() => PathCompilerMethods.CompileFill(path.PathData, path.FillRule), out var time));
+                    AddDrawing(MeasureTime(() => PathCompilerMethods.CompileFill(normalizedPath, path.FillRule), out var time));
                     colors.Add(Convert(clr.Colour));
-                    transforms.Add(Matrix.Identity);
+                    transforms.Add((Matrix)(matrix.ToDoubleMatrix() * normalizerMatrix));
                     totalTimes.Add(time);
                     numPaths++;
                 }
 
                 if (path.Stroke is SvgColourServer clr2 && clr2.Colour.A > 0)
                 {
-                    AddDrawing(MeasureTime(() => PathCompilerMethods.CompileStroke(path.PathData, path.StrokeWidth,
+                    AddDrawing(MeasureTime(() => PathCompilerMethods.CompileStroke(normalizedPath, path.StrokeWidth,
                         path.StrokeLineCap, path.StrokeLineJoin, path.StrokeMiterLimit), out var time));
                     colors.Add(Convert(clr2.Colour));
-                    transforms.Add(Matrix.Identity);
+                    transforms.Add((Matrix)(matrix.ToDoubleMatrix() * normalizerMatrix));
                     totalTimes.Add(time);
                     numPaths++;
                 }
