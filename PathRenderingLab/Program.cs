@@ -1,14 +1,11 @@
-﻿using Microsoft.Xna.Framework;
-using System;
+﻿using System;
+using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using PathRenderingLab.PathCompiler;
-using System.Xml;
-using PathRenderingLab.Parsers;
-using PathRenderingLab.SvgContents;
 using System.Diagnostics;
+using Svg;
 
 namespace PathRenderingLab
 {
@@ -18,6 +15,16 @@ namespace PathRenderingLab
     /// </summary>
     public static class Program
     {
+        /// <summary>
+        /// Utility function to be able to conditionally add an element to a list using the ?. operator
+        /// </summary>
+        /// <typeparam name="T">The type of the element to be added.</typeparam>
+        /// <param name="element">The element to be added.</param>
+        /// <param name="list">The list which to add the element to.</param>
+        public static void AddTo<T>(this T element, List<T> list) => list.Add(element);
+
+        public static Color Convert(System.Drawing.Color c) => new Color(c.R, c.G, c.B, c.A);
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -35,23 +42,11 @@ namespace PathRenderingLab
                 file = Console.ReadLine();
             }
 
-            var svg = new Svg(file);
+            var svg = SvgDocument.Open(file);
             var paths = new List<SvgPath>();
+            svg.ApplyRecursive(el => (el as SvgPath)?.AddTo(paths));
 
-            void EnumeratePaths(SvgGroup g)
-            {
-                if (!g.Renderable) return;
-
-                foreach (var node in g.Children)
-                {
-                    if (node is SvgGroup) EnumeratePaths(node as SvgGroup);
-                    else if (node is SvgPath) paths.Add(node as SvgPath);
-                }
-            }
-
-            EnumeratePaths(svg.Root);
-
-            int pathId = 0, numPaths = 0;
+            int numPaths = 0;
             var triangleIndices = new List<int>();
             var curveVertices = new List<VertexPositionCurve>();
             var doubleCurveVertices = new List<VertexPositionDoubleCurve>();
@@ -87,8 +82,9 @@ namespace PathRenderingLab
                 return result;
             }
 
-            foreach (var svgPath in paths)
+            foreach (var path in paths)
             {
+#if false
                 var path = svgPath.Path;
                 var ps = svgPath.PathStyle;
 
@@ -114,6 +110,26 @@ namespace PathRenderingLab
                         ps.StrokeLineCap, ps.StrokeLineJoin, ps.MiterLimit), out var time));
                     colors.Add(ps.StrokeColor.Value);
                     transforms.Add(matrix);
+                    totalTimes.Add(time);
+                    numPaths++;
+                }
+#endif
+
+                if (path.Fill is SvgColourServer clr && clr.Colour.A > 0)
+                {
+                    AddDrawing(MeasureTime(() => PathCompilerMethods.CompileFill(path.PathData, path.FillRule), out var time));
+                    colors.Add(Convert(clr.Colour));
+                    transforms.Add(Matrix.Identity);
+                    totalTimes.Add(time);
+                    numPaths++;
+                }
+
+                if (path.Stroke is SvgColourServer clr2 && clr2.Colour.A > 0)
+                {
+                    AddDrawing(MeasureTime(() => PathCompilerMethods.CompileStroke(path.PathData, path.StrokeWidth,
+                        path.StrokeLineCap, path.StrokeLineJoin, path.StrokeMiterLimit), out var time));
+                    colors.Add(Convert(clr2.Colour));
+                    transforms.Add(Matrix.Identity);
                     totalTimes.Add(time);
                     numPaths++;
                 }
@@ -216,4 +232,4 @@ namespace PathRenderingLab
         }
     }
 #endif
-}
+            }

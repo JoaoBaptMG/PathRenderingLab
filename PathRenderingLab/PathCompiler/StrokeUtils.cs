@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Svg;
 using static PathRenderingLab.DoubleUtils;
 using static PathRenderingLab.SwapUtils;
 
@@ -8,8 +9,8 @@ namespace PathRenderingLab.PathCompiler
 {
     public static class StrokeUtils
     {
-        public static IEnumerable<Curve> ConvertToFill(CurveData data, double halfWidth, StrokeLineCap lineCap,
-            StrokeLineJoin lineJoin, double miterLimit)
+        public static IEnumerable<Curve> ConvertToFill(CurveData data, double halfWidth, SvgStrokeLineCap lineCap,
+            SvgStrokeLineJoin lineJoin, double miterLimit)
         {
             // We are going to generate a "stroke fill"
             var leftCurves = new List<Curve>();
@@ -33,7 +34,7 @@ namespace PathRenderingLab.PathCompiler
                     else
                     {
                         // Else, add to the appropriate list
-                        var lineJoint = GenerateLineJoints(data.Curves[i], data.Curves[ik], halfWidth, lineJoin, miterLimit);
+                        var lineJoint = GenerateLineJoins(data.Curves[i], data.Curves[ik], halfWidth, lineJoin, miterLimit);
                         (prevTangent.Cross(nextTangent) > 0 ? rightCurves : leftCurves).AddRange(lineJoint);
                     }
                 }
@@ -224,8 +225,8 @@ namespace PathRenderingLab.PathCompiler
             return Curve.EllipticArc(xr0, radii, xr, largeArc, sweep, xr1);
         }
 
-        private static IEnumerable<Curve> GenerateLineJoints(Curve prevCurve, Curve nextCurve, double halfWidth,
-            StrokeLineJoin lineJoin, double miterLimit)
+        private static IEnumerable<Curve> GenerateLineJoins(Curve prevCurve, Curve nextCurve, double halfWidth,
+            SvgStrokeLineJoin lineJoin, double miterLimit)
         {
             // First, calculate the cross-product between the tangents
             var exitTangent = prevCurve.ExitTangent;
@@ -241,19 +242,19 @@ namespace PathRenderingLab.PathCompiler
             // Now, create the next triangles if necessary
             switch (lineJoin)
             {
-                case StrokeLineJoin.Bevel: // Just the bevel line
+                case SvgStrokeLineJoin.Bevel: // Just the bevel line
                     yield return Curve.Line(p + exitOffset, p + entryOffset);
                     break;
-                case StrokeLineJoin.Miter:
-                case StrokeLineJoin.MiterClip:
+                case SvgStrokeLineJoin.Miter:
+                case SvgStrokeLineJoin.MiterClip:
                     {
                         // Calculate the bisector and miter length
                         var cos = exitOffset.Dot(entryOffset) / Math.Sqrt(exitOffset.LengthSquared * entryOffset.LengthSquared);
                         var miter = halfWidth / Math.Sqrt(0.5 + 0.5 * cos);
 
                         // Check the conditions for the miter (only clip if miter-clip is explicity selected)
-                        if (lineJoin == StrokeLineJoin.Miter && miter >= halfWidth * miterLimit)
-                            goto case StrokeLineJoin.Bevel;
+                        if (lineJoin == SvgStrokeLineJoin.Miter && miter >= halfWidth * miterLimit)
+                            goto case SvgStrokeLineJoin.Bevel;
 
                         // Generate the miter
                         var miterWidth = halfWidth * miterLimit;
@@ -287,11 +288,11 @@ namespace PathRenderingLab.PathCompiler
                         }
                         break;
                     }
-                case StrokeLineJoin.Round:
+                case SvgStrokeLineJoin.Round:
                         // Generate the circle
                         yield return Curve.Circle(p, halfWidth, exitOffset, entryOffset, sd < 0);
                         break;
-                case StrokeLineJoin.Arcs:
+                case SvgStrokeLineJoin.Arcs:
                     {
                         // Compute the curvatures of the curves
                         var exitKappa = prevCurve.ExitCurvature;
@@ -299,11 +300,11 @@ namespace PathRenderingLab.PathCompiler
 
                         // If one of the curvatures is too large, fall back to round
                         if (Math.Abs(exitKappa) * halfWidth >= 1 || Math.Abs(entryKappa) * halfWidth >= 1)
-                            goto case StrokeLineJoin.Round;
+                            goto case SvgStrokeLineJoin.Round;
 
                         // If both of them are zero, fall back to miter
                         if (RoughlyZero(exitKappa) && RoughlyZero(entryKappa))
-                            goto case StrokeLineJoin.MiterClip;
+                            goto case SvgStrokeLineJoin.MiterClip;
                         // If one (or both) are nonzero, build the possible circles
                         else 
                         {
@@ -338,7 +339,7 @@ namespace PathRenderingLab.PathCompiler
                             }
 
                             // If still no solutions are found, go to the miter-clip case
-                            if (points.Length == 0) goto case StrokeLineJoin.MiterClip;
+                            if (points.Length == 0) goto case SvgStrokeLineJoin.MiterClip;
 
                             // Check both which point have less travelled distance
                             double PointParameter(Double2 pt)
@@ -501,7 +502,7 @@ namespace PathRenderingLab.PathCompiler
             return new[] { pt, pt };
         }
 
-        private static IEnumerable<Curve> GenerateLineCaps(Curve curve, bool atEnd, double halfWidth, StrokeLineCap lineCap)
+        private static IEnumerable<Curve> GenerateLineCaps(Curve curve, bool atEnd, double halfWidth, SvgStrokeLineCap lineCap)
         {
             // First, get the offset of the curve
             var tangent = atEnd ? curve.ExitTangent : curve.EntryTangent;
@@ -513,9 +514,9 @@ namespace PathRenderingLab.PathCompiler
             // Finally, generate the line cap
             switch (lineCap)
             {
-                case StrokeLineCap.Butt: yield return Curve.Line(p + offset, p - offset); break;
-                case StrokeLineCap.Round: yield return Curve.Circle(p, halfWidth, offset, -offset, !atEnd); break;
-                case StrokeLineCap.Square:
+                case SvgStrokeLineCap.Butt: yield return Curve.Line(p + offset, p - offset); break;
+                case SvgStrokeLineCap.Round: yield return Curve.Circle(p, halfWidth, offset, -offset, !atEnd); break;
+                case SvgStrokeLineCap.Square:
                     {
                         // Generate a half-square
                         var ext = offset.CCWPerpendicular;

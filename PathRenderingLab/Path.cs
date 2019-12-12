@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using PathRenderingLab.PathCompiler;
-using PathRenderingLab.Parsers;
 using System;
 
 namespace PathRenderingLab
@@ -82,12 +81,6 @@ namespace PathRenderingLab
         public Path() : this(new PathCommand[0]) { }
 
         public Path(PathCommand[] pathCommands) { PathCommands = pathCommands; }
-
-        public Path(string pathString)
-        {
-            var parser = new PathParser(pathString);
-            PathCommands = parser.Commands.ToArray();
-        }
 
         public static IEnumerable<CurveData> SplitCurves(IEnumerable<PathCommand> pathCommands)
         {

@@ -11,9 +11,9 @@ namespace PathRenderingLab
     public static class HelpText
     {
         public const string HelpTextKeyboard = "On a keyboard: arrow keys to move, Q to zoom in, A to zoom out, " +
-            "Z to toggle wireframe, X to toggle fill, C to toggle stroke, space to speed.";
+            "Z to toggle wireframe, R/F to choose a drawing, X to toggle the selected drawing, space to speed.";
         public const string HelpTextGamepad = "On a gamepad: left thumbstick to move, RT to zoom in, LT to zoom out, " +
-            "Y to toggle wireframe, B to toggle fill, X to toggle stroke, A to speed.";
+            "Y to toggle wireframe, d-pad up/down to choose a drawing, B to toggle the selected drawing, A to speed.";
     }
 
     /// <summary>
@@ -21,8 +21,6 @@ namespace PathRenderingLab
     /// </summary>
     public class PathRenderingLab : Game
     {
-        GraphicsDeviceManager graphics;
-
         public Color BackgroundColor;
         public Color[] DrawingColors;
 
@@ -43,8 +41,6 @@ namespace PathRenderingLab
         public Vector2 Position;
         public float Amount;
 
-        //private SuperSampler superSampler;
-
         Effect effect;
 
         VertexBuffer triangleVertexBuffer;
@@ -54,14 +50,15 @@ namespace PathRenderingLab
         SpriteBatch spriteBatch;
         SpriteFont font;
 
-        bool WireFrame;
-        bool lastY, lastX, lastB;
+        bool wireFrame;
+        bool lastY, lastUp, lastDown, lastB;
+        bool[] hiddenDrawings;
+        int curDrawingSelected;
 
         public PathRenderingLab()
         {
             var displayMode = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
-
-            graphics = new GraphicsDeviceManager(this)
+            _ = new GraphicsDeviceManager(this)
             {
                 PreferredBackBufferWidth = displayMode.Width,
                 PreferredBackBufferHeight = displayMode.Height,
@@ -77,10 +74,12 @@ namespace PathRenderingLab
 
             Content.RootDirectory = "Content";
 
-            WireFrame = false;
+            wireFrame = false;
             lastY = false;
-            lastX = false;
+            lastUp = false;
+            lastDown = false;
             lastB = false;
+            curDrawingSelected = 0;
         }
 
         /// <summary>
@@ -152,6 +151,8 @@ namespace PathRenderingLab
 
             spriteBatch = new SpriteBatch(GraphicsDevice);
             font = Content.Load<SpriteFont>("mplus");
+
+            hiddenDrawings = new bool[NumDrawings];
         }
 
         private FloatRectangle DeriveBoundingBox()
@@ -249,11 +250,11 @@ namespace PathRenderingLab
             var gamepadState = GamePad.GetState(PlayerIndex.One);
             var keyboardState = Keyboard.GetState();
 
-            if (keyboardState.IsKeyDown(Keys.Escape) || gamepadState.IsButtonDown(Buttons.Start))
-                Exit();
+            bool ButtonOrKeyDown(Buttons button, Keys key) => keyboardState.IsKeyDown(key) || gamepadState.IsButtonDown(button);
+            bool ButtonOrKeyHit(ref bool last, Buttons button, Keys key) => EventJustOccurred(ref last, ButtonOrKeyDown(button, key));
 
-            if (EventJustOccurred(ref lastY, gamepadState.IsButtonDown(Buttons.Y) || keyboardState.IsKeyDown(Keys.Z)))
-                WireFrame = !WireFrame;
+            if (ButtonOrKeyDown(Buttons.Start, Keys.Escape)) Exit();
+            if (ButtonOrKeyHit(ref lastY, Buttons.Y, Keys.Z)) wireFrame = !wireFrame;
 
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
@@ -270,13 +271,21 @@ namespace PathRenderingLab
                 (keyboardState.IsKeyDown(Keys.Right) ? 1 : 0) - (keyboardState.IsKeyDown(Keys.Left) ? 1 : 0),
                 (keyboardState.IsKeyDown(Keys.Up) ? 1 : 0) - (keyboardState.IsKeyDown(Keys.Down) ? 1 : 0));
 
-            if (gamepadState.IsButtonDown(Buttons.A)) displacementGamepad *= 4f;
             if (keyboardState.IsKeyDown(Keys.Space)) displacementKeyboard *= 4f;
+            if (gamepadState.IsButtonDown(Buttons.A)) displacementGamepad *= 4f;
 
             var displacement = displacementGamepad + displacementKeyboard;
             displacement.Y = -displacement.Y;
 
             Position += displacement * Amount * dt;
+
+            if (ButtonOrKeyHit(ref lastUp, Buttons.DPadUp, Keys.R))
+                curDrawingSelected = (curDrawingSelected + NumDrawings - 1) % NumDrawings;
+            else if (ButtonOrKeyHit(ref lastDown, Buttons.DPadDown, Keys.F))
+                curDrawingSelected = (curDrawingSelected + 1) % NumDrawings;
+
+            if (ButtonOrKeyHit(ref lastB, Buttons.B, Keys.X))
+                hiddenDrawings[curDrawingSelected] = !hiddenDrawings[curDrawingSelected];
 
             base.Update(gameTime);
         }
@@ -296,13 +305,15 @@ namespace PathRenderingLab
             GraphicsDevice.RasterizerState = new RasterizerState
             {
                 CullMode = CullMode.None,
-                FillMode = WireFrame ? FillMode.WireFrame : FillMode.Solid
+                FillMode = wireFrame ? FillMode.WireFrame : FillMode.Solid
             };
 
             GraphicsDevice.BlendState = BlendState.AlphaBlend;
 
             for (int i = 0; i < NumDrawings; i++)
             {
+                if (hiddenDrawings[i]) continue;
+
                 effect.Parameters["Color"].SetValue(DrawingColors[i].ToVector4());
                 effect.Parameters["WorldViewProjection"].SetValue(DrawingTransforms[i] * view * Projection);
 
@@ -325,7 +336,7 @@ namespace PathRenderingLab
                 // Fill curve triangles
                 if (DrawingCurveVerticesStartingIds[i] < DrawingCurveVerticesStartingIds[i + 1])
                 {
-                    if (!WireFrame) effect.CurrentTechnique = effect.Techniques["CurveDrawing"];
+                    if (!wireFrame) effect.CurrentTechnique = effect.Techniques["CurveDrawing"];
                     GraphicsDevice.SetVertexBuffer(curveVertexBuffer);
 
                     foreach (var pass in effect.CurrentTechnique.Passes)
@@ -339,7 +350,7 @@ namespace PathRenderingLab
                 // Fill double curve triangles
                 if (DrawingDoubleCurveVerticesStartingIds[i] < DrawingDoubleCurveVerticesStartingIds[i + 1])
                 {
-                    if (!WireFrame) effect.CurrentTechnique = effect.Techniques["DoubleCurveDrawing"];
+                    if (!wireFrame) effect.CurrentTechnique = effect.Techniques["DoubleCurveDrawing"];
                     GraphicsDevice.SetVertexBuffer(doubleCurveVertexBuffer);
 
                     foreach (var pass in effect.CurrentTechnique.Passes)
@@ -368,7 +379,7 @@ namespace PathRenderingLab
             base.Draw(gameTime);
         }
 
-        public string CommandText() => HelpText.HelpTextKeyboard + '\n' + HelpText.HelpTextGamepad;
+        public static string CommandText() => HelpText.HelpTextKeyboard + '\n' + HelpText.HelpTextGamepad;
 
         public string PathDebugText()
         {
@@ -379,7 +390,7 @@ namespace PathRenderingLab
                     $"({numIndices / 3} filled, {numCurveVertices / 3} curves and {numDoubleCurveVertices / 3} double curves)");
 
             for (int i = 0; i < NumDrawings; i++)
-                AppendDrawing($"drawing {i+1}",
+                AppendDrawing($"{(i == curDrawingSelected ? "@" : "O")} drawing {i+1}{(hiddenDrawings[i] ? " (hidden)" : "")}",
                     DrawingIndicesStartingIds[i + 1] - DrawingIndicesStartingIds[i],
                     DrawingCurveVerticesStartingIds[i + 1] - DrawingCurveVerticesStartingIds[i],
                     DrawingDoubleCurveVerticesStartingIds[i + 1] - DrawingDoubleCurveVerticesStartingIds[i]);
@@ -387,14 +398,14 @@ namespace PathRenderingLab
             return sb.ToString().Trim();
         }
 
-        public string WrapText(SpriteFont spriteFont, string text, float maxLineWidth)
+        public static string WrapText(SpriteFont spriteFont, string text, float maxLineWidth)
         {
             var strs = text.Split('\n').Select(s => WrapTextLine(spriteFont, s, maxLineWidth));
             return string.Join("\n", strs);
         }
 
         // Taken from https://stackoverflow.com/a/15987581
-        public string WrapTextLine(SpriteFont spriteFont, string text, float maxLineWidth)
+        public static string WrapTextLine(SpriteFont spriteFont, string text, float maxLineWidth)
         {
             string[] words = text.Split(' ');
             StringBuilder sb = new StringBuilder();

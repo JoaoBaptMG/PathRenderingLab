@@ -1,0 +1,3 @@
+[submodule "SVG"]
+	path = SVG
+	url = https://github.com/JoaoBaptMG/SVG

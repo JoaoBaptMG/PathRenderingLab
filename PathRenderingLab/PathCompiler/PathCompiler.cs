@@ -1,19 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
+using Svg;
+using Svg.Pathing;
 
 namespace PathRenderingLab.PathCompiler
 {
     public static class PathCompilerMethods
     {
+
         /// <summary>
         /// Determine the filled simple segments of a path, splitting lines and curves appropriately.
         /// </summary>
         /// <param name="path">The path that is supposed to be compiled.</param>
         /// <param name="fillRule">The fill rule used to determine the filled components</param>
         /// <returns>The set of simple path components.</returns>
-        public static CompiledDrawing CompileFill(Path path, FillRule fillRule = FillRule.Evenodd)
+        public static CompiledDrawing CompileFill(SvgPathSegmentList path, SvgFillRule fillRule = SvgFillRule.EvenOdd)
         {
             var curveData = path.SplitCurves();
             var curves = new List<Curve>();
@@ -32,21 +34,35 @@ namespace PathRenderingLab.PathCompiler
             return CompileCurves(curves, fillRule);
         }
 
-        [Conditional("DEBUG")]
-        internal static void DebugIntersections()
+        /// <summary>
+        /// Compiles the stroke to the necessary triangles to draw it.
+        /// </summary>
+        /// <param name="path">The path to be compiled.</param>
+        /// <param name="width">The width of the stroke.</param>
+        /// <param name="lineCap">The line cap method for the stroke's ends.</param>
+        /// <param name="lineJoin">The line join method for the stroke's midpoints</param>
+        /// <param name="miterLimit">The miter limit value.</param>
+        public static CompiledDrawing CompileStroke(SvgPathSegmentList path, double width,
+            SvgStrokeLineCap lineCap = SvgStrokeLineCap.Butt,
+            SvgStrokeLineJoin lineJoin = SvgStrokeLineJoin.Bevel,
+            double miterLimit = double.PositiveInfinity)
         {
-            var c1 = Curve.QuadraticBezier(new Double2(0, 0), new Double2(0, 4), new Double2(4, 4));
-            var c2 = Curve.QuadraticBezier(new Double2(0, 4), new Double2(0, 0), new Double2(4, 0));
-            foreach (var p in Curve.Intersections(c1, c2))
-            {
-                var a = c1.At(p.A);
-                var b = c2.At(p.B);
+            // Return empty if stroke width == 0
+            if (width == 0) return CompiledDrawing.Empty;
 
-                Console.WriteLine($"Intersection at t={p.A} ({a}) and t={p.B} ({b})");
-            }
+            // Divide the width by 2 to cope with the SVG documentation
+            var halfWidth = width / 2;
+
+            var curves = new List<Curve>();
+            // Convert each split path to a fill
+            foreach (var data in path.SplitCurves())
+                curves.AddRange(StrokeUtils.ConvertToFill(data, halfWidth, lineCap, lineJoin, miterLimit));
+
+            // And compile
+            return CompileCurves(curves, SvgFillRule.NonZero);
         }
 
-        internal static CompiledDrawing CompileCurves(List<Curve> curves, FillRule fillRule)
+        internal static CompiledDrawing CompileCurves(List<Curve> curves, SvgFillRule fillRule)
         {
             // Reunite all intersections to subdivide the curves
             var curveRootSets = new SortedDictionary<double, Double2>[curves.Count];
@@ -109,7 +125,7 @@ namespace PathRenderingLab.PathCompiler
 
             // Pick the appropriate predicate for the fill rule
             Func<DCEL.Face, bool> facePredicate;
-            if (fillRule == FillRule.Evenodd) facePredicate = f => f.FillNumber % 2 != 0;
+            if (fillRule == SvgFillRule.EvenOdd) facePredicate = f => f.FillNumber % 2 != 0;
             else facePredicate = f => f.FillNumber != 0;
 
             // Simplify the faces
@@ -124,34 +140,6 @@ namespace PathRenderingLab.PathCompiler
 
             // Generace the filled faces
             return CompiledDrawing.ConcatMany(fills.Select(CompiledDrawing.FromFace));
-        }
-
-        /// <summary>
-        /// Compiles the stroke to the necessary triangles to draw it.
-        /// </summary>
-        /// <param name="path">The path to be compiled.</param>
-        /// <param name="width">The width of the stroke.</param>
-        /// <param name="lineCap">The line cap method for the stroke's ends.</param>
-        /// <param name="lineJoin">The line join method for the stroke's midpoints</param>
-        /// <param name="miterLimit">The miter limit value.</param>
-        public static CompiledDrawing CompileStroke(Path path, double width,
-            StrokeLineCap lineCap = StrokeLineCap.Butt,
-            StrokeLineJoin lineJoin = StrokeLineJoin.Bevel,
-            double miterLimit = double.PositiveInfinity)
-        {
-            // Return empty if stroke width == 0
-            if (width == 0) return CompiledDrawing.Empty;
-
-            // Divide the width by 2 to cope with the SVG documentation
-            var halfWidth = width / 2;
-
-            var curves = new List<Curve>();
-            // Convert each split path to a fill
-            foreach (var data in path.SplitCurves())
-                curves.AddRange(StrokeUtils.ConvertToFill(data, halfWidth, lineCap, lineJoin, miterLimit));
-
-            // And compile
-            return CompileCurves(curves, FillRule.Nonzero);
         }
 
         // Use disjoint sets to create the clusters

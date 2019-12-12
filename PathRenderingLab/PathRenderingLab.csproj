@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\MonoGame\v3.0\MonoGame.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\MonoGame\v3.0\MonoGame.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -13,9 +13,10 @@
     <AssemblyName>PathRenderingLab</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MonoGamePlatform>Windows</MonoGamePlatform>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -48,15 +49,10 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="CompiledStroke.Backup.cs" />
     <Compile Include="DisjointSet.cs" />
     <Compile Include="DoubleMatrix.cs" />
     <Compile Include="DoubleRectangle.cs" />
     <Compile Include="FloatRectangle.cs" />
-    <Compile Include="Parsers\ParserBase.cs" />
-    <Compile Include="Parsers\ParserExceptions.cs" />
-    <Compile Include="Parsers\PropertyListParser.cs" />
-    <Compile Include="Parsers\TransformParser.cs" />
     <Compile Include="PathCompiler\CompiledDrawing.cs" />
     <Compile Include="ContentManagerExtensions.cs" />
     <Compile Include="CSSColor.cs" />
@@ -71,6 +67,7 @@
     <None Include="PathCompiler\DCEL Backup\Vertex.cs" />
     <Compile Include="Double3.cs" />
     <Compile Include="PathCompiler\OuterAngles.cs" />
+    <Compile Include="PathCompiler\PathUtils.cs" />
     <Compile Include="ReferenceEqualityComparer.cs" />
     <Compile Include="PathCompiler\FillFace.cs" />
     <Compile Include="PathCompiler\Curve.CubicBezier.cs" />
@@ -90,7 +87,6 @@
     <Compile Include="LinkedListUtils.cs" />
     <Compile Include="Path.cs" />
     <Compile Include="PathCompiler\PathCompiler.cs" />
-    <Compile Include="Parsers\PathParser.cs" />
     <Compile Include="PathRenderingLab.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -99,22 +95,6 @@
     <Compile Include="StringUtils.cs" />
     <Compile Include="PathCompiler\StrokeUtils.cs" />
     <Compile Include="SuperSampler.cs" />
-    <Compile Include="SvgContents\BasicShapes\SvgEllipse.cs" />
-    <Compile Include="SvgContents\BasicShapes\SvgCircle.cs" />
-    <Compile Include="SvgContents\BasicShapes\SvgPolygon.cs" />
-    <Compile Include="SvgContents\BasicShapes\SvgPolyline.cs" />
-    <Compile Include="SvgContents\BasicShapes\SvgLine.cs" />
-    <Compile Include="SvgContents\BasicShapes\SvgRect.cs" />
-    <Compile Include="SvgContents\ISvgPostResolve.cs" />
-    <Compile Include="SvgContents\PathStyle.cs" />
-    <Compile Include="SvgContents\Svg.cs" />
-    <Compile Include="SvgContents\SvgGroup.cs" />
-    <Compile Include="SvgContents\SvgNode.cs" />
-    <Compile Include="SvgContents\SvgPath.cs" />
-    <Compile Include="SvgContents\SvgSizedGroup.cs" />
-    <Compile Include="SvgContents\SvgUse.cs" />
-    <Compile Include="SvgContents\SvgUtils.cs" />
-    <Compile Include="SvgContents\TransformFunction.cs" />
     <Compile Include="SwapUtils.cs" />
     <Compile Include="PathCompiler\Triangle.cs" />
     <Compile Include="ArrayExtensions.cs" />
@@ -160,9 +140,15 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.InteropServices.RuntimeInformation.4.3.0\lib\net45\System.Runtime.InteropServices.RuntimeInformation.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
@@ -177,6 +163,10 @@
     <ProjectReference Include="..\Bitlush.AvlTree\Bitlush.AvlTree.csproj">
       <Project>{a14b4c98-27c7-421f-bb43-98ba24b55af6}</Project>
       <Name>Bitlush.AvlTree</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SVG\Source\Svg.csproj">
+      <Project>{886a98c5-37c0-4e8b-885e-30c1d2f98b47}</Project>
+      <Name>Svg</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
