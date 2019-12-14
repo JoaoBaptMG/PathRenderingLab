@@ -16,7 +16,7 @@ The core of this project is to convert the path representation according to the 
 
 ## How do I run the current project?
 
-Before, you needed a specially-crafted _path specification file_ to run an example. However, this new commit adds the possibility to specify simple SVG files. Unfortunately, the SVG support is not complete and the only thing it supports are solid colors and no use of shadow DOMs.
+Before, you needed a specially-crafted _path specification file_ to run an example. However, this new commit adds the possibility to specify simple SVG files. Unfortunately, the SVG support is not complete yet, but it already suport solid colors, linear and radial gradients. Support for shadow DOM and clipping and the rest might be coming soon.
 
 ## Screenshots
 ![img0](imgs/pathrendering0.png)
@@ -49,6 +49,10 @@ Before, you needed a specially-crafted _path specification file_ to run an examp
 ![img27](imgs/pathrendering27.png)
 ![img28](imgs/pathrendering28.png)
 ![img29](imgs/pathrendering29.png)
+![img30](imgs/pathrendering29.png)
+![img31](imgs/pathrendering29.png)
+![img32](imgs/pathrendering29.png)
+![img33](imgs/pathrendering29.png)
 
 ## How can I help?
 
