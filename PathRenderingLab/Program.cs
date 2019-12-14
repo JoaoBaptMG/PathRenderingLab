@@ -88,6 +88,7 @@ namespace PathRenderingLab
                 return result;
             }
 
+            var paintServerCreator = new PaintServerCreator();
             foreach (var path in paths)
             {
                 Console.WriteLine($"Parsed path {++pathId}: {path.PathData}");
@@ -95,7 +96,7 @@ namespace PathRenderingLab
                 var normalizedPath = path.PathData.NormalizeAndTruncate(out var normalizerMatrix);
                 var matrix = path.Transforms?.GetMatrix().ToDoubleMatrix() ?? DoubleMatrix.Identity;
 
-                var fill = PaintServerCreator.GetFromSvg(path.Fill, out var userSpaceOnUse);
+                var fill = paintServerCreator.GetFromSvg(path.Fill, out var userSpaceOnUse);
                 if (!(fill is NoPaintServer))
                 {
                     AddDrawing(MeasureTime(() => PathCompilerMethods.CompileFill(normalizedPath, path.FillRule), out var time));
@@ -107,7 +108,7 @@ namespace PathRenderingLab
                     numPaths++;
                 }
 
-                var stroke = PaintServerCreator.GetFromSvg(path.Stroke, out userSpaceOnUse);
+                var stroke = paintServerCreator.GetFromSvg(path.Stroke, out userSpaceOnUse);
                 if (!(stroke is NoPaintServer))
                 {
                     AddDrawing(MeasureTime(() => PathCompilerMethods.CompileStroke(normalizedPath, path.StrokeWidth,

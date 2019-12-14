@@ -10,12 +10,12 @@ namespace PathRenderingLab.PaintServers
     /// <summary>
     /// Converts a SvgPaintServer to a IPaintServer
     /// </summary>
-    public static class PaintServerCreator
+    public class PaintServerCreator
     {
         public static Microsoft.Xna.Framework.Color Convert(System.Drawing.Color c)
             => new Microsoft.Xna.Framework.Color(c.R, c.G, c.B, c.A);
 
-        public static IPaintServer GetFromSvg(SvgPaintServer server, out bool userSpaceOnUse)
+        public IPaintServer GetFromSvg(SvgPaintServer server, out bool userSpaceOnUse)
         {
             userSpaceOnUse = false;
 
