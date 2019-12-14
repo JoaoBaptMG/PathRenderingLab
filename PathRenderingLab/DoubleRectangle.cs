@@ -42,6 +42,20 @@ namespace PathRenderingLab
             return new DoubleRectangle(x1, y1, x2 - x1, y2 - y1);
         }
 
+        public static DoubleRectangle Intersection(DoubleRectangle r1, DoubleRectangle r2) => r1.Intersection(r2);
+
+        public DoubleRectangle Union(DoubleRectangle o)
+        {
+            var x1 = Math.Min(X, o.X);
+            var x2 = Math.Max(X + Width, o.X + o.Width);
+            var y1 = Math.Min(Y, o.Y);
+            var y2 = Math.Max(Y + Height, o.Y + o.Height);
+
+            return new DoubleRectangle(x1, y1, x2 - x1, y2 - y1);
+        }
+
+        public static DoubleRectangle Union(DoubleRectangle r1, DoubleRectangle r2) => r1.Union(r2);
+
         public bool ContainsCompletely(DoubleRectangle o)
             => X <= o.X && Y <= o.Y && X + Width >= o.X + o.Width && Y + Height >= o.Y + o.Height;
 

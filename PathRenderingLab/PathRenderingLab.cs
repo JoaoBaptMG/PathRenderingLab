@@ -136,11 +136,15 @@ namespace PathRenderingLab
                 indexBuffer.SetData(DrawingIndices);
             }
 
-            // Create the basic effect
+            // Create the effects and set up the parameters
             effects = new Dictionary<string, Effect>();
             foreach (var ps in DrawingPaintServers)
+            {
+                ps.PrepareOutsideResources(Content);
+
                 if (!effects.ContainsKey(ps.EffectName))
                     effects.Add(ps.EffectName, Content.Load<Effect>(ps.EffectName));
+            }
 
             // Compute the projection matrix
             var bbox = DeriveBoundingBox();

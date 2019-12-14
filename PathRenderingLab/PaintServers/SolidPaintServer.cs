@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -23,5 +24,7 @@ namespace PathRenderingLab.PaintServers
         {
             effect.Parameters["Color"].SetValue(color.ToVector4());
         }
+
+        public void PrepareOutsideResources(ContentManager content) { }
     }
 }

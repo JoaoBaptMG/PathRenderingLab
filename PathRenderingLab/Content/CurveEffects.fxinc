@@ -54,7 +54,7 @@ TriangleOutput TriangleVS(in TriangleInput input)
 
 float4 TrianglePS(TriangleOutput input) : COLOR
 {
-	return ComputeColor(input.ColorCoord);
+	return ComputeColor(input.ColorCoord, ddx(input.ColorCoord), ddy(input.ColorCoord));
 }
 
 struct CurveInput
@@ -85,7 +85,7 @@ float4 CurvePS(CurveOutput input) : COLOR
 {
 	float alph = ComputeAlphaFromCurveCoord(input.CurveCoord, ddx(input.CurveCoord), ddy(input.CurveCoord));
 	clip(alph == 0 ? -1 : 1);
-	return alph * ComputeColor(input.ColorCoord);
+	return alph * ComputeColor(input.ColorCoord, ddx(input.ColorCoord), ddy(input.ColorCoord));
 }
 
 struct DoubleCurveInput
@@ -126,7 +126,7 @@ float4 DoubleCurvePS(DoubleCurveOutput input) : COLOR
 	float alph2 = ComputeAlphaFromCurveCoord(input.CurveCoord2, ddx(input.CurveCoord2), ddy(input.CurveCoord2));
 
 	clip(alph1 == 0 || alph2 == 0 ? -1 : 1);
-	float4 color = ComputeColor(input.ColorCoord);
+	float4 color = ComputeColor(input.ColorCoord, ddx(input.ColorCoord), ddy(input.ColorCoord));
 	if (dj) return (alph1 + alph2 - alph1 * alph2) * color;
 	else return alph1 * alph2 * color;
 }

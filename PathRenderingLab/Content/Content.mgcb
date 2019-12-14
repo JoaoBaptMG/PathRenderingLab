@@ -32,3 +32,21 @@
 /processorParam:DebugMode=Auto
 /build:CurveEffectsSolid.fx
 
+#begin DirectEffect.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:DirectEffect.fx
+
+#begin CurveEffectsLinear.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:CurveEffectsLinear.fx
+
+#begin CurveEffectsRadial.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:CurveEffectsRadial.fx
+

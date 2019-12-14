@@ -61,13 +61,13 @@ namespace PathRenderingLab.PathCompiler
             if (curves.Count > 0) yield return NewCurveList(false);
         }
 
+        public static IEnumerable<Curve> Curves(this SvgPathSegmentList pathSegments)
+            => pathSegments.SplitCurves().SelectMany(c => c.Curves);
+
         public static SvgPathSegmentList NormalizeAndTruncate(this SvgPathSegmentList path, out DoubleMatrix transform, double halfSize = 2048)
         {
             // Calculate the bounding box of the path
-            var points = (from cd in path.SplitCurves()
-                          from curve in cd.Curves
-                          from p in curve.EnclosingPolygon
-                          select p).ToArray();
+            var points = path.Curves().SelectMany(c => c.EnclosingPolygon).ToArray();
 
             // Don't normalize an empty path
             if (points.Length == 0)
@@ -133,7 +133,14 @@ namespace PathRenderingLab.PathCompiler
         }
 
         // The bounding box matrix should map [-2048,2048] to [0,1] on both directions
-        public static DoubleMatrix BoundingBoxMatrix(float halfSize = 2048)
-            => new DoubleMatrix(0.5 / halfSize, 0, 0, 0.5 / halfSize, 0.5, 0.5);
+        public static DoubleRectangle BoundingBox(this SvgPathSegmentList path)
+            => path.Curves().Select(c => c.BoundingBox).Aggregate(DoubleRectangle.Union);
+
+        public static DoubleMatrix BoundingBoxMatrix(this SvgPathSegmentList path)
+        {
+            var bbox = path.BoundingBox();
+            return new DoubleMatrix(1 / bbox.Width, 0, 0, 1 / bbox.Height,
+                -bbox.X / bbox.Width, -bbox.Y / bbox.Height);
+        }
     }
 }

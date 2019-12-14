@@ -53,9 +53,12 @@
     <Compile Include="DoubleMatrix.cs" />
     <Compile Include="DoubleRectangle.cs" />
     <Compile Include="FloatRectangle.cs" />
+    <Compile Include="PaintServers\GradientPaintServer.cs" />
     <Compile Include="PaintServers\IPaintServer.cs" />
+    <Compile Include="PaintServers\LinearGradientPaintServer.cs" />
     <Compile Include="PaintServers\NoPaintServer.cs" />
     <Compile Include="PaintServers\PaintServerCreator.cs" />
+    <Compile Include="PaintServers\RadialGradientPaintServer.cs" />
     <Compile Include="PaintServers\SolidPaintServer.cs" />
     <Compile Include="PathCompiler\CompiledDrawing.cs" />
     <Compile Include="ContentManagerExtensions.cs" />
