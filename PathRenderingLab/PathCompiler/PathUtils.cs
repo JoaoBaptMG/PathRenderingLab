@@ -131,5 +131,9 @@ namespace PathRenderingLab.PathCompiler
                 return new System.Drawing.PointF((float)pt.X, (float)pt.Y);
             }
         }
+
+        // The bounding box matrix should map [-2048,2048] to [0,1] on both directions
+        public static DoubleMatrix BoundingBoxMatrix(float halfSize = 2048)
+            => new DoubleMatrix(0.5 / halfSize, 0, 0, 0.5 / halfSize, 0.5, 0.5);
     }
 }

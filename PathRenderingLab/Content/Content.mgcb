@@ -13,12 +13,6 @@
 
 #---------------------------------- Content ---------------------------------#
 
-#begin CurveEffects.fx
-/importer:EffectImporter
-/processor:EffectProcessor
-/processorParam:DebugMode=Auto
-/build:CurveEffects.fx
-
 #begin Supersampling.fx
 /importer:EffectImporter
 /processor:EffectProcessor
@@ -31,4 +25,10 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:TextureFormat=Compressed
 /build:mplus.spritefont
+
+#begin CurveEffectsSolid.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:CurveEffectsSolid.fx
 

@@ -6,6 +6,7 @@ using System.Linq;
 using PathRenderingLab.PathCompiler;
 using System.Diagnostics;
 using Svg;
+using PathRenderingLab.PaintServers;
 
 namespace PathRenderingLab
 {
@@ -22,8 +23,6 @@ namespace PathRenderingLab
         /// <param name="element">The element to be added.</param>
         /// <param name="list">The list which to add the element to.</param>
         public static void AddTo<T>(this T element, List<T> list) => list.Add(element);
-
-        public static Color Convert(System.Drawing.Color c) => new Color(c.R, c.G, c.B, c.A);
 
         public static DoubleMatrix ToDoubleMatrix(this System.Drawing.Drawing2D.Matrix matrix)
         {
@@ -61,8 +60,9 @@ namespace PathRenderingLab
             var curveVerticesStartingIds = new List<int>() { 0 };
             var doubleCurveVerticesStartingIds = new List<int>() { 0 };
 
-            var colors = new List<Color>();
+            var paintServers = new List<IPaintServer>();
             var transforms = new List<Matrix>();
+            var colorTransforms = new List<Matrix>();
             var vertexCache = new Dictionary<Vector2, int>();
 
             int curTriangleIndicesStartingId = 0;
@@ -95,21 +95,27 @@ namespace PathRenderingLab
                 var normalizedPath = path.PathData.NormalizeAndTruncate(out var normalizerMatrix);
                 var matrix = path.Transforms?.GetMatrix().ToDoubleMatrix() ?? DoubleMatrix.Identity;
 
-                if (path.Fill is SvgColourServer clr && clr.Colour.A > 0)
+                var fill = PaintServerCreator.GetFromSvg(path.Fill, out var userSpaceOnUse);
+                if (!(fill is NoPaintServer))
                 {
                     AddDrawing(MeasureTime(() => PathCompilerMethods.CompileFill(normalizedPath, path.FillRule), out var time));
-                    colors.Add(Convert(clr.Colour));
+                    paintServers.Add(fill);
                     transforms.Add((Matrix)(matrix * normalizerMatrix));
+                    if (userSpaceOnUse) colorTransforms.Add((Matrix)normalizerMatrix);
+                    else colorTransforms.Add((Matrix)PathUtils.BoundingBoxMatrix());
                     totalTimes.Add(time);
                     numPaths++;
                 }
 
-                if (path.Stroke is SvgColourServer clr2 && clr2.Colour.A > 0)
+                var stroke = PaintServerCreator.GetFromSvg(path.Stroke, out userSpaceOnUse);
+                if (!(stroke is NoPaintServer))
                 {
                     AddDrawing(MeasureTime(() => PathCompilerMethods.CompileStroke(normalizedPath, path.StrokeWidth,
                         path.StrokeLineCap, path.StrokeLineJoin, path.StrokeMiterLimit), out var time));
-                    colors.Add(Convert(clr2.Colour));
+                    paintServers.Add(stroke);
                     transforms.Add((Matrix)(matrix * normalizerMatrix));
+                    if (userSpaceOnUse) colorTransforms.Add((Matrix)normalizerMatrix);
+                    else colorTransforms.Add((Matrix)PathUtils.BoundingBoxMatrix());
                     totalTimes.Add(time);
                     numPaths++;
                 }
@@ -196,9 +202,10 @@ namespace PathRenderingLab
             using (var game = new PathRenderingLab())
             {
                 game.BackgroundColor = backgroundColor;
-                game.AllVertices = allVertices;
-                game.DrawingColors = colors.ToArray();
+                game.AllDrawingVertices = allVertices;
+                game.DrawingPaintServers = paintServers.ToArray();
                 game.DrawingTransforms = transforms.ToArray();
+                game.DrawingColorTransforms = colorTransforms.ToArray();
                 game.DrawingIndices = triangleIndices.ToArray();
                 game.DrawingCurveVertices = curveVertices.ToArray();
                 game.DrawingDoubleCurveVertices = doubleCurveVertices.ToArray();

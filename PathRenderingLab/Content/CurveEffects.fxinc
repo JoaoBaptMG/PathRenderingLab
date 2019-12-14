@@ -1,4 +1,4 @@
-﻿#if OPENGL
+#if OPENGL
 	#define SV_POSITION POSITION
 	#define VS_SHADERMODEL vs_3_0
 	#define PS_SHADERMODEL ps_3_0
@@ -6,11 +6,6 @@
 	#define VS_SHADERMODEL vs_4_0_level_9_1
 	#define PS_SHADERMODEL ps_4_0_level_9_3
 #endif
-
-matrix WorldViewProjection;
-float4 Color;
-float2 ScreenSize;
-float StrokeHalfWidth;
 
 float ComputeAlphaFromCurveCoord(in float4 t, in float4 tx, in float4 ty)
 {
@@ -33,28 +28,33 @@ float ComputeAlphaFromCurveCoord(in float4 t, in float4 tx, in float4 ty)
 	return saturate(0.5 - f / length(gradf));
 }
 
-struct VertexShaderInput
+matrix WorldViewProjection;
+matrix ColorTransform;
+
+struct TriangleInput
 {
 	float4 Position : POSITION0;
 };
 
-struct VertexShaderOutput
+struct TriangleOutput
 {
 	float4 Position : SV_POSITION;
+	float2 ColorCoord : TEXCOORD0;
 };
 
-VertexShaderOutput MainVS(in VertexShaderInput input)
+TriangleOutput TriangleVS(in TriangleInput input)
 {
-	VertexShaderOutput output = (VertexShaderOutput)0;
+	TriangleOutput output = (TriangleOutput)0;
 
 	output.Position = mul(input.Position, WorldViewProjection);
+	output.ColorCoord = mul(input.Position, ColorTransform).xy;
 
 	return output;
 }
 
-float4 MainPS(VertexShaderOutput input) : COLOR
+float4 TrianglePS(TriangleOutput input) : COLOR
 {
-	return Color;
+	return ComputeColor(input.ColorCoord);
 }
 
 struct CurveInput
@@ -67,6 +67,7 @@ struct CurveOutput
 {
 	float4 Position : SV_POSITION;
 	float4 CurveCoord : TEXCOORD0;
+	float2 ColorCoord : TEXCOORD1;
 };
 
 CurveOutput CurveVS(in CurveInput input)
@@ -74,6 +75,7 @@ CurveOutput CurveVS(in CurveInput input)
 	CurveOutput output = (CurveOutput)0;
 
 	output.Position = mul(input.Position, WorldViewProjection);
+	output.ColorCoord = mul(input.Position, ColorTransform).xy;
 	output.CurveCoord = input.CurveCoord;
 
 	return output;
@@ -82,8 +84,8 @@ CurveOutput CurveVS(in CurveInput input)
 float4 CurvePS(CurveOutput input) : COLOR
 {
 	float alph = ComputeAlphaFromCurveCoord(input.CurveCoord, ddx(input.CurveCoord), ddy(input.CurveCoord));
-	//clip(alph == 0 ? -1 : 1);
-	return alph * Color;
+	clip(alph == 0 ? -1 : 1);
+	return alph * ComputeColor(input.ColorCoord);
 }
 
 struct DoubleCurveInput
@@ -98,6 +100,7 @@ struct DoubleCurveOutput
 	float4 Position : SV_POSITION;
 	float4 CurveCoord1 : TEXCOORD0;
 	float4 CurveCoord2 : TEXCOORD1;
+	float2 ColorCoord : TEXCOORD2;
 };
 
 DoubleCurveOutput DoubleCurveVS(in DoubleCurveInput input)
@@ -107,6 +110,7 @@ DoubleCurveOutput DoubleCurveVS(in DoubleCurveInput input)
 	output.Position = mul(input.Position, WorldViewProjection);
 	output.CurveCoord1 = input.CurveCoord1;
 	output.CurveCoord2 = input.CurveCoord2;
+	output.ColorCoord = mul(input.Position, ColorTransform).xy;
 
 	return output;
 }
@@ -121,21 +125,22 @@ float4 DoubleCurvePS(DoubleCurveOutput input) : COLOR
 	float alph1 = ComputeAlphaFromCurveCoord(cc1, ddx(input.CurveCoord1), ddy(input.CurveCoord1));
 	float alph2 = ComputeAlphaFromCurveCoord(input.CurveCoord2, ddx(input.CurveCoord2), ddy(input.CurveCoord2));
 
-	//clip(alph1 == 0 || alph2 == 0 ? -1 : 1);
-	if (dj) return (alph1 + alph2 - alph1 * alph2) * Color;
-	else return alph1 * alph2 * Color;
+	clip(alph1 == 0 || alph2 == 0 ? -1 : 1);
+	float4 color = ComputeColor(input.ColorCoord);
+	if (dj) return (alph1 + alph2 - alph1 * alph2) * color;
+	else return alph1 * alph2 * color;
 }
 
-technique BasicColorDrawing
+technique Triangle
 {
 	pass P0
 	{
-		VertexShader = compile VS_SHADERMODEL MainVS();
-		PixelShader = compile PS_SHADERMODEL MainPS();
+		VertexShader = compile VS_SHADERMODEL TriangleVS();
+		PixelShader = compile PS_SHADERMODEL TrianglePS();
 	}
 };
 
-technique CurveDrawing
+technique Curve
 {
 	pass P0
 	{
@@ -144,7 +149,7 @@ technique CurveDrawing
 	}
 };
 
-technique DoubleCurveDrawing
+technique DoubleCurve
 {
 	pass P0
 	{

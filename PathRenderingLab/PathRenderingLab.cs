@@ -1,7 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using PathRenderingLab.PaintServers;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -22,12 +24,13 @@ namespace PathRenderingLab
     public class PathRenderingLab : Game
     {
         public Color BackgroundColor;
-        public Color[] DrawingColors;
+        public IPaintServer[] DrawingPaintServers;
 
-        public Vector2[] AllVertices;
+        public Vector2[] AllDrawingVertices;
         public int NumDrawings;
 
         public Matrix[] DrawingTransforms;
+        public Matrix[] DrawingColorTransforms;
         public int[] DrawingIndices;
         public VertexPositionCurve[] DrawingCurveVertices;
         public VertexPositionDoubleCurve[] DrawingDoubleCurveVertices;
@@ -41,7 +44,7 @@ namespace PathRenderingLab
         public Vector2 Position;
         public float Amount;
 
-        Effect effect;
+        Dictionary<string, Effect> effects;
 
         VertexBuffer triangleVertexBuffer;
         VertexBuffer curveVertexBuffer;
@@ -103,11 +106,11 @@ namespace PathRenderingLab
         protected override void LoadContent()
         {
             // Create the vertex buffer
-            var vertices = AllVertices.Select(v => new VertexPosition(new Vector3(v, 0))).ToArray();
-            if (AllVertices.Length > 0)
+            var vertices = AllDrawingVertices.Select(v => new VertexPosition(new Vector3(v, 0))).ToArray();
+            if (AllDrawingVertices.Length > 0)
             {
                 triangleVertexBuffer = new VertexBuffer(GraphicsDevice, VertexPosition.VertexDeclaration,
-                    AllVertices.Length, BufferUsage.WriteOnly);
+                    AllDrawingVertices.Length, BufferUsage.WriteOnly);
                 triangleVertexBuffer.SetData(vertices);
             }
 
@@ -134,7 +137,10 @@ namespace PathRenderingLab
             }
 
             // Create the basic effect
-            effect = Content.Load<Effect>("CurveEffects");
+            effects = new Dictionary<string, Effect>();
+            foreach (var ps in DrawingPaintServers)
+                if (!effects.ContainsKey(ps.EffectName))
+                    effects.Add(ps.EffectName, Content.Load<Effect>(ps.EffectName));
 
             // Compute the projection matrix
             var bbox = DeriveBoundingBox();
@@ -142,10 +148,6 @@ namespace PathRenderingLab
             Projection = Matrix.CreateOrthographic(bbox.Width, bbox.Height, -1, 100);
             Projection *= Matrix.CreateScale(new Vector3(1, -1, 1));
             Position = new Vector2(bbox.X + bbox.Width / 2, bbox.Y + bbox.Height / 2);
-
-            effect.Parameters["ScreenSize"].SetValue(new Vector2(
-                GraphicsDevice.PresentationParameters.BackBufferWidth,
-                GraphicsDevice.PresentationParameters.BackBufferHeight));
 
             Console.WriteLine(GraphicsDevice.Adapter.Description);
             //superSampler = new SuperSampler(this, 4, 4);
@@ -168,7 +170,7 @@ namespace PathRenderingLab
             {
                 for (int j = DrawingIndicesStartingIds[i]; j < DrawingIndicesStartingIds[i + 1]; j++)
                 {
-                    var v = Vector4.Transform(AllVertices[DrawingIndices[j]], DrawingTransforms[i]);
+                    var v = Vector4.Transform(AllDrawingVertices[DrawingIndices[j]], DrawingTransforms[i]);
 
                     minx = Math.Min(minx, v.X);
                     maxx = Math.Max(maxx, v.X);
@@ -315,10 +317,12 @@ namespace PathRenderingLab
             {
                 if (hiddenDrawings[i]) continue;
 
-                effect.Parameters["Color"].SetValue(DrawingColors[i].ToVector4());
+                var effect = effects[DrawingPaintServers[i].EffectName];
+                DrawingPaintServers[i].SetEffectParameters(effect);
                 effect.Parameters["WorldViewProjection"].SetValue(DrawingTransforms[i] * view * Projection);
+                effect.Parameters["ColorTransform"].SetValue(DrawingColorTransforms[i]);
 
-                effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
+                effect.CurrentTechnique = effect.Techniques["Triangle"];
 
                 // Fill triangles
                 if (DrawingIndicesStartingIds[i] < DrawingIndicesStartingIds[i + 1])
@@ -337,7 +341,7 @@ namespace PathRenderingLab
                 // Fill curve triangles
                 if (DrawingCurveVerticesStartingIds[i] < DrawingCurveVerticesStartingIds[i + 1])
                 {
-                    if (!wireFrame) effect.CurrentTechnique = effect.Techniques["CurveDrawing"];
+                    if (!wireFrame) effect.CurrentTechnique = effect.Techniques["Curve"];
                     GraphicsDevice.SetVertexBuffer(curveVertexBuffer);
 
                     foreach (var pass in effect.CurrentTechnique.Passes)
@@ -351,7 +355,7 @@ namespace PathRenderingLab
                 // Fill double curve triangles
                 if (DrawingDoubleCurveVerticesStartingIds[i] < DrawingDoubleCurveVerticesStartingIds[i + 1])
                 {
-                    if (!wireFrame) effect.CurrentTechnique = effect.Techniques["DoubleCurveDrawing"];
+                    if (!wireFrame) effect.CurrentTechnique = effect.Techniques["DoubleCurve"];
                     GraphicsDevice.SetVertexBuffer(doubleCurveVertexBuffer);
 
                     foreach (var pass in effect.CurrentTechnique.Passes)
